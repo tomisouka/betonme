@@ -132,6 +132,86 @@ async function saveLayHistory(lay) {
   } catch (e) { console.error('saveLayHistory failed', e) }
 }
 
+// ─── SERVER: DOG PICKS ────────────────────────────────────────────────────────
+async function loadDogState() {
+  try {
+    const data = await loadAllData()
+    return data.dog || {}
+  } catch { return {} }
+}
+
+async function saveDogStateServer(state) {
+  try {
+    const current = await loadAllData()
+    await saveAllData({ ...current, dog: state })
+  } catch (e) { console.error('saveDogState failed', e) }
+}
+
+// ─── SERVER: PROP PICKS ───────────────────────────────────────────────────────
+async function loadPropPick() {
+  try {
+    const data = await loadAllData()
+    return data.propPick || {}
+  } catch { return {} }
+}
+
+async function savePropPick(picks) {
+  try {
+    const current = await loadAllData()
+    await saveAllData({ ...current, propPick: picks })
+  } catch (e) { console.error('savePropPick failed', e) }
+}
+
+// ─── SERVER: DOUBLE LOCK O/U ─────────────────────────────────────────────────
+async function loadOuPick() {
+  try {
+    const data = await loadAllData()
+    return data.ouPick || {}
+  } catch { return {} }
+}
+
+async function saveOuPick(picks) {
+  try {
+    const current = await loadAllData()
+    await saveAllData({ ...current, ouPick: picks })
+  } catch (e) { console.error('saveOuPick failed', e) }
+}
+
+// ─── ONE-TIME localStorage MIGRATION ─────────────────────────────────────────
+// Runs once on startup: moves any existing browser-side pick data to the server.
+// After migration the localStorage keys are removed so this only fires once.
+async function migrateLocalStorageToServer() {
+  try {
+    const current = await loadAllData()
+    let dirty = false
+
+    // dog picks
+    const rawDog = localStorage.getItem('dogapp')
+    if (rawDog && !current.dog) {
+      try { current.dog = JSON.parse(rawDog); dirty = true } catch {}
+    }
+    // prop picks
+    const rawProp = localStorage.getItem('propPick')
+    if (rawProp && !current.propPick) {
+      try { current.propPick = JSON.parse(rawProp); dirty = true } catch {}
+    }
+    // O/U picks
+    const rawOU = localStorage.getItem('doubleLockOU')
+    if (rawOU && !current.ouPick) {
+      try { current.ouPick = JSON.parse(rawOU); dirty = true } catch {}
+    }
+
+    if (dirty) {
+      await saveAllData(current)
+      // Clean up old keys now that data is safe on the server
+      localStorage.removeItem('dogapp')
+      localStorage.removeItem('propPick')
+      localStorage.removeItem('doubleLockOU')
+      console.log('[BetOnMe] localStorage migration complete')
+    }
+  } catch (e) { console.error('Migration failed', e) }
+}
+
 // ─── TANK01 PROPS FETCHER ─────────────────────────────────────────────────────
 // Fetches player props for all in-season sports and stores silently.
 // Nothing is displayed yet — data sits in localStorage ready for Props tab.
@@ -290,9 +370,43 @@ const MARKET_EMOJIS = {
   player_reception_yds: '🙌',
 }
 
-function PropSection({ marketKey, label, props, pickedTeams, onPick, defaultOpen }) {
+const PAGE_SIZE = 5
+
+function PropSection({ marketKey, label, props, pickedTeams, onPick, defaultOpen, homeTeam, awayTeam, lockGame }) {
   const [open, setOpen] = React.useState(defaultOpen)
+  const [sortDir, setSortDir] = React.useState('desc') // desc = highest line first
+  const [showAll, setShowAll] = React.useState(false)
+
+  // Determine favorite/underdog color the same way the odds tab does:
+  // negative ML odds = favorite (green), positive = underdog (orange)
+  const ml = lockGame?.bookmakers?.[0]?.markets?.find(m => m.key === 'h2h')
+  const teamOdds = {} // { teamName: americanOdds }
+  ml?.outcomes?.forEach(o => { teamOdds[o.name] = ensureAmerican(o.price) })
+  const teamColor = (team) => {
+    if (!team || !teamOdds[team]) return '#555'
+    return teamOdds[team] < 0 ? '#00ff88' : '#ff9944'
+  }
+
   const pickedCount = props.filter(p => pickedTeams[p.team] === `${p.player}|${p.marketKey}`).length
+
+  // Always surface picked players regardless of pagination
+  const pickedProps = props.filter(p => pickedTeams[p.team] === `${p.player}|${p.marketKey}`)
+  const unpickedProps = props.filter(p => pickedTeams[p.team] !== `${p.player}|${p.marketKey}`)
+
+  const sortedUnpicked = [...unpickedProps].sort((a, b) =>
+    sortDir === 'desc' ? b.line - a.line : a.line - b.line
+  )
+
+  const visibleUnpicked = showAll ? sortedUnpicked : sortedUnpicked.slice(0, PAGE_SIZE)
+  const displayProps = [...pickedProps, ...visibleUnpicked]
+  const hiddenCount = sortedUnpicked.length - visibleUnpicked.length
+
+  function toggleSort(e) {
+    e.stopPropagation()
+    setSortDir(d => d === 'desc' ? 'asc' : 'desc')
+    setShowAll(false)
+  }
+
   return (
     <div style={{ background: '#141414', border: '1px solid #222', borderRadius: '10px', marginBottom: '0.5rem', overflow: 'hidden' }}>
       <div
@@ -310,12 +424,24 @@ function PropSection({ marketKey, label, props, pickedTeams, onPick, defaultOpen
               {pickedCount} picked
             </span>
           )}
+          {open && (
+            <button
+              onClick={toggleSort}
+              style={{
+                padding: '0.15rem 0.55rem', fontSize: '0.7rem', fontWeight: 'bold',
+                background: '#222', border: '1px solid #333', borderRadius: '5px',
+                color: '#aaa', cursor: 'pointer', lineHeight: 1.4,
+              }}
+            >
+              {sortDir === 'desc' ? '↓ High' : '↑ Low'}
+            </button>
+          )}
           <span style={{ color: '#444', fontSize: '0.8rem' }}>{open ? '▲' : '▼'}</span>
         </div>
       </div>
       {open && (
         <div style={{ padding: '0.6rem 0.75rem', borderTop: '1px solid #1a1a1a', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-          {props.map(prop => {
+          {displayProps.map(prop => {
             const isPicked = pickedTeams[prop.team] === `${prop.player}|${prop.marketKey}`
             const teamPickedElsewhere = pickedTeams[prop.team] && !isPicked
             return (
@@ -339,7 +465,7 @@ function PropSection({ marketKey, label, props, pickedTeams, onPick, defaultOpen
                       <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{prop.player}</span>
                       {isPicked && <span style={{ fontSize: '0.62rem', color: '#8888ff', background: '#8888ff22', borderRadius: '3px', padding: '0.1rem 0.35rem', fontWeight: 'bold' }}>✓ PICKED</span>}
                     </div>
-                    <div style={{ fontSize: '0.68rem', color: '#444' }}>{prop.team}</div>
+                    <div style={{ fontSize: '0.68rem', color: teamColor(prop.team), fontWeight: 'bold' }}>{prop.team}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff' }}>{prop.line}</div>
@@ -351,6 +477,23 @@ function PropSection({ marketKey, label, props, pickedTeams, onPick, defaultOpen
               </div>
             )
           })}
+
+          {/* Show more / Show less */}
+          {(hiddenCount > 0 || showAll) && (
+            <button
+              onClick={() => setShowAll(v => !v)}
+              style={{
+                marginTop: '0.2rem', padding: '0.6rem',
+                background: 'transparent', border: '1px solid #2a2a2a',
+                borderRadius: '8px', color: '#555', cursor: 'pointer',
+                fontSize: '0.78rem', fontWeight: 'bold', transition: 'color 0.15s, border-color 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.borderColor = '#444' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#555'; e.currentTarget.style.borderColor = '#2a2a2a' }}
+            >
+              {showAll ? '▲ Show less' : `▼ Show ${hiddenCount} more`}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -362,10 +505,7 @@ function PropsTab({ todayLock, allGames }) {
 
   // propPick[todayKey] = { [team]: { player, label, line, side, odds, sport, result } }
   // One pick per team (home + away) per day
-  const [propPick, setPropPick] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('propPick')) || {} }
-    catch { return {} }
-  })
+  const [propPick, setPropPick] = useState({})
   const [propModal, setPropModal] = useState(null)
   const [selectedSide, setSelectedSide] = useState(null)
 
@@ -378,10 +518,13 @@ function PropsTab({ todayLock, allGames }) {
   // todayPropPick is now { [team]: pickObj } or {}
   const todayTeamPicks = propPick[todayKey] || {}
 
+  // Load propPick from server on mount
+  useEffect(() => { loadPropPick().then(p => setPropPick(p || {})) }, [])
+
   // pickedTeams: { [team]: "player|marketKey" } — used to dim same-team props after picking
   const pickedTeams = {}
   Object.entries(todayTeamPicks).forEach(([team, pick]) => {
-    pickedTeams[team] = `${pick.player}|${pick.marketKey}`
+    if (pick?.player) pickedTeams[team] = `${pick.player}|${pick.marketKey}`
   })
 
   // Determine sport key and event ID from the lock game
@@ -524,7 +667,7 @@ function PropsTab({ todayLock, allGames }) {
     setPropModal(prop)
   }
 
-  function confirmPropPick() {
+  async function confirmPropPick() {
     if (!propModal || !selectedSide) return
     const updated = {
       ...propPick,
@@ -543,7 +686,7 @@ function PropsTab({ todayLock, allGames }) {
         }
       }
     }
-    localStorage.setItem('propPick', JSON.stringify(updated))
+    await savePropPick(updated)
     setPropPick(updated)
     setPropModal(null)
     setSelectedSide(null)
@@ -707,6 +850,9 @@ function PropsTab({ todayLock, allGames }) {
                   pickedTeams={pickedTeams}
                   onPick={openPropModal}
                   defaultOpen={i === 0}
+                  homeTeam={homeTeam}
+                  awayTeam={awayTeam}
+                  lockGame={lockGame}
                 />
               ))}
             </div>
@@ -1057,11 +1203,11 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
   }, [])
 
   // ── Double Lock O/U ──
-  const [ouPick, setOuPick] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('doubleLockOU')) || {} }
-    catch { return {} }
-  })
+  const [ouPick, setOuPick] = useState({})
   const [ouModal, setOuModal] = useState(null)
+
+  // Load ouPick from server on mount
+  useEffect(() => { loadOuPick().then(p => setOuPick(p || {})) }, [])
 
   const todayOuPick = ouPick[todayKey] || null
 
@@ -1072,9 +1218,9 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
   const ouMarket = lockGame?.bookmakers?.[0]?.markets?.find(m => m.key === 'totals')
   const ouOptions = ouMarket ? ouMarket.outcomes : []
 
-  function confirmOuPick(outcome) {
+  async function confirmOuPick(outcome) {
     const updated = { ...ouPick, [todayKey]: { name: outcome.name, point: outcome.point, odds: ensureAmerican(outcome.price) } }
-    localStorage.setItem('doubleLockOU', JSON.stringify(updated))
+    await saveOuPick(updated)
     setOuPick(updated)
     setOuModal(null)
   }
@@ -1162,7 +1308,8 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
   async function lockLay() {
     const legs = laySlip.map(game => {
       const isLock = game.id === lockGameId
-      const team = isLock ? todayLock?.team : selectedTeams[game.id]
+      const isDog = game.id === dogGameId && !isLock
+      const team = isLock ? todayLock?.team : isDog ? todayDog?.team : selectedTeams[game.id]
       return {
         gameId: game.id,
         home: game.home_team,
@@ -1170,6 +1317,7 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
         sport: game.sportLabel,
         team: team || null,
         isLock,
+        isDog,
         result: null,
       }
     })
@@ -1632,12 +1780,12 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                   <div key={leg.gameId} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     background: '#1a1a1a',
-                    border: `1px solid ${leg.result === 'W' ? '#00ff8844' : leg.result === 'L' ? '#ff444444' : leg.isLock ? '#00ff8844' : '#8888ff44'}`,
+                    border: `1px solid ${leg.result === 'W' ? '#00ff8844' : leg.result === 'L' ? '#ff444444' : leg.isLock ? '#00ff8844' : leg.isDog ? '#ff994444' : '#8888ff44'}`,
                     borderRadius: '8px', padding: '0.75rem 1rem',
                   }}>
                     <div>
-                      <div style={{ fontSize: '0.65rem', color: leg.isLock ? '#00ff88' : '#8888ff', fontWeight: 'bold', marginBottom: '0.2rem' }}>
-                        {leg.isLock ? '🔒 LOCK' : `LEG ${i + 1}`}
+                      <div style={{ fontSize: '0.65rem', color: leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff', fontWeight: 'bold', marginBottom: '0.2rem' }}>
+                        {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${i + 1}`}
                       </div>
                       <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{leg.team || '—'}</div>
                       <div style={{ color: '#555', fontSize: '0.72rem' }}>{leg.home} vs {leg.away}</div>
@@ -1653,7 +1801,8 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                   const ml = bm?.markets?.find(m => m.key === 'h2h')
                   const isRemoved = layRemovedGames.includes(game.id)
                   const isLockGame = game.id === lockGameId
-                  const chosenTeam = isLockGame ? todayLock?.team : selectedTeams[game.id]
+                  const isDogGame = game.id === dogGameId && !isLockGame
+                  const chosenTeam = isLockGame ? todayLock?.team : isDogGame ? todayDog?.team : selectedTeams[game.id]
                   const pickedOutcome = ml?.outcomes?.find(o => o.name === chosenTeam)
                     || ml?.outcomes?.reduce((a, b) => ensureAmerican(a.price) < ensureAmerican(b.price) ? a : b)
                   const canRemove = !isLockGame && laySlip.length > 2
@@ -1671,7 +1820,7 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                       style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         background: isRemoved ? '#111' : '#1a1a1a',
-                        border: `1px solid ${isRemoved ? '#1a1a1a' : isLockGame ? '#00ff8844' : '#2a2a2a'}`,
+                        border: `1px solid ${isRemoved ? '#1a1a1a' : isLockGame ? '#00ff8844' : isDogGame ? '#ff994444' : '#2a2a2a'}`,
                         borderRadius: '8px', padding: '0.75rem 1rem',
                         opacity: isRemoved ? 0.3 : 1,
                         cursor: (isLockGame || (!canRemove && !isRemoved) || (!canAdd && isRemoved)) ? 'default' : 'pointer',
@@ -1679,8 +1828,8 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: '0.65rem', color: isLockGame ? '#00ff88' : '#8888ff', fontWeight: 'bold', marginBottom: '0.2rem' }}>
-                          {isLockGame ? '🔒 LOCK' : isRemoved ? 'REMOVED' : `LEG ${legNum}`}
+                        <div style={{ fontSize: '0.65rem', color: isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : '#8888ff', fontWeight: 'bold', marginBottom: '0.2rem' }}>
+                          {isLockGame ? '🔒 LOCK' : isDogGame ? '🐕 DOG' : isRemoved ? 'REMOVED' : `LEG ${legNum}`}
                         </div>
                         <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{pickedOutcome?.name || '—'}</div>
                         <div style={{ color: '#555', fontSize: '0.72rem' }}>{game.home_team} vs {game.away_team}</div>
@@ -1742,24 +1891,26 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
 // Streak resets every time win/loss flips.
 
 function DogOfTheDay({ allGames, loading, onDogChange }) {
-  const [dogState, setDogState] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('dogapp')) || {} }
-    catch { return {} }
-  })
+  const [dogState, setDogState] = useState({})
   const [dogModal, setDogModal] = useState(null)
 
-  function saveDogState(s) {
-    localStorage.setItem('dogapp', JSON.stringify(s))
+  async function saveDogState(s) {
     setDogState({ ...s })
+    await saveDogStateServer(s)
   }
 
   const todayKey = getTodayKey()
   const todayPick = dogState.picks?.[todayKey]
 
+  // Load from server on mount
+  useEffect(() => {
+    loadDogState().then(s => setDogState(s || {}))
+  }, [])
+
   // Auto-resolve pending dog picks via ESPN
   useEffect(() => {
     async function resolve() {
-      const s = JSON.parse(localStorage.getItem('dogapp') || '{}')
+      const s = await loadDogState()
       if (!s.picks) return
       const pending = Object.entries(s.picks).filter(([, p]) => p.result === null)
       if (!pending.length) return
@@ -1797,7 +1948,7 @@ function DogOfTheDay({ allGames, loading, onDogChange }) {
           }
         } catch(e) { console.error('Dog resolve error', e) }
       }
-      localStorage.setItem('dogapp', JSON.stringify(s))
+      await saveDogStateServer(s)
       setDogState({ ...s })
     }
     resolve()
@@ -1808,10 +1959,10 @@ function DogOfTheDay({ allGames, loading, onDogChange }) {
     setDogModal(dog)
   }
 
-  function confirmDogPick() {
+  async function confirmDogPick() {
     if (!dogModal) return
     const dog = dogModal
-    const s = JSON.parse(localStorage.getItem('dogapp') || '{}')
+    const s = await loadDogState()
     s.picks = s.picks || {}
     s.picks[todayKey] = {
       team: dog.team, odds: dog.mlOdds,
@@ -2653,9 +2804,9 @@ export default function App() {
     setTodayLock(s.picks?.[getTodayKey()] || null)
   }
 
-  function refreshTodayDog() {
+  async function refreshTodayDog() {
     try {
-      const s = JSON.parse(localStorage.getItem('dogapp') || '{}')
+      const s = await loadDogState()
       setTodayDog(s.picks?.[getTodayKey()] || null)
     } catch { setTodayDog(null) }
   }
@@ -2682,6 +2833,8 @@ export default function App() {
   }
 
   useEffect(() => {
+    // One-time migration: move any existing localStorage pick data to the server
+    migrateLocalStorageToServer()
     fetchOdds()
     refreshTodayLock()
     refreshTodayDog()
@@ -2702,10 +2855,10 @@ export default function App() {
         } else { setDevMsg('⚠ No lock today.') }
         break
       case 'resetDog': {
-        const dog = JSON.parse(localStorage.getItem('dogapp') || '{}')
+        const dog = await loadDogState()
         if (dog.picks?.[todayKey]) {
           delete dog.picks[todayKey]
-          localStorage.setItem('dogapp', JSON.stringify(dog))
+          await saveDogStateServer(dog)
           setDevMsg("✅ Today's dog reset.")
         } else { setDevMsg('⚠ No dog pick today.') }
         return
@@ -2720,10 +2873,10 @@ export default function App() {
         } else { setDevMsg('⚠ No pick today.') }
         break
       case 'resetProp': {
-        const propPick = JSON.parse(localStorage.getItem('propPick') || '{}')
+        const propPick = await loadPropPick()
         if (propPick[todayKey]) {
           delete propPick[todayKey]
-          localStorage.setItem('propPick', JSON.stringify(propPick))
+          await savePropPick(propPick)
           setDevMsg("✅ Today's prop picks reset.")
         } else { setDevMsg('⚠ No prop picks today.') }
         return
@@ -2744,6 +2897,14 @@ export default function App() {
         setDevMsg('✅ Wiped. Refreshing...')
         setTimeout(() => window.location.reload(), 1000)
         return
+      case 'restoreBackup': {
+        try {
+          const res = await fetch(`${SERVER}/restore-backup`, { method: 'POST' })
+          if (res.ok) { setDevMsg('✅ Backup restored. Refreshing...'); setTimeout(() => window.location.reload(), 1000) }
+          else { const e = await res.json(); setDevMsg(`⚠ ${e.error || 'No backup found'}`) }
+        } catch { setDevMsg('⚠ Could not reach server') }
+        return
+      }
       case 'clearHistory':
         s.picks = {}
         s.streak = []
@@ -2827,6 +2988,8 @@ export default function App() {
                   <button onClick={() => devAction('resetDog')} style={{ padding: '0.75rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold' }}>🔄 Reset Today's Dog</button>
                   <button onClick={() => devAction('resetPredictions')} style={{ padding: '0.75rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold' }}>🔄 Reset Today's Predictions + Lay</button>
                   <button onClick={() => devAction('resetProp')} style={{ padding: '0.75rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold' }}>🔄 Reset Today's Props</button>
+                  <button onClick={() => window.open(`${SERVER}/export`, '_blank')} style={{ padding: '0.75rem', background: '#1a2a1a', border: '1px solid #44aa44', borderRadius: '8px', color: '#88ff88', cursor: 'pointer', fontWeight: 'bold' }}>💾 Export savedata.json</button>
+                  <button onClick={() => devAction('restoreBackup')} style={{ padding: '0.75rem', background: '#2a1a00', border: '1px solid #aa7700', borderRadius: '8px', color: '#ffaa44', cursor: 'pointer', fontWeight: 'bold' }}>↩ Restore Last Backup</button>
                   <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button onClick={() => devAction('setResult', 'W')} style={{ flex: 1, padding: '0.75rem', background: '#0a2a1a', border: '1px solid #00ff88', borderRadius: '8px', color: '#00ff88', cursor: 'pointer', fontWeight: 'bold' }}>✅ Force WIN</button>
                     <button onClick={() => devAction('setResult', 'L')} style={{ flex: 1, padding: '0.75rem', background: '#2a0a0a', border: '1px solid #ff4444', borderRadius: '8px', color: '#ff4444', cursor: 'pointer', fontWeight: 'bold' }}>❌ Force LOSS</button>
