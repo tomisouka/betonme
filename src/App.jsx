@@ -372,20 +372,12 @@ const MARKET_EMOJIS = {
 
 const PAGE_SIZE = 5
 
-function PropSection({ marketKey, label, props, pickedTeams, onPick, defaultOpen, homeTeam, awayTeam, lockGame }) {
+function PropSection({ marketKey, label, props, pickedTeams, onPick, defaultOpen, homeTeam, awayTeam, teamColorMap }) {
   const [open, setOpen] = React.useState(defaultOpen)
-  const [sortDir, setSortDir] = React.useState('desc') // desc = highest line first
+  const [sortDir, setSortDir] = React.useState('desc')
   const [showAll, setShowAll] = React.useState(false)
 
-  // Determine favorite/underdog color the same way the odds tab does:
-  // negative ML odds = favorite (green), positive = underdog (orange)
-  const ml = lockGame?.bookmakers?.[0]?.markets?.find(m => m.key === 'h2h')
-  const teamOdds = {} // { teamName: americanOdds }
-  ml?.outcomes?.forEach(o => { teamOdds[o.name] = ensureAmerican(o.price) })
-  const teamColor = (team) => {
-    if (!team || !teamOdds[team]) return '#555'
-    return teamOdds[team] < 0 ? '#00ff88' : '#ff9944'
-  }
+  const teamColor = (team) => teamColorMap?.[team] || '#555'
 
   const pickedCount = props.filter(p => pickedTeams[p.team] === `${p.player}|${p.marketKey}`).length
 
@@ -706,6 +698,15 @@ function PropsTab({ todayLock, allGames }) {
   const homeTeam = lockGame?.home_team || todayLock?.home || ''
   const awayTeam = lockGame?.away_team || todayLock?.away || ''
 
+  // Build team color map the same way the Games tab does: negative ML odds = green (fav), positive = orange (dog)
+  const ml = lockGame?.bookmakers?.[0]?.markets?.find(m => m.key === 'h2h')
+  const teamColorMap = {}
+  if (ml?.outcomes) {
+    ml.outcomes.forEach(o => {
+      teamColorMap[o.name] = ensureAmerican(o.price) < 0 ? '#00ff88' : '#ff9944'
+    })
+  }
+
   if (renderError) return (
     <div style={{ padding: '2rem', color: '#ff4444' }}>
       <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>⚠ Props failed to render</div>
@@ -764,6 +765,7 @@ function PropsTab({ todayLock, allGames }) {
       <div style={{ marginBottom: '1.75rem' }}>
         <h2 style={{ margin: '0 0 0.4rem', fontSize: '1rem', color: '#aaa' }}>🎲 PROPS</h2>
         <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>One prop per team per day — from your lock game.</p>
+        <TodoBox items={["Player team color coordination (fav/dog) needs real roster API — heuristic player split is unreliable."]} />
       </div>
 
       {!todayLock && (
@@ -852,7 +854,7 @@ function PropsTab({ todayLock, allGames }) {
                   defaultOpen={i === 0}
                   homeTeam={homeTeam}
                   awayTeam={awayTeam}
-                  lockGame={lockGame}
+                  teamColorMap={teamColorMap}
                 />
               ))}
             </div>
@@ -1245,9 +1247,16 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
 
   const predictionsSlip = (() => {
     if (predictionsLocked && todayPredictions) {
-      return todayPredictions.legs.map(leg => {
+      const mapped = todayPredictions.legs.map(leg => {
         const live = allGames.find(g => g.id === leg.gameId)
-        return live || { id: leg.gameId, home_team: leg.home, away_team: leg.away, sportLabel: leg.sport, bookmakers: [] }
+        return live || { id: leg.gameId, home_team: leg.home, away_team: leg.away, sportLabel: leg.sport, bookmakers: [], _leg: leg }
+      })
+      // Always enforce lock→dog→rest order even on already-locked slips
+      return [...mapped].sort((a, b) => {
+        const legA = todayPredictions.legs.find(l => l.gameId === a.id)
+        const legB = todayPredictions.legs.find(l => l.gameId === b.id)
+        const rank = l => l?.isLock ? 0 : l?.isDog ? 1 : 2
+        return rank(legA) - rank(legB)
       })
     }
     // Build ordered ID list: lock first, then dog (if different game), then user-selected
@@ -1292,6 +1301,9 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
         isDog,
         result: null,
       }
+    }).sort((a, b) => {
+      const rank = l => l.isLock ? 0 : l.isDog ? 1 : 2
+      return rank(a) - rank(b)
     })
     const updated = {
       ...predictionsHistory,
@@ -1320,6 +1332,9 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
         isDog,
         result: null,
       }
+    }).sort((a, b) => {
+      const rank = l => l.isLock ? 0 : l.isDog ? 1 : 2
+      return rank(a) - rank(b)
     })
     const hist = await loadLayHistory()
     const updated = { ...hist, [todayKey]: { legs, lockedAt: Date.now() } }
@@ -1478,7 +1493,7 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
             </div>
 
             <div style={{ fontSize: '0.72rem', color: '#555', marginBottom: '0.75rem', textAlign: 'center' }}>
-              {lockGame?.home_team} vs {lockGame?.away_team}
+              {lockGame?.away_team} vs {lockGame?.home_team}
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -1504,6 +1519,12 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
       <div style={{ marginBottom: '1.75rem' }}>
         <h2 style={{ margin: '0 0 0.4rem', fontSize: '1rem', color: '#aaa' }}>🎰 PARLAYS</h2>
         <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>Your daily parlay slips — combined picks, combined odds.</p>
+        <TodoBox items={[
+          "Dog of the day leg ordering — should always appear as leg 2 (after lock) in predictions slip.",
+          "Dog pick should auto-tag as isDog on predictions when picked same day — currently requires re-locking predictions.",
+          "Game matchup display — always show away team on left, home team on right (e.g. Hornets vs Celtics).",
+          "Show individual leg odds on the lay slip so the user can see which leg added the most value.",
+        ]} />
       </div>
 
 
@@ -1539,7 +1560,7 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                 color: '#8888ff', fontWeight: 'bold', fontSize: '0.9rem', textAlign: 'left',
               }}>
                 <span style={{ marginRight: '0.5rem' }}>➕</span> Pick O/U to complete Double Lock
-                <div style={{ fontSize: '0.72rem', color: '#555', fontWeight: 'normal', marginTop: '0.2rem' }}>{lockGame?.home_team} vs {lockGame?.away_team}</div>
+                <div style={{ fontSize: '0.72rem', color: '#555', fontWeight: 'normal', marginTop: '0.2rem' }}>{lockGame?.away_team} vs {lockGame?.home_team}</div>
               </button>
             ) : (
               <p style={{ color: '#555', fontSize: '0.85rem', margin: 0 }}>No O/U line available for this game.</p>
@@ -1550,7 +1571,7 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
 
       {/* 2. Predictions */}
       <ParlaySection title="Predictions" emoji="🔮" defaultOpen={true} totalOdds={predictionsOdds}>
-        <TodoBox items={["Show each team's last 7-day ML/spread record next to the pick (needs historical odds API)"]} />
+        <TodoBox items={["Add a 'Yesterday' tab inside Predictions showing the user's selections from the previous day."]} />
 
         {/* Yesterday's Results — Predictions + Lay, shown inside Predictions section */}
         {showYesterdayCard && (
@@ -1634,7 +1655,7 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                         {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${i + 1}`} · {leg.sport}
                       </div>
                       <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{leg.team || '—'}</div>
-                      <div style={{ color: '#555', fontSize: '0.72rem' }}>{leg.home} vs {leg.away}</div>
+                      <div style={{ color: '#555', fontSize: '0.72rem' }}>{leg.away} vs {leg.home}</div>
                     </div>
                     <div style={{ fontSize: '1.2rem' }}>
                       {leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'}
@@ -1686,7 +1707,7 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                             {isLockGame ? '🔒 LOCK GAME · ' : isDogGame ? '🐕 DOG GAME · ' : ''}{game.sportLabel}
                           </div>
                           <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
-                            {game.home_team} <span style={{ color: '#333' }}>vs</span> {game.away_team}
+                            {game.away_team} <span style={{ color: '#333' }}>vs</span> {game.home_team}
                           </div>
                           {chosenTeam && (
                             <div style={{ fontSize: '0.72rem', color: isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : '#00ff88', marginTop: '0.15rem', fontWeight: 'bold' }}>
@@ -1788,7 +1809,7 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                         {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${i + 1}`}
                       </div>
                       <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{leg.team || '—'}</div>
-                      <div style={{ color: '#555', fontSize: '0.72rem' }}>{leg.home} vs {leg.away}</div>
+                      <div style={{ color: '#555', fontSize: '0.72rem' }}>{leg.away} vs {leg.home}</div>
                     </div>
                     <div style={{ fontSize: '1.2rem' }}>
                       {leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'}
@@ -1805,7 +1826,7 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                   const chosenTeam = isLockGame ? todayLock?.team : isDogGame ? todayDog?.team : selectedTeams[game.id]
                   const pickedOutcome = ml?.outcomes?.find(o => o.name === chosenTeam)
                     || ml?.outcomes?.reduce((a, b) => ensureAmerican(a.price) < ensureAmerican(b.price) ? a : b)
-                  const canRemove = !isLockGame && laySlip.length > 2
+                  const canRemove = !isLockGame && !isDogGame && laySlip.length > 2
                   const canAdd = isRemoved && laySlip.length < 4
                   const legNum = laySlip.filter(g => !layRemovedGames.includes(g.id)).indexOf(game) + 1
 
@@ -1813,7 +1834,7 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                     <div
                       key={game.id}
                       onClick={() => {
-                        if (layLocked || isLockGame) return
+                        if (layLocked || isLockGame || isDogGame) return
                         if (isRemoved && canAdd) setLayRemovedGames(r => r.filter(id => id !== game.id))
                         else if (!isRemoved && canRemove) setLayRemovedGames(r => [...r, game.id])
                       }}
@@ -1823,7 +1844,7 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                         border: `1px solid ${isRemoved ? '#1a1a1a' : isLockGame ? '#00ff8844' : isDogGame ? '#ff994444' : '#2a2a2a'}`,
                         borderRadius: '8px', padding: '0.75rem 1rem',
                         opacity: isRemoved ? 0.3 : 1,
-                        cursor: (isLockGame || (!canRemove && !isRemoved) || (!canAdd && isRemoved)) ? 'default' : 'pointer',
+                        cursor: (isLockGame || isDogGame || (!canRemove && !isRemoved) || (!canAdd && isRemoved)) ? 'default' : 'pointer',
                         transition: 'all 0.15s',
                       }}
                     >
@@ -1832,14 +1853,14 @@ function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
                           {isLockGame ? '🔒 LOCK' : isDogGame ? '🐕 DOG' : isRemoved ? 'REMOVED' : `LEG ${legNum}`}
                         </div>
                         <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{pickedOutcome?.name || '—'}</div>
-                        <div style={{ color: '#555', fontSize: '0.72rem' }}>{game.home_team} vs {game.away_team}</div>
+                        <div style={{ color: '#555', fontSize: '0.72rem' }}>{game.away_team} vs {game.home_team}</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ fontWeight: 'bold', color: pickedOutcome && ensureAmerican(pickedOutcome.price) < 0 ? '#00ff88' : '#ff9944', fontSize: '1rem' }}>
                           {pickedOutcome ? formatOdds(ensureAmerican(pickedOutcome.price)) : '—'}
                         </div>
                         <div style={{ fontSize: '1.1rem' }}>
-                          {isRemoved ? (canAdd ? '➕' : '—') : isLockGame ? '🔒' : (canRemove ? '✕' : '—')}
+                          {isRemoved ? (canAdd ? '➕' : '—') : isLockGame ? '🔒' : isDogGame ? '🐕' : (canRemove ? '✕' : '—')}
                         </div>
                       </div>
                     </div>
@@ -2275,7 +2296,7 @@ function OddsDashboard({ allGames, loading, onRefresh, cacheAge }) {
               }}>{m === 'h2h' ? 'Moneyline' : 'Spread'}</button>
             ))}
           </div>
-          <h3 style={{ marginBottom: '1rem' }}>{selectedGame.home_team} vs {selectedGame.away_team}</h3>
+          <h3 style={{ marginBottom: '1rem' }}>{selectedGame.away_team} vs {selectedGame.home_team}</h3>
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={chartData}>
@@ -2610,7 +2631,7 @@ function LockOfTheDay({ allGames, loading, onRefresh, cacheAge, onLockChange }) 
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: '#141414', border: '1px solid #333', borderRadius: '14px', padding: '2rem', width: '100%', maxWidth: '420px' }}>
             <h2 style={{ margin: '0 0 0.25rem', fontSize: '1.2rem' }}>🔒 Confirm Your Lock</h2>
-            <p style={{ color: '#555', fontSize: '0.8rem', marginBottom: '1.5rem' }}>One pick per day — make it count</p>
+            <p style={{ color: '#555', fontSize: '0.8rem', marginBottom: '1.5rem' }}>One pick per day — make it count · odds locked at pick time</p>
             <div style={{ background: '#1a1a1a', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
               <div style={{ color: '#888', fontSize: '0.75rem', marginBottom: '0.4rem' }}>{modal.game.sportLabel}</div>
               <div style={{ marginBottom: '0.4rem' }}>
@@ -2619,7 +2640,7 @@ function LockOfTheDay({ allGames, loading, onRefresh, cacheAge, onLockChange }) 
                   {modal.market === 'h2h' ? 'Moneyline' : `Spread ${modal.point > 0 ? '+' : ''}${modal.point}`} ({formatOdds(modal.odds)})
                 </span>
               </div>
-              <div style={{ color: '#555', fontSize: '0.82rem' }}>{modal.game.home_team} vs {modal.game.away_team}</div>
+              <div style={{ color: '#555', fontSize: '0.82rem' }}>{modal.game.away_team} vs {modal.game.home_team}</div>
             </div>
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.5rem' }}>
@@ -2796,6 +2817,7 @@ export default function App() {
   const [devPassword, setDevPassword] = useState('')
   const [devUnlocked, setDevUnlocked] = useState(false)
   const [devMsg, setDevMsg] = useState('')
+  const [devPending, setDevPending] = useState(null) // { action, value, label }
   const [todayLock, setTodayLock] = useState(null)
   const [todayDog, setTodayDog] = useState(null)
 
@@ -2951,7 +2973,7 @@ export default function App() {
       {tab === 'live'    && <LivePicksTab todayLock={todayLock} todayDog={todayDog} />}
 
       <div style={{ marginTop: '4rem', paddingBottom: '2rem', textAlign: 'center' }}>
-        <button onClick={() => { setDevOpen(true); setDevUnlocked(false); setDevPassword(''); setDevMsg('') }} style={{
+        <button onClick={() => { setDevOpen(true); setDevUnlocked(false); setDevPassword(''); setDevMsg(''); setDevPending(null) }} style={{
           background: '#1a1a1a', border: '1px solid #444', color: '#888',
           padding: '0.6rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold',
         }}>⚙ Dev Panel</button>
@@ -2981,24 +3003,45 @@ export default function App() {
                     style={{ flex: 1, padding: '0.75rem', background: '#222', border: '1px solid #444', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontWeight: 'bold' }}>Enter</button>
                 </div>
               </>
+            ) : devPending ? (
+              <>
+                <div style={{ background: '#1a1a1a', border: '1px solid #444', borderRadius: '10px', padding: '1.25rem', marginBottom: '1.25rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⚠</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '0.95rem', marginBottom: '0.35rem' }}>{devPending.label}</div>
+                  <div style={{ color: '#555', fontSize: '0.78rem' }}>Cannot be undone.</div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    onClick={() => { setDevPending(null); setDevMsg('') }}
+                    style={{ flex: 1, padding: '0.85rem', background: 'transparent', border: '1px solid #333', borderRadius: '8px', color: '#888', cursor: 'pointer', fontWeight: 'bold' }}
+                  >Discard</button>
+                  <button
+                    onClick={async () => { await devAction(devPending.action, devPending.value); setDevPending(null) }}
+                    style={{ flex: 1, padding: '0.85rem', background: '#2a0a0a', border: '1px solid #ff4444', borderRadius: '8px', color: '#ff4444', cursor: 'pointer', fontWeight: 'bold' }}
+                  >Confirm</button>
+                </div>
+              </>
             ) : (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <button onClick={() => devAction('resetLock')} style={{ padding: '0.75rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold' }}>🔄 Reset Today's Lock</button>
-                  <button onClick={() => devAction('resetDog')} style={{ padding: '0.75rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold' }}>🔄 Reset Today's Dog</button>
-                  <button onClick={() => devAction('resetPredictions')} style={{ padding: '0.75rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold' }}>🔄 Reset Today's Predictions + Lay</button>
-                  <button onClick={() => devAction('resetProp')} style={{ padding: '0.75rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold' }}>🔄 Reset Today's Props</button>
+                  <button onClick={() => setDevPending({ action: 'resetLock', label: "Reset Today's Lock" })} style={{ padding: '0.75rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold' }}>🔄 Reset Today's Lock</button>
+                  <button onClick={() => setDevPending({ action: 'resetDog', label: "Reset Today's Dog" })} style={{ padding: '0.75rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold' }}>🔄 Reset Today's Dog</button>
+                  <button onClick={() => setDevPending({ action: 'resetPredictions', label: "Reset Today's Predictions + Lay" })} style={{ padding: '0.75rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold' }}>🔄 Reset Today's Predictions + Lay</button>
+                  <button onClick={() => setDevPending({ action: 'resetProp', label: "Reset Today's Props" })} style={{ padding: '0.75rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold' }}>🔄 Reset Today's Props</button>
                   <button onClick={() => window.open(`${SERVER}/export`, '_blank')} style={{ padding: '0.75rem', background: '#1a2a1a', border: '1px solid #44aa44', borderRadius: '8px', color: '#88ff88', cursor: 'pointer', fontWeight: 'bold' }}>💾 Export savedata.json</button>
-                  <button onClick={() => devAction('restoreBackup')} style={{ padding: '0.75rem', background: '#2a1a00', border: '1px solid #aa7700', borderRadius: '8px', color: '#ffaa44', cursor: 'pointer', fontWeight: 'bold' }}>↩ Restore Last Backup</button>
+                  <button onClick={() => setDevPending({ action: 'restoreBackup', label: 'Restore Last Backup' })} style={{ padding: '0.75rem', background: '#2a1a00', border: '1px solid #aa7700', borderRadius: '8px', color: '#ffaa44', cursor: 'pointer', fontWeight: 'bold' }}>↩ Restore Last Backup</button>
                   <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <button onClick={() => devAction('setResult', 'W')} style={{ flex: 1, padding: '0.75rem', background: '#0a2a1a', border: '1px solid #00ff88', borderRadius: '8px', color: '#00ff88', cursor: 'pointer', fontWeight: 'bold' }}>✅ Force WIN</button>
-                    <button onClick={() => devAction('setResult', 'L')} style={{ flex: 1, padding: '0.75rem', background: '#2a0a0a', border: '1px solid #ff4444', borderRadius: '8px', color: '#ff4444', cursor: 'pointer', fontWeight: 'bold' }}>❌ Force LOSS</button>
+                    <button onClick={() => setDevPending({ action: 'setResult', value: 'W', label: "Force WIN on today's lock" })} style={{ flex: 1, padding: '0.75rem', background: '#0a2a1a', border: '1px solid #00ff88', borderRadius: '8px', color: '#00ff88', cursor: 'pointer', fontWeight: 'bold' }}>✅ Force WIN</button>
+                    <button onClick={() => setDevPending({ action: 'setResult', value: 'L', label: "Force LOSS on today's lock" })} style={{ flex: 1, padding: '0.75rem', background: '#2a0a0a', border: '1px solid #ff4444', borderRadius: '8px', color: '#ff4444', cursor: 'pointer', fontWeight: 'bold' }}>❌ Force LOSS</button>
                   </div>
-                  <button onClick={() => devAction('clearHistory')} style={{ padding: '0.75rem', background: '#1a1a1a', border: '1px solid #555', borderRadius: '8px', color: '#aaa', cursor: 'pointer', fontWeight: 'bold' }}>🗑 Clear History & Streak</button>
-                  <button onClick={() => devAction('resetAll')} style={{ padding: '0.75rem', background: '#2a0a0a', border: '1px solid #ff4444', borderRadius: '8px', color: '#ff4444', cursor: 'pointer', fontWeight: 'bold' }}>⚠ Reset Everything</button>
+                  <button onClick={() => setDevPending({ action: 'clearHistory', label: 'Clear all history & streak' })} style={{ padding: '0.75rem', background: '#1a1a1a', border: '1px solid #555', borderRadius: '8px', color: '#aaa', cursor: 'pointer', fontWeight: 'bold' }}>🗑 Clear History & Streak</button>
+                  <button onClick={() => setDevPending({ action: 'resetAll', label: 'Reset EVERYTHING — wipe all data' })} style={{ padding: '0.75rem', background: '#2a0a0a', border: '1px solid #ff4444', borderRadius: '8px', color: '#ff4444', cursor: 'pointer', fontWeight: 'bold' }}>⚠ Reset Everything</button>
                 </div>
                 {devMsg && <p style={{ color: '#00ff88', fontSize: '0.85rem', marginBottom: '1rem' }}>{devMsg}</p>}
-                <button onClick={() => { setDevOpen(false); window.location.reload() }} style={{ width: '100%', padding: '0.75rem', background: 'transparent', border: '1px solid #333', borderRadius: '8px', color: '#888', cursor: 'pointer' }}>Close & Reload</button>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button onClick={() => { setDevOpen(false); setDevPending(null) }} style={{ flex: 1, padding: '0.75rem', background: 'transparent', border: '1px solid #333', borderRadius: '8px', color: '#888', cursor: 'pointer', fontWeight: 'bold' }}>Exit</button>
+                  <button onClick={() => { setDevOpen(false); setDevPending(null); window.location.reload() }} style={{ flex: 1, padding: '0.75rem', background: '#111', border: '1px solid #444', borderRadius: '8px', color: '#aaa', cursor: 'pointer', fontWeight: 'bold' }}>Exit & Reload</button>
+                </div>
               </>
             )}
           </div>
