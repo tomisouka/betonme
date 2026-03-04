@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { getSportsInSeason, getTodayKey, isSaturday, ensureAmerican, formatOdds, calcProfit, calcPayout, combineParlayOdds } from './utils/odds.js'
 import { SERVER, STORAGE_KEYS, loadAllData, saveAllData, loadState, saveState, loadPredictions, savePredictions, loadLayHistory, saveLayHistory, loadDogState, saveDogStateServer, loadPropPick, savePropPick, loadOuPick, saveOuPick, getCachedOdds, setCachedOdds, getCacheAge, getCachedData, setCachedData, migrateLocalStorageToServer } from './hooks/useSaveData.js'
+import TodoBox from './components/TodoBox.jsx'
+import ParlaySection from './components/ParlaySection.jsx'
+import PropSection, { ODDS_API_PROP_MARKETS, PROP_MARKET_LABELS, MARKET_ORDER, MARKET_EMOJIS } from './components/PropSection.jsx'
 
 const API_KEY = '9556a1b199876f898bdc45023a854ed2'
 
@@ -86,167 +89,6 @@ async function fetchAndCachePlayerStats() {
 
 // ─── PROP MARKET KEYS PER SPORT ──────────────────────────────────────────────
 // the-odds-api player prop market keys, fetched via /events/{id}/odds
-const ODDS_API_PROP_MARKETS = {
-  NBA: ['player_points', 'player_rebounds', 'player_assists', 'player_threes'],
-  MLB: ['pitcher_strikeouts', 'batter_total_bases', 'batter_hits'],
-  NFL: ['player_pass_yds', 'player_rush_yds', 'player_reception_yds'],
-}
-
-const PROP_MARKET_LABELS = {
-  player_points: 'Points O/U',
-  player_rebounds: 'Rebounds O/U',
-  player_assists: 'Assists O/U',
-  player_threes: '3-Pointers O/U',
-  pitcher_strikeouts: 'Strikeouts O/U',
-  batter_total_bases: 'Total Bases O/U',
-  batter_hits: 'Hits O/U',
-  player_pass_yds: 'Pass Yards O/U',
-  player_rush_yds: 'Rush Yards O/U',
-  player_reception_yds: 'Rec Yards O/U',
-}
-
-// ─── PROP MARKET SECTION ORDER ───────────────────────────────────────────────
-const MARKET_ORDER = {
-  NBA: ['player_points', 'player_rebounds', 'player_assists', 'player_threes'],
-  MLB: ['pitcher_strikeouts', 'batter_total_bases', 'batter_hits'],
-  NFL: ['player_pass_yds', 'player_rush_yds', 'player_reception_yds'],
-}
-
-const MARKET_EMOJIS = {
-  player_points: '🏀',
-  player_rebounds: '🔄',
-  player_assists: '🎯',
-  player_threes: '3pt',
-  pitcher_strikeouts: '⚾',
-  batter_total_bases: '🏃',
-  batter_hits: '🥎',
-  player_pass_yds: '🏈',
-  player_rush_yds: '💨',
-  player_reception_yds: '🙌',
-}
-
-const PAGE_SIZE = 5
-
-function PropSection({ marketKey, label, props, pickedTeams, onPick, defaultOpen, homeTeam, awayTeam, teamColorMap }) {
-  const [open, setOpen] = React.useState(defaultOpen)
-  const [sortDir, setSortDir] = React.useState('desc')
-  const [showAll, setShowAll] = React.useState(false)
-
-  const teamColor = (team) => teamColorMap?.[team] || '#555'
-
-  const pickedCount = props.filter(p => pickedTeams[p.team] === `${p.player}|${p.marketKey}`).length
-
-  // Always surface picked players regardless of pagination
-  const pickedProps = props.filter(p => pickedTeams[p.team] === `${p.player}|${p.marketKey}`)
-  const unpickedProps = props.filter(p => pickedTeams[p.team] !== `${p.player}|${p.marketKey}`)
-
-  const sortedUnpicked = [...unpickedProps].sort((a, b) =>
-    sortDir === 'desc' ? b.line - a.line : a.line - b.line
-  )
-
-  const visibleUnpicked = showAll ? sortedUnpicked : sortedUnpicked.slice(0, PAGE_SIZE)
-  const displayProps = [...pickedProps, ...visibleUnpicked]
-  const hiddenCount = sortedUnpicked.length - visibleUnpicked.length
-
-  function toggleSort(e) {
-    e.stopPropagation()
-    setSortDir(d => d === 'desc' ? 'asc' : 'desc')
-    setShowAll(false)
-  }
-
-  return (
-    <div style={{ background: '#141414', border: '1px solid #222', borderRadius: '10px', marginBottom: '0.5rem', overflow: 'hidden' }}>
-      <div
-        onClick={() => setOpen(o => !o)}
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.85rem 1.1rem', cursor: 'pointer', background: open ? '#1a1a1a' : '#141414' }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span>{MARKET_EMOJIS[marketKey] || '📊'}</span>
-          <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{label}</span>
-          <span style={{ fontSize: '0.72rem', color: '#444' }}>({props.length})</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {pickedCount > 0 && (
-            <span style={{ fontSize: '0.68rem', color: '#8888ff', background: '#8888ff22', border: '1px solid #8888ff44', borderRadius: '4px', padding: '0.1rem 0.45rem', fontWeight: 'bold' }}>
-              {pickedCount} picked
-            </span>
-          )}
-          {open && (
-            <button
-              onClick={toggleSort}
-              style={{
-                padding: '0.15rem 0.55rem', fontSize: '0.7rem', fontWeight: 'bold',
-                background: '#222', border: '1px solid #333', borderRadius: '5px',
-                color: '#aaa', cursor: 'pointer', lineHeight: 1.4,
-              }}
-            >
-              {sortDir === 'desc' ? '↓ High' : '↑ Low'}
-            </button>
-          )}
-          <span style={{ color: '#444', fontSize: '0.8rem' }}>{open ? '▲' : '▼'}</span>
-        </div>
-      </div>
-      {open && (
-        <div style={{ padding: '0.6rem 0.75rem', borderTop: '1px solid #1a1a1a', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-          {displayProps.map(prop => {
-            const isPicked = pickedTeams[prop.team] === `${prop.player}|${prop.marketKey}`
-            const teamPickedElsewhere = pickedTeams[prop.team] && !isPicked
-            return (
-              <div
-                key={`${prop.player}-${prop.marketKey}`}
-                onClick={() => !isPicked && onPick(prop)}
-                style={{
-                  background: isPicked ? '#1a1a2a' : '#1a1a1a',
-                  border: `1px solid ${isPicked ? '#8888ff' : '#2a2a2a'}`,
-                  borderRadius: '8px', padding: '0.75rem 1rem',
-                  cursor: isPicked ? 'default' : 'pointer',
-                  opacity: teamPickedElsewhere ? 0.35 : 1,
-                  transition: 'border-color 0.15s, opacity 0.15s',
-                }}
-                onMouseEnter={e => { if (!isPicked && !teamPickedElsewhere) e.currentTarget.style.borderColor = '#8888ff' }}
-                onMouseLeave={e => { if (!isPicked) e.currentTarget.style.borderColor = isPicked ? '#8888ff' : '#2a2a2a' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
-                      <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{prop.player}</span>
-                      {isPicked && <span style={{ fontSize: '0.62rem', color: '#8888ff', background: '#8888ff22', borderRadius: '3px', padding: '0.1rem 0.35rem', fontWeight: 'bold' }}>✓ PICKED</span>}
-                    </div>
-                    <div style={{ fontSize: '0.68rem', color: teamColor(prop.team), fontWeight: 'bold' }}>{prop.team}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff' }}>{prop.line}</div>
-                    <div style={{ fontSize: '0.7rem', color: '#555' }}>
-                      ⬆ {formatOdds(prop.overOdds)} · ⬇ {formatOdds(prop.underOdds)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-
-          {/* Show more / Show less */}
-          {(hiddenCount > 0 || showAll) && (
-            <button
-              onClick={() => setShowAll(v => !v)}
-              style={{
-                marginTop: '0.2rem', padding: '0.6rem',
-                background: 'transparent', border: '1px solid #2a2a2a',
-                borderRadius: '8px', color: '#555', cursor: 'pointer',
-                fontSize: '0.78rem', fontWeight: 'bold', transition: 'color 0.15s, border-color 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.borderColor = '#444' }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#555'; e.currentTarget.style.borderColor = '#2a2a2a' }}
-            >
-              {showAll ? '▲ Show less' : `▼ Show ${hiddenCount} more`}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
 function PropsTab({ todayLock, allGames }) {
   const todayKey = getTodayKey()
 
@@ -790,116 +632,6 @@ function LivePicksTab({ todayLock, todayDog }) {
   )
 }
 
-
-// ─── TODO BOX ────────────────────────────────────────────────────────────────
-
-function TodoBox({ items }) {
-  const [open, setOpen] = React.useState(false)
-  if (!items || !items.length) return null
-  return (
-    <div style={{ marginBottom: '1rem' }}>
-      <div
-        onClick={() => setOpen(o => !o)}
-        style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          background: '#1a1a0a', border: '1px solid #33330a', borderRadius: '7px',
-          padding: '0.5rem 0.85rem', cursor: 'pointer',
-        }}
-      >
-        <span style={{ color: '#888844', fontSize: '0.72rem', fontWeight: 'bold' }}>📋 TODO ({items.length})</span>
-        <span style={{ color: '#555533', fontSize: '0.72rem' }}>{open ? '▲' : '▼'}</span>
-      </div>
-      {open && (
-        <div style={{ background: '#141408', border: '1px solid #33330a', borderTop: 'none', borderRadius: '0 0 7px 7px', padding: '0.6rem 0.85rem' }}>
-          {items.map((item, i) => (
-            <div key={i} style={{ color: '#666633', fontSize: '0.75rem', marginBottom: i < items.length - 1 ? '0.35rem' : 0 }}>
-              · {item}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── MEDIA ───────────────────────────────────────────────────────────────────
-
-function MediaTab() {
-  return (
-    <div>
-      <div style={{ marginBottom: '1.75rem' }}>
-        <h2 style={{ margin: '0 0 0.4rem', fontSize: '1rem', color: '#aaa' }}>📺 MEDIA</h2>
-        <TodoBox items={[
-          "Discord integration: post to a #picks channel and app fetches and displays as a live feed (Discord bot + webhook, free)",
-          "Twitter/X: dedicated account posts a pick tweet daily, paste URL into dev panel to render via Twitter embed script (free, manual)",
-        ]} />
-        <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>
-          More coming soon.
-        </p>
-      </div>
-      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚧</div>
-        <div style={{ color: '#333', fontSize: '0.9rem' }}>This section is under construction.</div>
-      </div>
-    </div>
-  )
-}
-
-// ─── PARLAYS ─────────────────────────────────────────────────────────────────
-
-function ParlaySection({ title, emoji, defaultOpen, children, totalOdds, forceOpen, onToggle }) {
-  const [open, setOpen] = React.useState(defaultOpen)
-  // Allow parent to force open (e.g. auto-open Lay when Predictions locks)
-  React.useEffect(() => { if (forceOpen) setOpen(true) }, [forceOpen])
-  function toggle() { setOpen(o => !o); onToggle && onToggle() }
-
-  const formatTotalOdds = (odds) => {
-    if (!odds) return null
-    return odds > 0 ? `+${odds}` : `${odds}`
-  }
-
-  return (
-    <div style={{
-      background: '#141414', border: '1px solid #2a2a2a',
-      borderRadius: '12px', marginBottom: '0.75rem', overflow: 'hidden',
-    }}>
-      {/* Header — always visible, click to toggle */}
-      <div
-        onClick={toggle}
-        style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '1rem 1.25rem', cursor: 'pointer',
-          background: open ? '#1a1a1a' : '#141414',
-          transition: 'background 0.15s',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '1.1rem' }}>{emoji}</span>
-          <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{title}</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {totalOdds && (
-            <span style={{
-              fontSize: '0.8rem', fontWeight: 'bold', color: '#00ff88',
-              background: '#0a2a1a', border: '1px solid #00ff8844',
-              borderRadius: '5px', padding: '0.2rem 0.6rem',
-            }}>
-              {formatTotalOdds(totalOdds)}
-            </span>
-          )}
-          <span style={{ color: '#444', fontSize: '0.85rem' }}>{open ? '▲' : '▼'}</span>
-        </div>
-      </div>
-
-      {/* Collapsable body */}
-      {open && (
-        <div style={{ padding: '1.25rem', borderTop: '1px solid #222' }}>
-          {children}
-        </div>
-      )}
-    </div>
-  )
-}
 
 // Combine American odds legs into a single American parlay odds number
 function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
@@ -2549,6 +2281,26 @@ function LockOfTheDay({ allGames, loading, onRefresh, cacheAge, onLockChange }) 
 }
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
+function MediaTab() {
+  return (
+    <div>
+      <div style={{ marginBottom: '1.75rem' }}>
+        <h2 style={{ margin: '0 0 0.4rem', fontSize: '1rem', color: '#aaa' }}>📺 MEDIA</h2>
+        <TodoBox items={[
+          "Discord integration: post to a #picks channel and app fetches and displays as a live feed (Discord bot + webhook, free)",
+          "Twitter/X: dedicated account posts a pick tweet daily, paste URL into dev panel to render via Twitter embed script (free, manual)",
+        ]} />
+        <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>
+          More coming soon.
+        </p>
+      </div>
+      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚧</div>
+        <div style={{ color: '#333', fontSize: '0.9rem' }}>This section is under construction.</div>
+      </div>
+    </div>
+  )
+}
 export default function App() {
   const [tab, setTab] = useState('lock')
   const [allGames, setAllGames] = useState([])
