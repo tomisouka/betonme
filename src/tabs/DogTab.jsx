@@ -3,7 +3,7 @@ import { getTodayKey, ensureAmerican, formatOdds, calcProfit } from '../utils/od
 import { loadDogState, saveDogStateServer } from '../hooks/useSaveData.js'
 import TodoBox from '../components/TodoBox.jsx'
 
-export default function DogTab({ allGames, loading, onDogChange }) {
+export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
   const [dogState, setDogState] = useState({})
   const [dogModal, setDogModal] = useState(null)
 
@@ -15,9 +15,31 @@ export default function DogTab({ allGames, loading, onDogChange }) {
   const todayKey = getTodayKey()
   const todayPick = dogState.picks?.[todayKey]
 
+  // If lock exists and is +150 or better, it IS the dog — auto-set if not already set
+  const lockIsTheDog = todayLock && todayLock.odds >= 150
+  const lockOdds = todayLock?.odds ?? null
+
   useEffect(() => {
-    loadDogState().then(s => setDogState(s || {}))
-  }, [])
+    async function init() {
+      const s = await loadDogState().then(s => s || {})
+      setDogState(s)
+
+      // if lock is +150 or better and no dog picked yet, auto-set dog = lock
+      if (todayLock && todayLock.odds >= 150 && !s.picks?.[getTodayKey()]) {
+        const updated = { ...s, picks: { ...(s.picks || {}) } }
+        updated.picks[getTodayKey()] = {
+          team: todayLock.team, odds: todayLock.odds,
+          home: todayLock.home, away: todayLock.away,
+          sport: todayLock.sport, gameId: todayLock.gameId,
+          result: null, autoSetFromLock: true,
+        }
+        setDogState(updated)
+        await saveDogStateServer(updated)
+        onDogChange && onDogChange()
+      }
+    }
+    init()
+  }, [todayLock])
 
   useEffect(() => {
     async function resolve() {
@@ -169,6 +191,25 @@ export default function DogTab({ allGames, loading, onDogChange }) {
         </p>
       </div>
 
+      {/* Gate: no lock yet */}
+      {!todayLock && (
+        <div style={{ background: '#1a1a0a', border: '1px solid #33330a', borderRadius: '10px', padding: '1.25rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔒</div>
+          <div style={{ color: '#888844', fontWeight: 'bold', marginBottom: '0.25rem' }}>Lock first</div>
+          <div style={{ color: '#555533', fontSize: '0.82rem' }}>You need to set your Lock of the Day before picking a dog.</div>
+        </div>
+      )}
+
+      {/* Auto-dog banner: lock IS the dog */}
+      {lockIsTheDog && (
+        <div style={{ background: '#1a0a2a', border: '1px solid #ff994466', borderRadius: '10px', padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '0.7rem', color: '#ff9944', fontWeight: 'bold', marginBottom: '0.35rem' }}>🐕 YOUR LOCK IS YOUR DOG</div>
+          <div style={{ color: '#aaa', fontSize: '0.88rem' }}>
+            Your lock ({todayLock.team} at {formatOdds(lockOdds)}) qualifies as today's dog — it's been automatically set.
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
         {[
           { label: 'DOG RECORD', value: `${wins}W - ${losses}L`, color: '#aaa' },
@@ -207,8 +248,9 @@ export default function DogTab({ allGames, loading, onDogChange }) {
       )}
 
       {loading && <p style={{ color: '#888' }}>Sniffing out underdogs...</p>}
-      {!loading && underdogs.length === 0 && <p style={{ color: '#555' }}>No underdogs found — no games loaded yet.</p>}
+      {!loading && underdogs.length === 0 && todayLock && !lockIsTheDog && <p style={{ color: '#555' }}>No underdogs found — no games loaded yet.</p>}
 
+      {todayLock && !lockIsTheDog && (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {underdogs.map((dog, i) => {
           const tier = getTier(dog.mlOdds)
@@ -284,6 +326,7 @@ export default function DogTab({ allGames, loading, onDogChange }) {
           )
         })}
       </div>
+      )}
     </div>
   )
 }

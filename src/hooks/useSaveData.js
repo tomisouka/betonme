@@ -35,6 +35,24 @@ export async function saveAllData(data) {
   } catch (e) { console.error('saveAllData failed', e) }
 }
 
+// ─── WRITE QUEUE ──────────────────────────────────────────────────────────────
+// Serializes all saves so they run one at a time.
+// Each job: reads current data, merges its key, writes back.
+// Next job doesn't start until the previous POST fully resolves —
+// so no two saves ever read the same stale snapshot and stomp each other.
+
+let _queue = Promise.resolve()
+
+function enqueueWrite(key, value) {
+  _queue = _queue.then(async () => {
+    try {
+      const current = await loadAllData()
+      await saveAllData({ ...current, [key]: value })
+    } catch (e) { console.error(`enqueueWrite(${key}) failed`, e) }
+  })
+  return _queue
+}
+
 // ─── APP STATE (lock picks, coins, streak) ────────────────────────────────────
 
 export async function loadState() {
@@ -45,10 +63,7 @@ export async function loadState() {
 }
 
 export async function saveState(state) {
-  try {
-    const current = await loadAllData()
-    await saveAllData({ ...current, app: state })
-  } catch (e) { console.error('saveState failed', e) }
+  return enqueueWrite('app', state)
 }
 
 // ─── PREDICTIONS ──────────────────────────────────────────────────────────────
@@ -61,10 +76,7 @@ export async function loadPredictions() {
 }
 
 export async function savePredictions(pred) {
-  try {
-    const current = await loadAllData()
-    await saveAllData({ ...current, predictions: pred })
-  } catch (e) { console.error('savePredictions failed', e) }
+  return enqueueWrite('predictions', pred)
 }
 
 // ─── LAY HISTORY ─────────────────────────────────────────────────────────────
@@ -77,10 +89,7 @@ export async function loadLayHistory() {
 }
 
 export async function saveLayHistory(lay) {
-  try {
-    const current = await loadAllData()
-    await saveAllData({ ...current, lay })
-  } catch (e) { console.error('saveLayHistory failed', e) }
+  return enqueueWrite('lay', lay)
 }
 
 // ─── DOG PICKS ────────────────────────────────────────────────────────────────
@@ -93,10 +102,7 @@ export async function loadDogState() {
 }
 
 export async function saveDogStateServer(state) {
-  try {
-    const current = await loadAllData()
-    await saveAllData({ ...current, dog: state })
-  } catch (e) { console.error('saveDogState failed', e) }
+  return enqueueWrite('dog', state)
 }
 
 // ─── PROP PICKS ───────────────────────────────────────────────────────────────
@@ -109,10 +115,7 @@ export async function loadPropPick() {
 }
 
 export async function savePropPick(picks) {
-  try {
-    const current = await loadAllData()
-    await saveAllData({ ...current, propPick: picks })
-  } catch (e) { console.error('savePropPick failed', e) }
+  return enqueueWrite('propPick', picks)
 }
 
 // ─── DOUBLE LOCK O/U ─────────────────────────────────────────────────────────
@@ -125,10 +128,7 @@ export async function loadOuPick() {
 }
 
 export async function saveOuPick(picks) {
-  try {
-    const current = await loadAllData()
-    await saveAllData({ ...current, ouPick: picks })
-  } catch (e) { console.error('saveOuPick failed', e) }
+  return enqueueWrite('ouPick', picks)
 }
 
 // ─── ODDS CACHE (localStorage) ───────────────────────────────────────────────

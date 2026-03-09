@@ -2,6 +2,38 @@ import React, { useState, useEffect } from 'react'
 import { getTodayKey, isSaturday, formatOdds, calcProfit, calcPayout } from '../utils/odds.js'
 import { loadState, saveState } from '../hooks/useSaveData.js'
 
+const ESPN_ENDPOINTS = { MLB: 'baseball/mlb', NFL: 'football/nfl', NBA: 'basketball/nba' }
+
+function getGameStatus(game, espnEvents) {
+  if (!espnEvents) return null
+  const match = espnEvents.find(e => {
+    const comps = e.competitions?.[0]?.competitors || []
+    return comps.some(c => {
+      const dn = c.team.displayName.toLowerCase()
+      return game.home_team.toLowerCase().includes(dn) || dn.includes(game.home_team.toLowerCase()) ||
+             game.away_team.toLowerCase().includes(dn) || dn.includes(game.away_team.toLowerCase())
+    })
+  })
+  if (!match) return null
+  const status = match.competitions?.[0]?.status
+  if (!status) return null
+  const state = status.type?.state
+  const completed = status.type?.completed
+  if (completed || state === 'post') {
+    const comps = match.competitions?.[0]?.competitors || []
+    const scores = comps.map(c => `${c.team.abbreviation} ${c.score}`).join(' · ')
+    return { state: 'post', label: scores ? `Final · ${scores}` : 'Final' }
+  }
+  if (state === 'in') {
+    const clock = status.displayClock
+    const period = status.period
+    const sport = game.sportLabel
+    let p = period ? (sport === 'MLB' ? `Inn ${period}` : `Q${period}`) : ''
+    return { state: 'in', label: [p, clock].filter(Boolean).join(' · ') || 'In Progress' }
+  }
+  return { state: 'pre', label: null }
+}
+
 // ─── STAT CARD ────────────────────────────────────────────────────────────────
 function StatCard({ label, value, sub, color, hidden }) {
   const [hovered, setHovered] = useState(false)
@@ -118,28 +150,58 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
   const [modal, setModal] = useState(null)
   const [betAmount, setBetAmount] = useState(1)
   const [resolving, setResolving] = useState(false)
+  const [serverOk, setServerOk] = useState(null)
+  const [espnByLeague, setEspnByLeague] = useState({})
   const todayKey = getTodayKey()
 
   useEffect(() => {
     async function init() {
-      const s = await loadState()
+      let s
+      try {
+        const res = await fetch('http://127.0.0.1:3001/data')
+        const all = await res.json()
+        s = all.app || {}
+        setServerOk(true)
+      } catch {
+        setServerOk(false)
+        return
+      }
       if (s.lastCoinDate !== todayKey) {
         const earned = isSaturday() ? 2 : 1
         s.coins = (s.coins || 0) + earned
         s.lastCoinDate = todayKey
         await saveState(s)
       }
+      s = await resolvePendingPicks(s)
       setAppState({ ...s })
-      resolvePendingPicks()
     }
     init()
   }, [])
 
-  async function resolvePendingPicks() {
-    const s = await loadState()
-    if (!s.picks) return
+  useEffect(() => {
+    if (!allGames.length) return
+    async function fetchStatuses() {
+      const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
+      const result = {}
+      await Promise.all(
+        Object.entries(ESPN_ENDPOINTS).map(async ([league, endpoint]) => {
+          try {
+            const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${endpoint}/scoreboard?dates=${today}`)
+            const data = await res.json()
+            result[league] = data.events || []
+          } catch { result[league] = [] }
+        })
+      )
+      setEspnByLeague(result)
+    }
+    fetchStatuses()
+  }, [allGames])
+
+  async function resolvePendingPicks(s) {
+    if (!s) s = await loadState()
+    if (!s.picks) return s
     const pending = Object.entries(s.picks).filter(([, pick]) => pick.result === null)
-    if (!pending.length) return
+    if (!pending.length) return s
     setResolving(true)
 
     const ESPN_ENDPOINTS = { MLB: 'baseball/mlb', NFL: 'football/nfl', NBA: 'basketball/nba' }
@@ -192,8 +254,8 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
     }
 
     await saveState(s)
-    setAppState({ ...s })
     setResolving(false)
+    return s
   }
 
   const todayPick = appState.picks?.[todayKey]
@@ -240,8 +302,7 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
     const { game, team, odds, market, point } = modal
     const stake = Math.min(Math.max(1, betAmount), coins)
     const profit = calcProfit(odds, stake)
-    const s = await loadState()
-    s.picks = s.picks || {}
+    const s = { ...appState, picks: { ...(appState.picks || {}) } }
     s.picks[todayKey] = {
       gameId: game.id, team, odds, market, point,
       home: game.home_team, away: game.away_team,
@@ -249,9 +310,9 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
       stake, profit, result: null,
     }
     s.coins = (s.coins || 0) - stake
-    await saveState(s)
     setAppState({ ...s })
     setModal(null)
+    await saveState(s)
     onLockChange && onLockChange()
   }
 
@@ -261,6 +322,14 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
 
   return (
     <div>
+      {serverOk === false && (
+        <div style={{ background: '#2a0a0a', border: '1px solid #ff4444', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.5rem', color: '#ff4444', fontSize: '0.85rem' }}>
+          ⚠ Server offline — run <code style={{ background: '#1a0a0a', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>pnpm dev</code> to start it. Your data is safe but nothing will load until it's running.
+        </div>
+      )}
+      {serverOk === null && (
+        <div style={{ color: '#444', fontSize: '0.8rem', marginBottom: '1rem' }}>⏳ Connecting to server...</div>
+      )}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: '#141414', border: '1px solid #333', borderRadius: '14px', padding: '2rem', width: '100%', maxWidth: '420px' }}>
@@ -280,10 +349,18 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
               <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.5rem' }}>
                 HOW MANY COINS? <span style={{ color: '#555' }}>(max: {coins})</span>
               </label>
-              <input type="number" min={1} max={coins} value={betAmount}
-                onChange={e => setBetAmount(Math.min(Math.max(1, Number(e.target.value)), coins))}
-                style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '1.2rem', background: '#0f0f0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', outline: 'none', boxSizing: 'border-box' }}
-              />
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input type="number" min={1} max={coins} value={betAmount}
+                  onChange={e => setBetAmount(Math.min(Math.max(1, Number(e.target.value)), coins))}
+                  style={{ flex: 1, padding: '0.75rem 1rem', fontSize: '1.2rem', background: '#0f0f0f', border: '1px solid #333', borderRadius: '8px', color: '#fff', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <button
+                  onClick={() => setBetAmount(coins)}
+                  style={{ padding: '0.75rem 1.1rem', background: '#1a1a2a', border: '1px solid #4444aa', borderRadius: '8px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
+                >
+                  MAX
+                </button>
+              </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', background: '#0a2a1a', border: '1px solid #00ff8833', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.5rem' }}>
               <div>
@@ -347,8 +424,17 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
             if (!bm) return null
             const ml = bm.markets?.find(m => m.key === 'h2h')
             const sp = bm.markets?.find(m => m.key === 'spreads')
+            const status = getGameStatus(game, espnByLeague[game.sportLabel])
+            const isLive = status?.state === 'in'
+            const isFinal = status?.state === 'post'
+            const isUnavailable = isLive || isFinal
             return (
-              <div key={game.id} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '1.25rem', marginBottom: '1rem' }}>
+              <div key={game.id} style={{
+                background: '#1a1a1a',
+                border: `1px solid ${isLive ? '#ff994433' : isFinal ? '#2a2a2a' : '#2a2a2a'}`,
+                borderRadius: '10px', padding: '1.25rem', marginBottom: '1rem',
+                opacity: isFinal ? 0.45 : 1,
+              }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                   <div>
                     <span style={{ color: '#555', fontSize: '0.75rem', marginRight: '0.5rem' }}>{game.sportLabel}</span>
@@ -356,32 +442,54 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
                     <span style={{ color: '#444', margin: '0 0.5rem' }}>vs</span>
                     <strong>{game.away_team}</strong>
                   </div>
-                  <span style={{ color: '#444', fontSize: '0.8rem' }}>
-                    {new Date(game.commence_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    {isLive && (
+                      <span style={{
+                        fontSize: '0.68rem', fontWeight: 'bold', padding: '0.15rem 0.5rem',
+                        background: '#2a1500', border: '1px solid #ff994466',
+                        borderRadius: '4px', color: '#ff9944',
+                      }}>🔴 LIVE · {status.label}</span>
+                    )}
+                    {isFinal && (
+                      <span style={{
+                        fontSize: '0.68rem', fontWeight: 'bold', padding: '0.15rem 0.5rem',
+                        background: '#111', border: '1px solid #2a2a2a',
+                        borderRadius: '4px', color: '#444',
+                      }}>✓ {status.label}</span>
+                    )}
+                    <span style={{ color: '#444', fontSize: '0.8rem' }}>
+                      {new Date(game.commence_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {ml?.outcomes.map(o => (
-                    <button key={`ml-${o.name}`} onClick={() => openModal(game, o.name, o.price, 'h2h', null)} disabled={coins < 1} style={{
-                      padding: '0.5rem 1rem', borderRadius: '6px', cursor: coins < 1 ? 'not-allowed' : 'pointer',
-                      background: o.price < 0 ? '#0a2a1a' : '#2a1a0a',
-                      border: `1px solid ${o.price < 0 ? '#00ff88' : '#ff9944'}`,
-                      color: o.price < 0 ? '#00ff88' : '#ff9944', fontSize: '0.85rem', fontWeight: 'bold',
-                    }}>
-                      {o.name} ML {formatOdds(o.price)}
-                      <span style={{ display: 'block', fontSize: '0.7rem', color: '#666' }}>+{calcProfit(o.price, 1)} profit per coin</span>
-                    </button>
-                  ))}
-                  {sp?.outcomes.map(o => (
-                    <button key={`sp-${o.name}`} onClick={() => openModal(game, o.name, o.price, 'spreads', o.point)} disabled={coins < 1} style={{
-                      padding: '0.5rem 1rem', borderRadius: '6px', cursor: coins < 1 ? 'not-allowed' : 'pointer',
-                      background: '#1a1a2a', border: '1px solid #4444aa', color: '#8888ff', fontSize: '0.85rem', fontWeight: 'bold',
-                    }}>
-                      {o.name} {o.point > 0 ? '+' : ''}{o.point} ({formatOdds(o.price)})
-                      <span style={{ display: 'block', fontSize: '0.7rem', color: '#666' }}>+{calcProfit(o.price, 1)} profit per coin</span>
-                    </button>
-                  ))}
-                </div>
+                {isUnavailable ? (
+                  <div style={{ fontSize: '0.78rem', color: '#444', fontStyle: 'italic' }}>
+                    {isLive ? 'Game in progress — betting closed' : 'Game over — betting closed'}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {ml?.outcomes.map(o => (
+                      <button key={`ml-${o.name}`} onClick={() => openModal(game, o.name, o.price, 'h2h', null)} disabled={coins < 1} style={{
+                        padding: '0.5rem 1rem', borderRadius: '6px', cursor: coins < 1 ? 'not-allowed' : 'pointer',
+                        background: o.price < 0 ? '#0a2a1a' : '#2a1a0a',
+                        border: `1px solid ${o.price < 0 ? '#00ff88' : '#ff9944'}`,
+                        color: o.price < 0 ? '#00ff88' : '#ff9944', fontSize: '0.85rem', fontWeight: 'bold',
+                      }}>
+                        {o.name} ML {formatOdds(o.price)}
+                        <span style={{ display: 'block', fontSize: '0.7rem', color: '#666' }}>+{calcProfit(o.price, 1)} profit per coin</span>
+                      </button>
+                    ))}
+                    {sp?.outcomes.map(o => (
+                      <button key={`sp-${o.name}`} onClick={() => openModal(game, o.name, o.price, 'spreads', o.point)} disabled={coins < 1} style={{
+                        padding: '0.5rem 1rem', borderRadius: '6px', cursor: coins < 1 ? 'not-allowed' : 'pointer',
+                        background: '#1a1a2a', border: '1px solid #4444aa', color: '#8888ff', fontSize: '0.85rem', fontWeight: 'bold',
+                      }}>
+                        {o.name} {o.point > 0 ? '+' : ''}{o.point} ({formatOdds(o.price)})
+                        <span style={{ display: 'block', fontSize: '0.7rem', color: '#666' }}>+{calcProfit(o.price, 1)} profit per coin</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })}

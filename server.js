@@ -9,7 +9,12 @@ const app = express()
 const SAVE_PATH   = path.join(__dirname, 'savedata.json')
 const BACKUP_PATH = path.join(__dirname, 'savedata.backup.json')
 
-app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174'] }))
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || /^http:\/\/localhost:\d+$/.test(origin)) cb(null, true)
+    else cb(new Error('CORS blocked'))
+  }
+}))
 app.use(express.json({ limit: '5mb' }))
 
 // ── Load all data ────────────────────────────────────────────────────────────

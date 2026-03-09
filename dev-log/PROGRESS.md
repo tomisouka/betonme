@@ -41,17 +41,28 @@ pnpm dev
 ## Tabs
 | Tab | Status |
 |-----|--------|
-| 🎮 Games | ✅ Working |
-| 🔒 Lock | ✅ Working |
+| 🎮 Games | ✅ Working (ESPN status badges) |
+| 🔒 Lock | ✅ Working (ESPN status badges, MAX bet button) |
 | 🐕 Dogs | ✅ Working |
 | 🎰 Parlays | ✅ Working |
 | 🎲 Props | ✅ Working (lines cache in localStorage) |
 | 📺 Media | 🚧 Under construction |
-| ⚡ Live | ✅ Working |
+| ⚡ Live | ⚠ Broken — live odds fetch not working |
 
 ---
 
 ## Completed
+
+### 2026-03-08 (Session 2)
+- **Welcome back screen** — boot overlay in App.jsx showing current date, daily coin status (earned today vs already claimed + balance), and first game of the day pulled from live odds. Coin grant moved here from LockTab so welcome always shows post-grant balance. LockTab skips grant if already done.
+- **MAX button on Lock bet modal** — one-click sets bet amount to full coin balance in LockTab modal
+- **ESPN game status badges** — GamesTab and LockTab now fetch ESPN scoreboard on load. Live games show 🔴 LIVE · Q3 8:42 badge; finished games show ✓ Final · LAL 112 · BOS 108. In LockTab, unavailable games replace pick buttons with "Game in progress — betting closed" / "Game over — betting closed"
+- `getGameStatus()` helper shared in both tabs — matches odds API games to ESPN events by team name fuzzy match
+
+### 2026-03-08 (Diagnostics)
+- Audited all TODO items against actual codebase
+- **App.jsx split** — confirmed complete. App.jsx is 309 lines (was 3,051). All tabs live in `src/tabs/`, shared hook in `src/hooks/useSaveData.js`, utils in `src/utils/odds.js`
+- **Dog auto-tag** — confirmed complete. DogTab auto-sets dog from lock when odds are +150 or better (`autoSetFromLock: true` flag)
 
 ### 2026-03-04 (Session 2)
 - Fixed away vs home ordering throughout entire app (correct convention: away vs home)
@@ -81,39 +92,23 @@ pnpm dev
 ## TODO
 
 ### High Priority
-- [ ] **Split App.jsx** — 3,051 lines needs breaking into per-tab component files
-  ```
-  src/
-  ├── components/
-  │   ├── LockOfTheDay.jsx
-  │   ├── DogOfTheDay.jsx
-  │   ├── ParlaysTab.jsx
-  │   ├── PropsTab.jsx
-  │   ├── LivePicksTab.jsx
-  │   ├── OddsDashboard.jsx
-  │   ├── MediaTab.jsx
-  │   └── StatsBar.jsx
-  ├── lib/
-  │   ├── storage.js     ← all server fetch/save functions
-  │   └── helpers.js     ← calcProfit, formatOdds, getSportsInSeason, etc.
-  └── App.jsx            ← root only: tabs, shared state, fetchOdds
-  ```
+- [ ] **Live tab — fix live odds fetch** — nothing in LiveTab works right now. Currently re-fetches from the-odds-api which returns cached/stale lines. Need to either use a different endpoint that returns in-play odds, or replace with ESPN live data and drop the odds display entirely for in-progress games. Investigate: the-odds-api `/v4/sports/{sport}/events/{eventId}/odds` with `markets=h2h` may return live lines if available.
+- [ ] **Live scores on game cards** — GamesTab and LockTab currently show ESPN status badge (e.g. "🔴 LIVE · Q3 8:42") but not the actual score. The ESPN scoreboard response already contains `competitors[].score` — wire it into the badge so users see "🔴 Q3 8:42 · LAL 87 – BOS 91" inline on the card without having to click anything.
 
 ### Medium Priority
-- [ ] **Dog ordering in Predictions** — dog leg should always appear as leg 2 (after lock)
-- [ ] **Dog auto-tag** — dog pick should auto-tag as `isDog` on predictions when picked same day without re-locking
-- [ ] **Individual leg odds on Lay slip** — show each leg's odds so user can see value per leg
-- [ ] **Yesterday tab in Predictions** — show previous day's selections inside Predictions section
-- [ ] **Timestamped backup rotation** — keep 7 days of snapshots via `node-cron` (see SERVER.md)
-- [ ] **`POST /import` endpoint** — accept JSON upload to restore from any snapshot (see SERVER.md)
-- [ ] **Error logging** — add append-only `server.log` (see SERVER.md)
+- [ ] **Dog ordering in Predictions** — dog leg should always appear as leg 2 (after lock). No sort logic currently enforces this.
+- [ ] **Individual leg odds on Lay slip** — locked lay slip shows team + result emoji but no per-leg odds. TodoBox comment in ParlaysTab line ~301 calls this out.
+- [ ] **Yesterday tab in Predictions** — show previous day's selections inside Predictions section. No prevDay logic exists yet in LockTab or App.jsx.
+- [ ] **Timestamped backup rotation** — keep 7 days of snapshots via `node-cron`. Currently only one rolling backup (`savedata.backup.json`). `node-cron` not installed.
+- [ ] **`POST /import` endpoint** — accept JSON upload to restore from any snapshot. `/restore-backup` exists but only restores the single rolling backup, not arbitrary uploads.
+- [ ] **Error logging** — add append-only `server.log` with timestamps. Currently errors go to `console.error` only and are lost on restart.
 
 ### Low Priority / Future
+- [ ] **Versioned savedata** — add `_version` field to `savedata.json` for future schema migrations. Currently missing.
 - [ ] **balldontlie stats** — needs paid API key (balldontlie.io)
 - [ ] **Media tab** — Discord webhook (post pick on lock, update on result), Twitter/X embed
 - [ ] **Historical odds/results** — 7-day team records on game cards (needs SportsDataIO or paid tier)
 - [ ] **Player team colors in Props** — heuristic split unreliable; needs real roster API
-- [ ] **Versioned savedata** — add `_version` field for future schema migrations
 
 ### Roadmap (See SERVER.md for full detail)
 - [ ] **Phase 1** — timestamped backups, import endpoint, error log
