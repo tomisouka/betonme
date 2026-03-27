@@ -26,3 +26,7 @@ src-tauri/target
 *.sw?
 savedata.json
 savedata.backup.json
+dk_odds.json
+odds_history.json
+project.zip
+*.sync-conflict-*.json
