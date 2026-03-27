@@ -13,20 +13,33 @@ Data is persisted to `savedata.json` via a small Express server (port 3001).
 - **Frontend:** React 19, Vite, Recharts
 - **Data server:** Express (server.js, port 3001)
 - **Persistence:** savedata.json (local JSON file)
-- **Cache:** localStorage (odds, props, stats — temporary, intentionally not migrated)
+- **Odds scraper:** dk_scraper.py — DraftKings reverse-engineered API, runs every 30min via systemd
+- **Cache:** localStorage (ESPN, odds — temporary, intentionally not migrated)
 - **Package manager:** pnpm
-- **Dev runner:** concurrently
+- **Dev runner:** concurrently (startapp.sh)
 
 ### Data Flow
 ```
-pnpm dev
-├── [server] node server.js → reads/writes savedata.json
+startapp.sh / pnpm dev
+├── [server] node server.js → reads/writes savedata.json, serves dk_odds.json, odds_history.json
 └── [vite]   vite → serves React app on localhost:5173
+
+systemd user service (dk-scraper.service)
+└── python3 dk_scraper.py --watch → fetches DK every 30min → dk_odds.json + POST /odds-history
 ```
+
+### Data Sources
+| Source | Data | Cost |
+|--------|------|------|
+| ESPN (unofficial) | Games, scores, schedules, live status | Free · unlimited |
+| DraftKings (dk_scraper.py) | Game lines (ML/spread/total), pitcher props | Free · unlimited |
+| the-odds-api | Player props fallback only | 500 credits/month · resets April 1 |
+| Local Express | savedata.json, odds_history.json | Local |
 
 ### savedata.json Structure
 ```json
 {
+  "_version": 1,
   "app": { "coins": 0, "lastCoinDate": "YYYY-MM-DD", "picks": { "YYYY-MM-DD": {} } },
   "predictions": { "YYYY-MM-DD": { "legs": [], "lockedAt": 0 } },
   "lay": { "YYYY-MM-DD": { "legs": [], "lockedAt": 0 } },
@@ -36,92 +49,127 @@ pnpm dev
 }
 ```
 
+### DK Scraper Subcategory IDs
+| Sport | subcategoryId | Market |
+|-------|--------------|--------|
+| MLB | 4519 | Game lines (ML/spread/total) |
+| MLB | 15221 | Pitcher Strikeouts O/U |
+| MLB | 17413 | Pitcher Outs O/U |
+| NBA | 4511 | Game lines (ML/spread/total) |
+| MLB batter props | TBD | Hits O/U, Total Bases O/U, HRs O/U, RBIs O/U — grab from DevTools on game day |
+| NBA player props | TBD | Points O/U, Rebounds O/U, Assists O/U |
+
 ---
 
 ## Tabs
 | Tab | Status |
 |-----|--------|
-| 🎮 Games | ✅ Working (ESPN status badges) |
-| 🔒 Lock | ✅ Working (ESPN status badges, MAX bet button) |
-| 🐕 Dogs | ✅ Working |
+| 🎮 Games | ✅ Working — ESPN + DK odds, Today/Tomorrow/Later sections, final scores, live badges |
+| 🔒 Lock | ✅ Working — ESPN status badges, MAX bet button |
+| 🐕 Dogs | ✅ Working — +150 threshold |
 | 🎰 Parlays | ✅ Working |
-| 🎲 Props | ✅ Working (lines cache in localStorage) |
+| 🎲 Props | ✅ Working — DK pitcher props free, the-odds-api fallback for batter props |
 | 📺 Media | 🚧 Under construction |
-| ⚡ Live | ⚠ Broken — live odds fetch not working |
+| ⚡ Live | ✅ Working — DK odds movement chart, dual-axis (odds + implied prob %), 30min snapshots |
+| 🏆 Wins | ✅ Working |
+| 📋 Past Lays | ✅ Working |
 
 ---
 
 ## Completed
 
+### 2026-03-27 (Session 3 — DK Scraper + Live Tab + Props)
+
+#### DraftKings Scraper (`dk_scraper.py`)
+- Reverse-engineered DK internal API from browser DevTools network capture
+- Endpoint: `sportsbook-nash.draftkings.com/sites/US-SB/api/sportscontent/controldata/league/leagueSubcategory/v1/markets`
+- **MLB game lines:** subcategoryId `4519` — moneyline, run line, total
+- **NBA game lines:** subcategoryId `4511` — moneyline, spread, total
+- **Pitcher Strikeouts O/U:** subcategoryId `15221` — standard o/u format (6.5 Ks o+121 / u-155)
+- **Pitcher Outs O/U:** subcategoryId `17413` — outs recorded (15.5 o+112 / u-148)
+- `parse_props()` handles both O/U format (over/under pairs) and milestone format (3+, 4+, 5+)
+- Saves to `dk_odds.json`, logs odds snapshots to server `/odds-history` endpoint
+- Runs every **30 minutes** via systemd service (`dk-scraper.service`)
+- `--watch` flag for systemd mode, `--test` flag for dry run
+
+#### Server (`server.js`)
+- `GET /dk-odds` — serves dk_odds.json
+- `GET /dk-props?sport=MLB` — serves props portion of dk_odds.json
+- `POST /scrape-now` — triggers dk_scraper.py on demand (↺ Refresh button)
+- `GET /odds-history` — returns odds movement history (last 2 days, auto-purge)
+- `POST /odds-history` — logs new snapshot (called by scraper)
+- Fixed ES module `require()` → `import { exec }` bug
+
+#### Live Tab — Full Rewrite
+- Dual-axis SVG line chart — American odds (left) + implied probability % (right)
+- Home team in blue, away team in purple
+- Shows last 2 days — loads yesterday's lock + dog from savedata on mount
+- Lock game highlighted green (sorts first), Dog game highlighted orange (sorts second)
+- ↺ Refresh Now button triggers `/scrape-now` + reloads history
+- Game cards collapsed by default, tap to expand chart + movement log
+- Movement log shows last 3 snapshots, expandable
+
+#### Games Tab
+- **Today/Tomorrow/Later** sections — clean split by local date
+- Final scores on completed games: `Diamondbacks 3 – Dodgers 7`
+- Completed games moved to collapsed `✓ FINAL` section
+- All games sorted chronologically by `commence_time` across sports
+- Fixed UTC date bucketing bug (was showing today's games as tomorrow)
+- NBA odds now show in game cards (was showing no lines before)
+
+#### Props Tab — DK Integration
+- `fetchDkProps()` — tries local DK scraper first (free), falls back to the-odds-api
+- Props sneak peek always visible (even without lock), fetches `/dk-props` on mount
+- Sneak peek shows pitcher Ks O/U + Outs O/U grouped by game per pitcher
+- Shows TBA for any market not yet posted
+- Starts at 2 pitchers per game, "+ more" to expand
+
+#### App-wide
+- Global `↺ Refresh` button in header — runs scraper + force-refreshes ESPN
+- Shows "Updated 8:45 PM" timestamp after refresh
+- Data sources bar updated to show actual sources (DK for lines, ESPN for games)
+
+---
+
 ### 2026-03-08 (Session 2)
-- **Welcome back screen** — boot overlay in App.jsx showing current date, daily coin status (earned today vs already claimed + balance), and first game of the day pulled from live odds. Coin grant moved here from LockTab so welcome always shows post-grant balance. LockTab skips grant if already done.
-- **MAX button on Lock bet modal** — one-click sets bet amount to full coin balance in LockTab modal
-- **ESPN game status badges** — GamesTab and LockTab now fetch ESPN scoreboard on load. Live games show 🔴 LIVE · Q3 8:42 badge; finished games show ✓ Final · LAL 112 · BOS 108. In LockTab, unavailable games replace pick buttons with "Game in progress — betting closed" / "Game over — betting closed"
-- `getGameStatus()` helper shared in both tabs — matches odds API games to ESPN events by team name fuzzy match
-
-### 2026-03-08 (Diagnostics)
-- Audited all TODO items against actual codebase
-- **App.jsx split** — confirmed complete. App.jsx is 309 lines (was 3,051). All tabs live in `src/tabs/`, shared hook in `src/hooks/useSaveData.js`, utils in `src/utils/odds.js`
-- **Dog auto-tag** — confirmed complete. DogTab auto-sets dog from lock when odds are +150 or better (`autoSetFromLock: true` flag)
-
-### 2026-03-04 (Session 2)
-- Fixed away vs home ordering throughout entire app (correct convention: away vs home)
-- Fixed predictions slip sorting — locked slips enforce lock → dog → rest order
-- Added `_leg` reference to fallback game objects so locked predictions retain full leg data
-- Lock confirm modal subtitle updated to "odds locked at pick time"
-- Dev panel "Close & Reload" split into "Exit" and "Exit & Reload" buttons
-- Added TodoBox items across Props and Parlays tabs for future work tracking
-- Created `BetOnMe-Roadmap.md` and `SERVER.md` — server evolution + PWA/APK path docs
-- Git restore point committed: `b4f1f47` — "restore point before splitting 3k App.js"
-- Confirmed `savedata.json` + `savedata.backup.json` in `.gitignore` ✅
-- Confirmed git remote: `git@github.com:tomisouka/I-DONT-MISSSS.git` ✅
+- Welcome back screen — boot overlay with daily coin status
+- MAX button on Lock bet modal
+- ESPN game status badges in GamesTab and LockTab
+- `getGameStatus()` helper shared between tabs
 
 ### 2026-03-04 (Session 1)
-- Migrated all persistent data from localStorage to `savedata.json` via Express server
-  - Built `server.js` with GET/POST `/data`, `/export`, `/restore-backup` endpoints
-  - Backup on write — server rotates `savedata.json` → `savedata.backup.json` before every save
-  - Migrated: lock picks, predictions, lay, dog picks, prop picks, double lock O/U
-  - Added one-time `migrateLocalStorageToServer()` migration utility on startup
-  - Fixed async patterns throughout (`useState({})` + `useEffect` instead of sync `useState(loadFn)`)
-  - Fixed CORS origins
-- Graceful shutdown — `SIGTERM` / `SIGINT` handled in server.js
-- Set up `concurrently` — `pnpm dev` starts both servers with labeled `[server]` / `[vite]` output
+- Migrated all persistent data from localStorage to `savedata.json` via Express
+- Built `server.js` with GET/POST `/data`, `/export`, `/restore-backup`
+- Backup on write — timestamped backups in savedata-backups/, 7-day retention
+- Migrated: lock picks, predictions, lay, dog picks, prop picks, double lock O/U
+- Graceful shutdown — SIGTERM / SIGINT handled in server.js
+- Set up concurrently — `pnpm dev` starts both servers
 
 ---
 
 ## TODO
 
-### High Priority
-- [ ] **Live tab — fix live odds fetch** — nothing in LiveTab works right now. Currently re-fetches from the-odds-api which returns cached/stale lines. Need to either use a different endpoint that returns in-play odds, or replace with ESPN live data and drop the odds display entirely for in-progress games. Investigate: the-odds-api `/v4/sports/{sport}/events/{eventId}/odds` with `markets=h2h` may return live lines if available.
-- [ ] **Live scores on game cards** — GamesTab and LockTab currently show ESPN status badge (e.g. "🔴 LIVE · Q3 8:42") but not the actual score. The ESPN scoreboard response already contains `competitors[].score` — wire it into the badge so users see "🔴 Q3 8:42 · LAL 87 – BOS 91" inline on the card without having to click anything.
+### Do Tomorrow
+- [ ] **Batter prop subcategoryIds** — open DK MLB batter props on game day, grab Hits O/U, Total Bases O/U, HRs O/U, RBIs O/U subcategoryIds from DevTools Network tab, add to `PROP_SUBCATEGORIES` in dk_scraper.py
+- [ ] **Fix deprecation warnings** — `datetime.utcnow()` → `datetime.now(timezone.utc)` in dk_scraper.py
 
 ### Medium Priority
-- [ ] **Dog ordering in Predictions** — dog leg should always appear as leg 2 (after lock). No sort logic currently enforces this.
-- [ ] **Individual leg odds on Lay slip** — locked lay slip shows team + result emoji but no per-leg odds. TodoBox comment in ParlaysTab line ~301 calls this out.
-- [ ] **Yesterday tab in Predictions** — show previous day's selections inside Predictions section. No prevDay logic exists yet in LockTab or App.jsx.
-- [ ] **Timestamped backup rotation** — keep 7 days of snapshots via `node-cron`. Currently only one rolling backup (`savedata.backup.json`). `node-cron` not installed.
-- [ ] **`POST /import` endpoint** — accept JSON upload to restore from any snapshot. `/restore-backup` exists but only restores the single rolling backup, not arbitrary uploads.
-- [ ] **Error logging** — add append-only `server.log` with timestamps. Currently errors go to `console.error` only and are lost on restart.
+- [ ] **NBA player props** — find NBA player prop subcategoryIds from DevTools (points, rebounds, assists O/U)
+- [ ] **Media tab** — Discord webhook (post pick on lock, update on result), Twitter/X embed
+- [ ] **TICKET-T001** — Tauri server bundling (Option D: resources in tauri.conf.json)
 
 ### Low Priority / Future
-- [ ] **Versioned savedata** — add `_version` field to `savedata.json` for future schema migrations. Currently missing.
-- [ ] **balldontlie stats** — needs paid API key (balldontlie.io)
-- [ ] **Media tab** — Discord webhook (post pick on lock, update on result), Twitter/X embed
-- [ ] **Historical odds/results** — 7-day team records on game cards (needs SportsDataIO or paid tier)
-- [ ] **Player team colors in Props** — heuristic split unreliable; needs real roster API
-
-### Roadmap (See SERVER.md for full detail)
-- [ ] **Phase 1** — timestamped backups, import endpoint, error log
-- [ ] **Phase 2** — VPS/Pi deployment, HTTPS via Caddy, drop Syncthing
-- [ ] **Phase 3** — SQLite, server-side cron result resolution, push notifications
-- [ ] **Phase 4** — PWA setup (`vite-plugin-pwa`) once hosted somewhere, then Capacitor APK
-- [ ] **Future** — React Native only if Play Store distribution becomes a goal
+- [ ] **7-day team records** — on game cards and dog tab (needs historical results API)
+- [ ] **Player team colors in Props** — needs real roster API
+- [ ] **VPS/Pi deployment** — HTTPS via Caddy, drop Syncthing dependency
 
 ---
 
 ## Notes
-- Cache data (odds, props, stats) stays in localStorage — temporary, 3hr TTL, no need to persist
+- Cache data (odds, props, stats) stays in localStorage — temporary, no need to persist
 - `savedata.json` grows ~1 entry/day — ~200-300KB after a full year, no performance concern
 - Dev panel password: `Jesiah` — fine for local-only use
 - Git remote: `git@github.com:tomisouka/I-DONT-MISSSS.git`
-- Restore point before App.jsx split: `b4f1f47`
+- DK scraper API key: none needed — reverse-engineered from browser traffic
+- the-odds-api key: `9556a1b199876f898bdc45023a854ed2` — resets April 1st (27 credits left as of 2026-03-27)
+- Systemd service: `systemctl --user status dk-scraper` to check, `journalctl --user -u dk-scraper -f` for logs

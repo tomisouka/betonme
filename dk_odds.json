@@ -1,0 +1,1713 @@
+{
+  "fetchedAt": "2026-03-27T05:59:44.318128Z",
+  "source": "DraftKings (sportsbook-nash internal API)",
+  "sports": {
+    "MLB": {
+      "games": [
+        {
+          "id": "dk_33880537",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-03-27T20:35:00.0000000Z",
+          "home_team": "SF Giants",
+          "away_team": "NY Yankees",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:44.661463Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "NY Yankees",
+                      "price": -131
+                    },
+                    {
+                      "name": "SF Giants",
+                      "price": 109
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "NY Yankees",
+                      "price": 135,
+                      "point": -1.5
+                    },
+                    {
+                      "name": "SF Giants",
+                      "price": -163,
+                      "point": 1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -118,
+                      "point": 7.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -102,
+                      "point": 7.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33880537",
+            "homePitcher": "Robbie Ray",
+            "awayPitcher": "Cam Schlittler",
+            "homeColor": "#fd5a1e",
+            "awayColor": "#003087",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33855835",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-03-27T23:07:00.0000000Z",
+          "home_team": "TOR Blue Jays",
+          "away_team": "Athletics",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:44.661488Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "Athletics",
+                      "price": 139
+                    },
+                    {
+                      "name": "TOR Blue Jays",
+                      "price": -168
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "Athletics",
+                      "price": -149,
+                      "point": 1.5
+                    },
+                    {
+                      "name": "TOR Blue Jays",
+                      "price": 123,
+                      "point": -1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -118,
+                      "point": 8.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -102,
+                      "point": 8.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33855835",
+            "homePitcher": "Kevin Gausman",
+            "awayPitcher": "Luis Severino",
+            "homeColor": "#134a8e",
+            "awayColor": "#003831",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33855836",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-03-27T23:10:00.0000000Z",
+          "home_team": "MIA Marlins",
+          "away_team": "COL Rockies",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:44.661514Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "COL Rockies",
+                      "price": 163
+                    },
+                    {
+                      "name": "MIA Marlins",
+                      "price": -199
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "COL Rockies",
+                      "price": -136,
+                      "point": 1.5
+                    },
+                    {
+                      "name": "MIA Marlins",
+                      "price": 113,
+                      "point": -1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -102,
+                      "point": 7.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -118,
+                      "point": 7.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33855836",
+            "homePitcher": "Sandy Alcantara",
+            "awayPitcher": "Kyle Freeland",
+            "homeColor": "#00a3e0",
+            "awayColor": "#333366",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33855837",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-03-27T23:15:00.0000000Z",
+          "home_team": "ATL Braves",
+          "away_team": "KC Royals",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:44.661529Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "KC Royals",
+                      "price": 119
+                    },
+                    {
+                      "name": "ATL Braves",
+                      "price": -143
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "KC Royals",
+                      "price": -186,
+                      "point": 1.5
+                    },
+                    {
+                      "name": "ATL Braves",
+                      "price": 153,
+                      "point": -1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": 100,
+                      "point": 7.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -120,
+                      "point": 7.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33855837",
+            "homePitcher": "Chris Sale",
+            "awayPitcher": "Cole Ragans",
+            "homeColor": "#ce1141",
+            "awayColor": "#004687",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33880539",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-03-28T00:15:00.0000000Z",
+          "home_team": "HOU Astros",
+          "away_team": "LA Angels",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:44.661542Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "LA Angels",
+                      "price": 135
+                    },
+                    {
+                      "name": "HOU Astros",
+                      "price": -163
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "LA Angels",
+                      "price": -156,
+                      "point": 1.5
+                    },
+                    {
+                      "name": "HOU Astros",
+                      "price": 129,
+                      "point": -1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -115,
+                      "point": 8.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -105,
+                      "point": 8.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33880539",
+            "homePitcher": "Mike Burrows",
+            "awayPitcher": "Yusei Kikuchi",
+            "homeColor": "#002d62",
+            "awayColor": "#003263",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33880541",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-03-28T01:40:00.0000000Z",
+          "home_team": "SD Padres",
+          "away_team": "DET Tigers",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:44.661552Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "DET Tigers",
+                      "price": 104
+                    },
+                    {
+                      "name": "SD Padres",
+                      "price": -126
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "DET Tigers",
+                      "price": 168,
+                      "point": -1.5
+                    },
+                    {
+                      "name": "SD Padres",
+                      "price": -205,
+                      "point": 1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -102,
+                      "point": 7.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -118,
+                      "point": 7.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33880541",
+            "homePitcher": "Michael King",
+            "awayPitcher": "Framber Valdez",
+            "homeColor": "#2f241d",
+            "awayColor": "#0c2340",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33880543",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-03-28T01:45:00.0000000Z",
+          "home_team": "SEA Mariners",
+          "away_team": "CLE Guardians",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:44.661564Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "CLE Guardians",
+                      "price": 141
+                    },
+                    {
+                      "name": "SEA Mariners",
+                      "price": -171
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "CLE Guardians",
+                      "price": -156,
+                      "point": 1.5
+                    },
+                    {
+                      "name": "SEA Mariners",
+                      "price": 129,
+                      "point": -1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -118,
+                      "point": 7
+                    },
+                    {
+                      "name": "Under",
+                      "price": -102,
+                      "point": 7
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33880543",
+            "homePitcher": "George Kirby",
+            "awayPitcher": "Gavin Williams",
+            "homeColor": "#0c2c56",
+            "awayColor": "#00385d",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33880548",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-03-28T02:10:00.0000000Z",
+          "home_team": "LA Dodgers",
+          "away_team": "ARI Diamondbacks",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:44.661575Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "ARI Diamondbacks",
+                      "price": 184
+                    },
+                    {
+                      "name": "LA Dodgers",
+                      "price": -226
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "ARI Diamondbacks",
+                      "price": -112,
+                      "point": 1.5
+                    },
+                    {
+                      "name": "LA Dodgers",
+                      "price": -108,
+                      "point": -1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -115,
+                      "point": 8.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -105,
+                      "point": 8.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33880548",
+            "homePitcher": "Emmet Sheehan",
+            "awayPitcher": "Ryne Nelson",
+            "homeColor": "#005a9c",
+            "awayColor": "#a71930",
+            "liveState": null,
+            "score": null
+          }
+        }
+      ],
+      "count": 8,
+      "props": [
+        {
+          "player": "Cam Schlittler",
+          "marketName": "Cam Schlittler Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33880537",
+          "home": "SF Giants",
+          "away": "NY Yankees",
+          "sport": "MLB",
+          "line": 4.5,
+          "label": "O/U 4.5",
+          "overOdds": -122,
+          "underOdds": -104,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 98,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Robbie Ray",
+          "marketName": "Robbie Ray Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33880537",
+          "home": "SF Giants",
+          "away": "NY Yankees",
+          "sport": "MLB",
+          "line": 6.5,
+          "label": "O/U 6.5",
+          "overOdds": 121,
+          "underOdds": -155,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 186,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Luis Severino",
+          "marketName": "Luis Severino Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33855835",
+          "home": "TOR Blue Jays",
+          "away": "Athletics",
+          "sport": "MLB",
+          "line": 3.5,
+          "label": "O/U 3.5",
+          "overOdds": -117,
+          "underOdds": -109,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 124,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Kevin Gausman",
+          "marketName": "Kevin Gausman Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33855835",
+          "home": "TOR Blue Jays",
+          "away": "Athletics",
+          "sport": "MLB",
+          "line": 5.5,
+          "label": "O/U 5.5",
+          "overOdds": -146,
+          "underOdds": 114,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 215,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Sandy Alcantara",
+          "marketName": "Sandy Alcantara Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33855836",
+          "home": "MIA Marlins",
+          "away": "COL Rockies",
+          "sport": "MLB",
+          "line": 5.5,
+          "label": "O/U 5.5",
+          "overOdds": 103,
+          "underOdds": -132,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 142,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Kyle Freeland",
+          "marketName": "Kyle Freeland Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33855836",
+          "home": "MIA Marlins",
+          "away": "COL Rockies",
+          "sport": "MLB",
+          "line": 3.5,
+          "label": "O/U 3.5",
+          "overOdds": -159,
+          "underOdds": 124,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 124,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Cole Ragans",
+          "marketName": "Cole Ragans Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33855837",
+          "home": "ATL Braves",
+          "away": "KC Royals",
+          "sport": "MLB",
+          "line": 6.5,
+          "label": "O/U 6.5",
+          "overOdds": 111,
+          "underOdds": -142,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 98,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Chris Sale",
+          "marketName": "Chris Sale Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33855837",
+          "home": "ATL Braves",
+          "away": "KC Royals",
+          "sport": "MLB",
+          "line": 6.5,
+          "label": "O/U 6.5",
+          "overOdds": -113,
+          "underOdds": -113,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 165,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Michael King",
+          "marketName": "Michael King Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33880541",
+          "home": "SD Padres",
+          "away": "DET Tigers",
+          "sport": "MLB",
+          "line": 5.5,
+          "label": "O/U 5.5",
+          "overOdds": -148,
+          "underOdds": 116,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 79,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Framber Valdez",
+          "marketName": "Framber Valdez Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33880541",
+          "home": "SD Padres",
+          "away": "DET Tigers",
+          "sport": "MLB",
+          "line": 4.5,
+          "label": "O/U 4.5",
+          "overOdds": -146,
+          "underOdds": 115,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 187,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Gavin Williams",
+          "marketName": "Gavin Williams Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33880543",
+          "home": "SEA Mariners",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 5.5,
+          "label": "O/U 5.5",
+          "overOdds": -119,
+          "underOdds": -107,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 181,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "George Kirby",
+          "marketName": "George Kirby Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33880543",
+          "home": "SEA Mariners",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 5.5,
+          "label": "O/U 5.5",
+          "overOdds": -118,
+          "underOdds": -108,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 158,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Ryne Nelson",
+          "marketName": "Ryne Nelson Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33880548",
+          "home": "LA Dodgers",
+          "away": "ARI Diamondbacks",
+          "sport": "MLB",
+          "line": 3.5,
+          "label": "O/U 3.5",
+          "overOdds": -162,
+          "underOdds": 126,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 132,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Emmet Sheehan",
+          "marketName": "Emmet Sheehan Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33880548",
+          "home": "LA Dodgers",
+          "away": "ARI Diamondbacks",
+          "sport": "MLB",
+          "line": 5.5,
+          "label": "O/U 5.5",
+          "overOdds": 105,
+          "underOdds": -135,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 95,
+          "lastSeasonLabel": "Last Season K"
+        },
+        {
+          "player": "Robbie Ray",
+          "marketName": "Robbie Ray Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33880537",
+          "home": "SF Giants",
+          "away": "NY Yankees",
+          "sport": "MLB",
+          "line": 15.5,
+          "label": "O/U 15.5",
+          "overOdds": 112,
+          "underOdds": -148,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 547,
+          "lastSeasonLabel": "Last Season O"
+        },
+        {
+          "player": "Cam Schlittler",
+          "marketName": "Cam Schlittler Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33880537",
+          "home": "SF Giants",
+          "away": "NY Yankees",
+          "sport": "MLB",
+          "line": 14.5,
+          "label": "O/U 14.5",
+          "overOdds": -128,
+          "underOdds": -104,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 262,
+          "lastSeasonLabel": "Last Season O"
+        },
+        {
+          "player": "Luis Severino",
+          "marketName": "Luis Severino Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33855835",
+          "home": "TOR Blue Jays",
+          "away": "Athletics",
+          "sport": "MLB",
+          "line": 14.5,
+          "label": "O/U 14.5",
+          "overOdds": -175,
+          "underOdds": 131,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 488,
+          "lastSeasonLabel": "Last Season O"
+        },
+        {
+          "player": "Sandy Alcantara",
+          "marketName": "Sandy Alcantara Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33855836",
+          "home": "MIA Marlins",
+          "away": "COL Rockies",
+          "sport": "MLB",
+          "line": 17.5,
+          "label": "O/U 17.5",
+          "overOdds": -170,
+          "underOdds": 128,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 524,
+          "lastSeasonLabel": "Last Season O"
+        },
+        {
+          "player": "Kyle Freeland",
+          "marketName": "Kyle Freeland Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33855836",
+          "home": "MIA Marlins",
+          "away": "COL Rockies",
+          "sport": "MLB",
+          "line": 15.5,
+          "label": "O/U 15.5",
+          "overOdds": 122,
+          "underOdds": -162,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 488,
+          "lastSeasonLabel": "Last Season O"
+        },
+        {
+          "player": "Chris Sale",
+          "marketName": "Chris Sale Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33855837",
+          "home": "ATL Braves",
+          "away": "KC Royals",
+          "sport": "MLB",
+          "line": 17.5,
+          "label": "O/U 17.5",
+          "overOdds": -146,
+          "underOdds": 110,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 377,
+          "lastSeasonLabel": "Last Season O"
+        },
+        {
+          "player": "Cole Ragans",
+          "marketName": "Cole Ragans Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33855837",
+          "home": "ATL Braves",
+          "away": "KC Royals",
+          "sport": "MLB",
+          "line": 15.5,
+          "label": "O/U 15.5",
+          "overOdds": 131,
+          "underOdds": -175,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 185,
+          "lastSeasonLabel": "Last Season O"
+        },
+        {
+          "player": "Yusei Kikuchi",
+          "marketName": "Yusei Kikuchi Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33880539",
+          "home": "HOU Astros",
+          "away": "LA Angels",
+          "sport": "MLB",
+          "line": 14.5,
+          "label": "O/U 14.5",
+          "overOdds": -144,
+          "underOdds": 108,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 535,
+          "lastSeasonLabel": "Last Season O"
+        },
+        {
+          "player": "Framber Valdez",
+          "marketName": "Framber Valdez Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33880541",
+          "home": "SD Padres",
+          "away": "DET Tigers",
+          "sport": "MLB",
+          "line": 17.5,
+          "label": "O/U 17.5",
+          "overOdds": -105,
+          "underOdds": -126,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 576,
+          "lastSeasonLabel": "Last Season O"
+        },
+        {
+          "player": "Michael King",
+          "marketName": "Michael King Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33880541",
+          "home": "SD Padres",
+          "away": "DET Tigers",
+          "sport": "MLB",
+          "line": 15.5,
+          "label": "O/U 15.5",
+          "overOdds": -112,
+          "underOdds": -118,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 223,
+          "lastSeasonLabel": "Last Season O"
+        }
+      ],
+      "propsCount": 24
+    },
+    "NBA": {
+      "games": [
+        {
+          "id": "dk_33880032",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-03-27T23:10:00.0000000Z",
+          "home_team": "IND Pacers",
+          "away_team": "LA Clippers",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:45.975419Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "LA Clippers",
+                      "price": -425
+                    },
+                    {
+                      "name": "IND Pacers",
+                      "price": 330
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "LA Clippers",
+                      "price": -115,
+                      "point": -8.5
+                    },
+                    {
+                      "name": "IND Pacers",
+                      "price": -105,
+                      "point": 8.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -105,
+                      "point": 238.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -115,
+                      "point": 238.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33880032",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#002d62",
+            "awayColor": "#c8102e",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33880033",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-03-27T23:40:00.0000000Z",
+          "home_team": "BOS Celtics",
+          "away_team": "ATL Hawks",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:45.975441Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "ATL Hawks",
+                      "price": 170
+                    },
+                    {
+                      "name": "BOS Celtics",
+                      "price": -205
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "ATL Hawks",
+                      "price": -105,
+                      "point": 4.5
+                    },
+                    {
+                      "name": "BOS Celtics",
+                      "price": -115,
+                      "point": -4.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -115,
+                      "point": 224.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -105,
+                      "point": 224.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33880033",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#007a33",
+            "awayColor": "#c8102e",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33880034",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-03-27T23:40:00.0000000Z",
+          "home_team": "CLE Cavaliers",
+          "away_team": "MIA Heat",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:45.975452Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "MIA Heat",
+                      "price": 170
+                    },
+                    {
+                      "name": "CLE Cavaliers",
+                      "price": -205
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "MIA Heat",
+                      "price": -105,
+                      "point": 4.5
+                    },
+                    {
+                      "name": "CLE Cavaliers",
+                      "price": -115,
+                      "point": -4.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -108,
+                      "point": 242.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -112,
+                      "point": 242.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33880034",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#860038",
+            "awayColor": "#98002e",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33882385",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-03-28T00:10:00.0000000Z",
+          "home_team": "OKC Thunder",
+          "away_team": "CHI Bulls",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:45.975463Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "CHI Bulls",
+                      "price": 1300
+                    },
+                    {
+                      "name": "OKC Thunder",
+                      "price": -2800
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "CHI Bulls",
+                      "price": -110,
+                      "point": 19.5
+                    },
+                    {
+                      "name": "OKC Thunder",
+                      "price": -110,
+                      "point": -19.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -115,
+                      "point": 236.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -105,
+                      "point": 236.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33882385",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#007ac1",
+            "awayColor": "#ce1141",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33882384",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-03-28T00:10:00.0000000Z",
+          "home_team": "MEM Grizzlies",
+          "away_team": "HOU Rockets",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:45.975472Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "HOU Rockets",
+                      "price": -800
+                    },
+                    {
+                      "name": "MEM Grizzlies",
+                      "price": 550
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "HOU Rockets",
+                      "price": -110,
+                      "point": -12.5
+                    },
+                    {
+                      "name": "MEM Grizzlies",
+                      "price": -110,
+                      "point": 12.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -110,
+                      "point": 226.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -110,
+                      "point": 226.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33882384",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#5d76a9",
+            "awayColor": "#ce1141",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33882389",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-03-28T00:40:00.0000000Z",
+          "home_team": "TOR Raptors",
+          "away_team": "NO Pelicans",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:45.975482Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "NO Pelicans",
+                      "price": 270
+                    },
+                    {
+                      "name": "TOR Raptors",
+                      "price": -340
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "NO Pelicans",
+                      "price": -110,
+                      "point": 8.5
+                    },
+                    {
+                      "name": "TOR Raptors",
+                      "price": -110,
+                      "point": -8.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -110,
+                      "point": 228.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -110,
+                      "point": 228.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33882389",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#ce1141",
+            "awayColor": "#0c2340",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33882390",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-03-28T01:10:00.0000000Z",
+          "home_team": "DEN Nuggets",
+          "away_team": "UTA Jazz",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:45.975491Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "UTA Jazz",
+                      "price": 1000
+                    },
+                    {
+                      "name": "DEN Nuggets",
+                      "price": -1800
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "UTA Jazz",
+                      "price": -115,
+                      "point": 18.5
+                    },
+                    {
+                      "name": "DEN Nuggets",
+                      "price": -105,
+                      "point": -18.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -110,
+                      "point": 248.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -110,
+                      "point": 248.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33882390",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#0e2240",
+            "awayColor": "#002b5c",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33882393",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-03-28T02:10:00.0000000Z",
+          "home_team": "POR Trail Blazers",
+          "away_team": "DAL Mavericks",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:45.975501Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "DAL Mavericks",
+                      "price": 340
+                    },
+                    {
+                      "name": "POR Trail Blazers",
+                      "price": -440
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "DAL Mavericks",
+                      "price": -118,
+                      "point": 10.5
+                    },
+                    {
+                      "name": "POR Trail Blazers",
+                      "price": -102,
+                      "point": -10.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -115,
+                      "point": 238.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -105,
+                      "point": 238.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33882393",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#e03a3e",
+            "awayColor": "#00538c",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33882391",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-03-28T02:10:00.0000000Z",
+          "home_team": "GS Warriors",
+          "away_team": "WAS Wizards",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:45.975510Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "WAS Wizards",
+                      "price": 650
+                    },
+                    {
+                      "name": "GS Warriors",
+                      "price": -1000
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "WAS Wizards",
+                      "price": -118,
+                      "point": 14.5
+                    },
+                    {
+                      "name": "GS Warriors",
+                      "price": -102,
+                      "point": -14.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -105,
+                      "point": 233.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -115,
+                      "point": 233.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33882391",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#1d428a",
+            "awayColor": "#002b5c",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33882394",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-03-28T02:40:00.0000000Z",
+          "home_team": "LA Lakers",
+          "away_team": "BKN Nets",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-03-27T05:59:45.975520Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "BKN Nets",
+                      "price": 950
+                    },
+                    {
+                      "name": "LA Lakers",
+                      "price": -1650
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "BKN Nets",
+                      "price": -110,
+                      "point": 16.5
+                    },
+                    {
+                      "name": "LA Lakers",
+                      "price": -110,
+                      "point": -16.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -105,
+                      "point": 222.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -115,
+                      "point": 222.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33882394",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#552583",
+            "awayColor": "#000000",
+            "liveState": null,
+            "score": null
+          }
+        }
+      ],
+      "count": 10,
+      "props": [],
+      "propsCount": 0
+    }
+  }
+}

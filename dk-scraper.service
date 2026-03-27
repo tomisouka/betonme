@@ -1,0 +1,14 @@
+[Unit]
+Description=BetOnMe DraftKings Odds Scraper
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/kaneki/rabbit/root/projects/onit/betonme
+ExecStart=/usr/bin/python3 /home/kaneki/rabbit/root/projects/onit/betonme/dk_scraper.py --watch
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=default.target

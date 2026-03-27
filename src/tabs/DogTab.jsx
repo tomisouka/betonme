@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import { getTodayKey, ensureAmerican, formatOdds, calcProfit } from '../utils/odds.js'
-import { loadDogState, saveDogStateServer } from '../hooks/useSaveData.js'
-import TodoBox from '../components/TodoBox.jsx'
+import { getTodayKey, ensureAmerican, formatOdds, calcProfit, getGameDateLabel, fetchMlbProbablePitchers, getProbablePitcher } from '../utils/odds.js'
+import { loadDogState, saveDogStateServer, fetchEspnDate } from '../hooks/useSaveData.js'
+import SportFilter, { filterBySport } from '../components/SportFilter.jsx'
 
 export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
   const [dogState, setDogState] = useState({})
   const [dogModal, setDogModal] = useState(null)
+  const [sportTab, setSportTab] = useState('ALL')
+  const [mlbPitchers, setMlbPitchers] = useState({})
+
+  useEffect(() => {
+    const hasMlb = allGames.some(g => g.sportLabel === 'MLB')
+    if (hasMlb) fetchMlbProbablePitchers().then(map => setMlbPitchers(map))
+  }, [allGames])
 
   async function saveDogState(s) {
     setDogState({ ...s })
@@ -48,15 +55,11 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
       const pending = Object.entries(s.picks).filter(([, p]) => p.result === null)
       if (!pending.length) return
 
-      const ESPN_ENDPOINTS = { MLB: 'baseball/mlb', NFL: 'football/nfl', NBA: 'basketball/nba' }
-
       for (const [date, pick] of pending) {
-        const endpoint = ESPN_ENDPOINTS[pick.sport]
-        if (!endpoint) continue
+        if (!pick.sport) continue
         try {
-          const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${endpoint}/scoreboard?dates=${date.replace(/-/g,'')}`)
-          const data = await res.json()
-          const event = (data.events || []).find(e =>
+          const events = await fetchEspnDate(pick.sport, date.replace(/-/g,''))
+          const event = events.find(e =>
             (e.competitions?.[0]?.competitors || []).some(c =>
               pick.home.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
               c.team.displayName.toLowerCase().includes(pick.home.toLowerCase())
@@ -107,14 +110,14 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
   }
 
   const underdogs = []
-  allGames.forEach(game => {
+  filterBySport(allGames, sportTab).forEach(game => {
     const bm = game.bookmakers?.[0]
     const ml = bm?.markets?.find(m => m.key === 'h2h')
     const sp = bm?.markets?.find(m => m.key === 'spreads')
     if (!ml) return
     ml.outcomes.forEach(outcome => {
       const odds = ensureAmerican(outcome.price)
-      if (odds > 0) {
+      if (odds >= 150) {
         const opponent = ml.outcomes.find(o => o.name !== outcome.name)
         const spread = sp?.outcomes.find(o => o.name === outcome.name)
         underdogs.push({
@@ -183,9 +186,6 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
 
       <div style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ margin: '0 0 0.4rem', fontSize: '1rem', color: '#aaa' }}>🐕 DOG OF THE DAY</h2>
-        <TodoBox items={[
-          "Show underdog's last 7-day straight-up win record — needs historical results API",
-        ]} />
         <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>
           Positive odds = underdog. Pick one per day — no coins, just bragging rights.
         </p>
@@ -250,6 +250,8 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
       {loading && <p style={{ color: '#888' }}>Sniffing out underdogs...</p>}
       {!loading && underdogs.length === 0 && todayLock && !lockIsTheDog && <p style={{ color: '#555' }}>No underdogs found — no games loaded yet.</p>}
 
+      <SportFilter games={allGames} value={sportTab} onChange={setSportTab} label="underdog" />
+
       {todayLock && !lockIsTheDog && (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {underdogs.map((dog, i) => {
@@ -281,9 +283,9 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
                 }}>✓ YOUR PICK</div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: dog.sport === 'MLB' ? '0.3rem' : '0.75rem' }}>
                 <div style={{ fontSize: '0.72rem', color: '#555' }}>
-                  {dog.sport} · {new Date(dog.gameTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {dog.sport} · {getGameDateLabel(dog.gameTime)}
                 </div>
                 <div style={{
                   background: '#00000044', border: `1px solid ${tier.border}`,
@@ -291,6 +293,16 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
                   fontSize: '0.68rem', color: tier.color, fontWeight: 'bold', letterSpacing: '0.05em'
                 }}>#{i + 1} {tier.label}</div>
               </div>
+              {dog.sport === 'MLB' && (() => {
+                const awayP = getProbablePitcher(dog.away, mlbPitchers)
+                const homeP = getProbablePitcher(dog.home, mlbPitchers)
+                return (
+                  <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.72rem', marginBottom: '0.75rem' }}>
+                    <span>⚾ <span style={{ color: '#4c9be8' }}>{dog.away.split(' ').pop()}:</span> <span style={{ color: awayP ? '#aaa' : '#444' }}>{awayP || 'TBA'}</span></span>
+                    <span>⚾ <span style={{ color: '#4c9be8' }}>{dog.home.split(' ').pop()}:</span> <span style={{ color: homeP ? '#aaa' : '#444' }}>{homeP || 'TBA'}</span></span>
+                  </div>
+                )
+              })()}
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
                 <div style={{ flex: 1 }}>

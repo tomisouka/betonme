@@ -4,41 +4,95 @@ import { formatOdds } from '../utils/odds.js'
 const PAGE_SIZE = 5
 
 export const MARKET_EMOJIS = {
+  // NBA
   player_points: '🏀',
   player_rebounds: '🔄',
   player_assists: '🎯',
   player_threes: '3pt',
+  // MLB — Pitcher
   pitcher_strikeouts: '⚾',
+  pitcher_hits_allowed: '🎯',
+  pitcher_walks: '🚶',
+  pitcher_earned_runs: '💥',
+  // MLB — Batter
   batter_total_bases: '🏃',
   batter_hits: '🥎',
+  batter_home_runs: '🏠',
+  batter_rbis: '📊',
+  batter_runs_scored: '🏅',
+  batter_singles: '1️⃣',
+  batter_doubles: '2️⃣',
+  batter_stolen_bases: '💨',
+  batter_triples: '3️⃣',
+  batter_walks: '🚶',
+  // NFL
   player_pass_yds: '🏈',
   player_rush_yds: '💨',
   player_reception_yds: '🙌',
+  player_pass_tds: '🎯',
+  player_receptions: '🤲',
+  player_rush_attempts: '🦵',
 }
 
 export const PROP_MARKET_LABELS = {
+  // NBA
   player_points: 'Points O/U',
   player_rebounds: 'Rebounds O/U',
   player_assists: 'Assists O/U',
   player_threes: '3-Pointers O/U',
+  // MLB — Pitcher
   pitcher_strikeouts: 'Strikeouts O/U',
+  pitcher_hits_allowed: 'Hits Allowed O/U',
+  pitcher_walks: 'Walks O/U',
+  pitcher_earned_runs: 'Earned Runs O/U',
+  // MLB — Batter
   batter_total_bases: 'Total Bases O/U',
   batter_hits: 'Hits O/U',
+  batter_home_runs: 'Home Runs O/U',
+  batter_rbis: 'RBIs O/U',
+  batter_runs_scored: 'Runs Scored O/U',
+  batter_singles: 'Singles O/U',
+  batter_doubles: 'Doubles O/U',
+  batter_stolen_bases: 'Stolen Bases O/U',
+  batter_triples: 'Triples O/U',
+  batter_walks: 'Walks (Batter) O/U',
+  // NFL
   player_pass_yds: 'Pass Yards O/U',
   player_rush_yds: 'Rush Yards O/U',
   player_reception_yds: 'Rec Yards O/U',
+  player_pass_tds: 'Pass TDs O/U',
+  player_receptions: 'Receptions O/U',
+  player_rush_attempts: 'Rush Attempts O/U',
+}
+
+// Section groupings for display labels
+export const MARKET_SECTION_LABELS = {
+  MLB: {
+    pitcher: { label: '⚾ Pitcher Props', keys: ['pitcher_strikeouts', 'pitcher_hits_allowed', 'pitcher_walks', 'pitcher_earned_runs'] },
+    batter: { label: '🥎 Batter Props', keys: ['batter_hits', 'batter_total_bases', 'batter_home_runs', 'batter_rbis', 'batter_runs_scored', 'batter_singles', 'batter_doubles', 'batter_triples', 'batter_walks', 'batter_stolen_bases'] },
+  }
 }
 
 export const ODDS_API_PROP_MARKETS = {
   NBA: ['player_points', 'player_rebounds', 'player_assists', 'player_threes'],
-  MLB: ['pitcher_strikeouts', 'batter_total_bases', 'batter_hits'],
-  NFL: ['player_pass_yds', 'player_rush_yds', 'player_reception_yds'],
+  MLB: [
+    // Pitcher (confirmed valid keys for FanDuel/DraftKings)
+    'pitcher_strikeouts', 'pitcher_hits_allowed', 'pitcher_walks', 'pitcher_earned_runs',
+    // Batter
+    'batter_hits', 'batter_total_bases', 'batter_home_runs', 'batter_rbis',
+    'batter_runs_scored', 'batter_singles', 'batter_doubles', 'batter_triples',
+    'batter_walks', 'batter_stolen_bases',
+  ],
+  NFL: ['player_pass_yds', 'player_rush_yds', 'player_reception_yds', 'player_pass_tds', 'player_receptions', 'player_rush_attempts'],
 }
 
 export const MARKET_ORDER = {
   NBA: ['player_points', 'player_rebounds', 'player_assists', 'player_threes'],
-  MLB: ['pitcher_strikeouts', 'batter_total_bases', 'batter_hits'],
-  NFL: ['player_pass_yds', 'player_rush_yds', 'player_reception_yds'],
+  MLB: [
+    'pitcher_strikeouts', 'pitcher_hits_allowed', 'pitcher_walks', 'pitcher_earned_runs',
+    'batter_hits', 'batter_total_bases', 'batter_home_runs', 'batter_rbis', 'batter_runs_scored', 'batter_singles', 'batter_doubles', 'batter_triples', 'batter_walks', 'batter_stolen_bases',
+  ],
+  NFL: ['player_pass_yds', 'player_rush_yds', 'player_reception_yds', 'player_pass_tds', 'player_receptions', 'player_rush_attempts'],
 }
 
 export default function PropSection({ marketKey, label, props, pickedTeams, onPick, defaultOpen, homeTeam, awayTeam, teamColorMap }) {
@@ -48,10 +102,10 @@ export default function PropSection({ marketKey, label, props, pickedTeams, onPi
 
   const teamColor = (team) => teamColorMap?.[team] || '#555'
 
-  const pickedCount = props.filter(p => pickedTeams[p.team] === `${p.player}|${p.marketKey}`).length
+  const pickedCount = props.filter(p => pickedTeams[`${p.team || 'unknown'}||${p.marketKey}`] === `${p.player}|${p.marketKey}`).length
 
-  const pickedProps = props.filter(p => pickedTeams[p.team] === `${p.player}|${p.marketKey}`)
-  const unpickedProps = props.filter(p => pickedTeams[p.team] !== `${p.player}|${p.marketKey}`)
+  const pickedProps = props.filter(p => pickedTeams[`${p.team || 'unknown'}||${p.marketKey}`] === `${p.player}|${p.marketKey}`)
+  const unpickedProps = props.filter(p => pickedTeams[`${p.team || 'unknown'}||${p.marketKey}`] !== `${p.player}|${p.marketKey}`)
 
   const sortedUnpicked = [...unpickedProps].sort((a, b) =>
     sortDir === 'desc' ? b.line - a.line : a.line - b.line
@@ -102,21 +156,24 @@ export default function PropSection({ marketKey, label, props, pickedTeams, onPi
       {open && (
         <div style={{ padding: '0.6rem 0.75rem', borderTop: '1px solid #1a1a1a', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
           {displayProps.map(prop => {
-            const isPicked = pickedTeams[prop.team] === `${prop.player}|${prop.marketKey}`
-            const teamPickedElsewhere = pickedTeams[prop.team] && !isPicked
+            // isPicked: this exact player+market is already picked
+            const teamMKey = `${prop.team || 'unknown'}||${prop.marketKey}`
+            const isPicked = pickedTeams[teamMKey] === `${prop.player}|${prop.marketKey}`
+            // pickedElsewhere: a different player on the same team in the same market
+            const marketPickedElsewhere = pickedTeams[teamMKey] && !isPicked
             return (
               <div
                 key={`${prop.player}-${prop.marketKey}`}
-                onClick={() => !isPicked && onPick(prop)}
+                onClick={() => !isPicked && !marketPickedElsewhere && onPick(prop)}
                 style={{
                   background: isPicked ? '#1a1a2a' : '#1a1a1a',
                   border: `1px solid ${isPicked ? '#8888ff' : '#2a2a2a'}`,
                   borderRadius: '8px', padding: '0.75rem 1rem',
-                  cursor: isPicked ? 'default' : 'pointer',
-                  opacity: teamPickedElsewhere ? 0.35 : 1,
+                  cursor: isPicked || marketPickedElsewhere ? 'default' : 'pointer',
+                  opacity: marketPickedElsewhere ? 0.35 : 1,
                   transition: 'border-color 0.15s, opacity 0.15s',
                 }}
-                onMouseEnter={e => { if (!isPicked && !teamPickedElsewhere) e.currentTarget.style.borderColor = '#8888ff' }}
+                onMouseEnter={e => { if (!isPicked && !marketPickedElsewhere) e.currentTarget.style.borderColor = '#8888ff' }}
                 onMouseLeave={e => { if (!isPicked) e.currentTarget.style.borderColor = isPicked ? '#8888ff' : '#2a2a2a' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -128,10 +185,24 @@ export default function PropSection({ marketKey, label, props, pickedTeams, onPi
                     <div style={{ fontSize: '0.68rem', color: teamColor(prop.team), fontWeight: 'bold' }}>{prop.team}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff' }}>{prop.line}</div>
-                    <div style={{ fontSize: '0.7rem', color: '#555' }}>
-                      ⬆ {formatOdds(prop.overOdds)} · ⬇ {formatOdds(prop.underOdds)}
+                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff' }}>
+                      {prop.line}{prop.underOdds == null ? '+' : ''}
                     </div>
+                    <div style={{ fontSize: '0.7rem', color: '#555' }}>
+                      {prop.underOdds == null
+                        ? <span style={{ color: prop.overOdds > 0 ? '#ff9944' : '#aaa' }}>{formatOdds(prop.overOdds)}</span>
+                        : <>⬆ {formatOdds(prop.overOdds)} · ⬇ {formatOdds(prop.underOdds)}</>
+                      }
+                    </div>
+                    {prop.allLines && prop.allLines.length > 1 && (
+                      <div style={{ fontSize: '0.6rem', color: '#333', marginTop: '0.2rem' }}>
+                        {prop.allLines.map(l => (
+                          <span key={l.label} style={{ marginLeft: '0.3rem', color: l.line === prop.line ? '#aaa' : '#2a2a2a' }}>
+                            {l.label} {formatOdds(l.odds)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

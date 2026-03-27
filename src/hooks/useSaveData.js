@@ -14,7 +14,7 @@ export const STORAGE_KEYS = {
   LAY: 'layHistory',
 }
 
-const CACHE_DURATION_MS = 3 * 60 * 60 * 1000
+const CACHE_DURATION_MS = 8 * 60 * 60 * 1000  // 8h — kept for legacy compatibility
 
 // ─── RAW SERVER I/O ───────────────────────────────────────────────────────────
 
@@ -138,7 +138,8 @@ export function getCachedOdds() {
     const raw = localStorage.getItem(STORAGE_KEYS.ODDS_CACHE)
     if (!raw) return null
     const { timestamp, data } = JSON.parse(raw)
-    if (Date.now() - timestamp < CACHE_DURATION_MS) return data
+    // 8-hour TTL = 3 fetches/day (450 credits/month)
+    if (Date.now() - timestamp < 8 * 60 * 60 * 1000) return data
     return null
   } catch { return null }
 }
@@ -162,7 +163,8 @@ export function getCachedData(storageKey) {
     const raw = localStorage.getItem(storageKey)
     if (!raw) return null
     const { timestamp, data } = JSON.parse(raw)
-    if (Date.now() - timestamp < CACHE_DURATION_MS) return data
+    // 8-hour TTL = 3 fetches/day (450 credits/month)
+    if (Date.now() - timestamp < 8 * 60 * 60 * 1000) return data
     return null
   } catch { return null }
 }
@@ -201,4 +203,41 @@ export async function migrateLocalStorageToServer() {
       console.log('[BetOnMe] localStorage migration complete')
     }
   } catch (e) { console.error('Migration failed', e) }
+}
+// ─── ESPN DATE CACHE ──────────────────────────────────────────────────────────
+// Caches ESPN scoreboard responses keyed by date string (YYYYMMDD)
+// Historical dates never change once completed — cache indefinitely
+// Today's date uses 8h TTL
+
+export function getCachedEspnDate(dateStr) {
+  try {
+    const raw = localStorage.getItem(`espn_${dateStr}`)
+    if (!raw) return null
+    const { timestamp, events } = JSON.parse(raw)
+    const isToday = dateStr === new Date().toISOString().split('T')[0].replace(/-/g, '')
+    if (isToday && Date.now() - timestamp > 8 * 60 * 60 * 1000) return null
+    // Historical dates: cache forever
+    return events
+  } catch { return null }
+}
+
+export function setCachedEspnDate(dateStr, events) {
+  try {
+    localStorage.setItem(`espn_${dateStr}`, JSON.stringify({ timestamp: Date.now(), events }))
+  } catch {}
+}
+
+export async function fetchEspnDate(sport, dateStr) {
+  const cached = getCachedEspnDate(dateStr)
+  if (cached) return cached
+  const endpoints = { MLB: 'baseball/mlb', NFL: 'football/nfl', NBA: 'basketball/nba' }
+  const endpoint = endpoints[sport]
+  if (!endpoint) return []
+  try {
+    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${endpoint}/scoreboard?dates=${dateStr}`)
+    const data = await res.json()
+    const events = data.events || []
+    setCachedEspnDate(dateStr, events)
+    return events
+  } catch { return [] }
 }

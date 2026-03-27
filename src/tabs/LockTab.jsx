@@ -1,35 +1,28 @@
 import React, { useState, useEffect } from 'react'
-import { getTodayKey, isSaturday, formatOdds, calcProfit, calcPayout } from '../utils/odds.js'
-import { loadState, saveState } from '../hooks/useSaveData.js'
+import { getTodayKey, isSaturday, formatOdds, calcProfit, calcPayout, getGameDateLabel, fetchMlbProbablePitchers, getProbablePitcher } from '../utils/odds.js'
+import { loadState, saveState, fetchEspnDate } from '../hooks/useSaveData.js'
+import SportFilter, { filterBySport } from '../components/SportFilter.jsx'
 
-const ESPN_ENDPOINTS = { MLB: 'baseball/mlb', NFL: 'football/nfl', NBA: 'basketball/nba' }
 
-function getGameStatus(game, espnEvents) {
-  if (!espnEvents) return null
-  const match = espnEvents.find(e => {
-    const comps = e.competitions?.[0]?.competitors || []
-    return comps.some(c => {
-      const dn = c.team.displayName.toLowerCase()
-      return game.home_team.toLowerCase().includes(dn) || dn.includes(game.home_team.toLowerCase()) ||
-             game.away_team.toLowerCase().includes(dn) || dn.includes(game.away_team.toLowerCase())
-    })
-  })
-  if (!match) return null
-  const status = match.competitions?.[0]?.status
+function getGameStatus(game) {
+  const status = game.espnStatus
   if (!status) return null
   const state = status.type?.state
   const completed = status.type?.completed
   if (completed || state === 'post') {
-    const comps = match.competitions?.[0]?.competitors || []
-    const scores = comps.map(c => `${c.team.abbreviation} ${c.score}`).join(' · ')
-    return { state: 'post', label: scores ? `Final · ${scores}` : 'Final' }
+    const s = game.espnScores
+    const scoreLabel = s ? `${game.away_team.split(' ').pop()} ${s.away} – ${game.home_team.split(' ').pop()} ${s.home}` : ''
+    return { state: 'post', label: scoreLabel ? `Final · ${scoreLabel}` : 'Final' }
   }
   if (state === 'in') {
     const clock = status.displayClock
     const period = status.period
     const sport = game.sportLabel
     let p = period ? (sport === 'MLB' ? `Inn ${period}` : `Q${period}`) : ''
-    return { state: 'in', label: [p, clock].filter(Boolean).join(' · ') || 'In Progress' }
+    const s = game.espnScores
+    const scoreLabel = s ? `${game.away_team.split(' ').pop()} ${s.away} – ${game.home_team.split(' ').pop()} ${s.home}` : null
+    const timePart = [p, clock].filter(Boolean).join(' ')
+    return { state: 'in', label: [timePart, scoreLabel].filter(Boolean).join(' · ') || 'In Progress' }
   }
   return { state: 'pre', label: null }
 }
@@ -98,11 +91,32 @@ function calcTeamStats(picks) {
   }
 }
 
+function useMidnightCountdown() {
+  const [label, setLabel] = useState('')
+  useEffect(() => {
+    function update() {
+      const now = new Date()
+      const midnight = new Date(now)
+      midnight.setHours(24, 0, 0, 0)
+      const diff = midnight - now
+      const h = Math.floor(diff / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setLabel(`next coin in ${h}h ${m}m ${s}s`)
+    }
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  }, [])
+  return label
+}
+
 function StatsBar({ coins, streakInfo, streak, streakDates, bestStreaks, picks }) {
+  const countdown = useMidnightCountdown()
   const { biased, cursed } = calcTeamStats(picks)
   return (
     <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
-      <StatCard label="COINS" value={`🪙 ${coins}`} />
+      <StatCard label="COINS" value={`🪙 ${+coins.toFixed(2)}`} sub={countdown} />
       <StatCard
         label="STREAK"
         value={streakInfo ? `${streakInfo.type === 'W' ? '🔥' : '❄'} ${streakInfo.count} ${streakInfo.type}` : 'None yet'}
@@ -151,12 +165,26 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
   const [betAmount, setBetAmount] = useState(1)
   const [resolving, setResolving] = useState(false)
   const [serverOk, setServerOk] = useState(null)
-  const [espnByLeague, setEspnByLeague] = useState({})
+  const [sportTab, setSportTab] = useState('ALL')
+  const [mlbPitchers, setMlbPitchers] = useState({})
   const todayKey = getTodayKey()
 
   useEffect(() => {
     async function init() {
       let s
+      // Retry up to 5x with 800ms delay — Tauri WebView loads before server is ready
+      let connected = false
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          const res = await fetch('http://127.0.0.1:3001/ping')
+          await res.json()
+          connected = true
+          break
+        } catch {
+          await new Promise(r => setTimeout(r, 800))
+        }
+      }
+      if (!connected) { setServerOk(false); return }
       try {
         const res = await fetch('http://127.0.0.1:3001/data')
         const all = await res.json()
@@ -180,21 +208,9 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
 
   useEffect(() => {
     if (!allGames.length) return
-    async function fetchStatuses() {
-      const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
-      const result = {}
-      await Promise.all(
-        Object.entries(ESPN_ENDPOINTS).map(async ([league, endpoint]) => {
-          try {
-            const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${endpoint}/scoreboard?dates=${today}`)
-            const data = await res.json()
-            result[league] = data.events || []
-          } catch { result[league] = [] }
-        })
-      )
-      setEspnByLeague(result)
-    }
-    fetchStatuses()
+    // allGames from ESPN already has espnStatus embedded — no separate fetch needed
+    const hasMlb = allGames.some(g => g.sportLabel === 'MLB')
+    if (hasMlb) fetchMlbProbablePitchers().then(map => setMlbPitchers(map))
   }, [allGames])
 
   async function resolvePendingPicks(s) {
@@ -204,16 +220,11 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
     if (!pending.length) return s
     setResolving(true)
 
-    const ESPN_ENDPOINTS = { MLB: 'baseball/mlb', NFL: 'football/nfl', NBA: 'basketball/nba' }
-
     for (const [date, pick] of pending) {
-      const endpoint = ESPN_ENDPOINTS[pick.sport]
-      if (!endpoint) continue
+      if (!pick.sport) continue
       const dateStr = date.replace(/-/g, '')
       try {
-        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${endpoint}/scoreboard?dates=${dateStr}`)
-        const data = await res.json()
-        const events = data.events || []
+        const events = await fetchEspnDate(pick.sport, dateStr)
         const event = events.find(e => {
           const competitors = e.competitions?.[0]?.competitors || []
           return competitors.some(c =>
@@ -249,7 +260,7 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
         s.picks[date].result = result
         s.streak = [...(s.streak || []), result]
         s.streakDates = [...(s.streakDates || []), date]
-        if (result === 'W') s.coins = (s.coins || 0) + calcPayout(pick.odds, pick.stake)
+        if (result === 'W') s.coins = +((s.coins || 0) + calcPayout(pick.odds, pick.stake)).toFixed(2)
       } catch (e) { console.error('ESPN resolve error:', e) }
     }
 
@@ -299,17 +310,24 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
 
   async function confirmPick() {
     if (!modal) return
+    // Re-read fresh state from server as final guard — prevents race with UTC date flip
+    const fresh = await loadState()
+    const currentKey = getTodayKey()
+    if (fresh.picks?.[currentKey]) {
+      setModal(null)
+      return // already locked today, bail silently
+    }
     const { game, team, odds, market, point } = modal
     const stake = Math.min(Math.max(1, betAmount), coins)
     const profit = calcProfit(odds, stake)
-    const s = { ...appState, picks: { ...(appState.picks || {}) } }
-    s.picks[todayKey] = {
+    const s = { ...fresh, picks: { ...(fresh.picks || {}) } }
+    s.picks[currentKey] = {
       gameId: game.id, team, odds, market, point,
       home: game.home_team, away: game.away_team,
       sport: game.sportLabel, commenceTime: game.commence_time,
       stake, profit, result: null,
     }
-    s.coins = (s.coins || 0) - stake
+    s.coins = +Math.max(0, (s.coins || 0) - stake).toFixed(2)
     setAppState({ ...s })
     setModal(null)
     await saveState(s)
@@ -323,8 +341,13 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
   return (
     <div>
       {serverOk === false && (
-        <div style={{ background: '#2a0a0a', border: '1px solid #ff4444', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.5rem', color: '#ff4444', fontSize: '0.85rem' }}>
-          ⚠ Server offline — run <code style={{ background: '#1a0a0a', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>pnpm dev</code> to start it. Your data is safe but nothing will load until it's running.
+        <div style={{ background: '#2a0a0a', border: '1px solid #ff444455', borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '1.5rem', color: '#ff6644', fontSize: '0.82rem', lineHeight: 1.6 }}>
+          ⚠ <strong>Save server offline</strong> — your data is safe.<br />
+          <span style={{ color: '#888', fontSize: '0.78rem' }}>
+            Start it with one of:<br />
+            • Terminal: <code style={{ background: '#1a0a0a', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.75rem' }}>cd ~/rabbit/root/projects/onit/betonme && node server.js</code><br />
+            • Service: <code style={{ background: '#1a0a0a', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.75rem' }}>systemctl --user start betonme-server</code>
+          </span>
         </div>
       )}
       {serverOk === null && (
@@ -413,21 +436,24 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h2 style={{ margin: 0, fontSize: '1rem', color: '#aaa' }}>🎯 PICK YOUR LOCK</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              {cacheAge && <span style={{ color: '#555', fontSize: '0.8rem' }}>{cacheAge}</span>}
-              <button onClick={onRefresh} style={{ padding: '0.4rem 1rem', background: '#222', color: '#fff', border: '1px solid #444', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>🔄 Refresh</button>
+              {cacheAge && <span style={{ color: '#555', fontSize: '0.75rem' }}>updated {cacheAge} · auto-refreshes every 8h</span>}
+
             </div>
           </div>
           {coins < 1 && <p style={{ color: '#ff4444' }}>No coins — come back tomorrow!</p>}
           {loading && <p style={{ color: '#888' }}>Fetching games...</p>}
-          {allGames.map(game => {
+          <SportFilter games={allGames} value={sportTab} onChange={setSportTab} label="game" />
+          {filterBySport(allGames, sportTab).map(game => {
             const bm = game.bookmakers?.[0]
-            if (!bm) return null
-            const ml = bm.markets?.find(m => m.key === 'h2h')
-            const sp = bm.markets?.find(m => m.key === 'spreads')
-            const status = getGameStatus(game, espnByLeague[game.sportLabel])
+            const ml = bm?.markets?.find(m => m.key === 'h2h')
+            const sp = bm?.markets?.find(m => m.key === 'spreads')
+            const status = getGameStatus(game)
             const isLive = status?.state === 'in'
             const isFinal = status?.state === 'post'
             const isUnavailable = isLive || isFinal
+            const isMlb = game.sportLabel === 'MLB'
+            const awayPitcher = isMlb ? getProbablePitcher(game.away_team, mlbPitchers) : null
+            const homePitcher = isMlb ? getProbablePitcher(game.home_team, mlbPitchers) : null
             return (
               <div key={game.id} style={{
                 background: '#1a1a1a',
@@ -435,7 +461,7 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
                 borderRadius: '10px', padding: '1.25rem', marginBottom: '1rem',
                 opacity: isFinal ? 0.45 : 1,
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: isMlb ? '0.3rem' : '0.75rem' }}>
                   <div>
                     <span style={{ color: '#555', fontSize: '0.75rem', marginRight: '0.5rem' }}>{game.sportLabel}</span>
                     <strong>{game.home_team}</strong>
@@ -458,10 +484,16 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
                       }}>✓ {status.label}</span>
                     )}
                     <span style={{ color: '#444', fontSize: '0.8rem' }}>
-                      {new Date(game.commence_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {getGameDateLabel(game.commence_time)}
                     </span>
                   </div>
                 </div>
+                {isMlb && (
+                  <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.72rem', marginBottom: '0.75rem' }}>
+                    <span>⚾ <span style={{ color: '#4c9be8' }}>{game.away_team.split(' ').pop()}:</span> <span style={{ color: awayPitcher ? '#aaa' : '#444' }}>{awayPitcher || 'TBA'}</span></span>
+                    <span>⚾ <span style={{ color: '#4c9be8' }}>{game.home_team.split(' ').pop()}:</span> <span style={{ color: homePitcher ? '#aaa' : '#444' }}>{homePitcher || 'TBA'}</span></span>
+                  </div>
+                )}
                 {isUnavailable ? (
                   <div style={{ fontSize: '0.78rem', color: '#444', fontStyle: 'italic' }}>
                     {isLive ? 'Game in progress — betting closed' : 'Game over — betting closed'}
@@ -493,7 +525,7 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
               </div>
             )
           })}
-          {!loading && allGames.length === 0 && <p style={{ color: '#555' }}>No games today.</p>}
+          {!loading && filterBySport(allGames, sportTab).length === 0 && <p style={{ color: '#555' }}>No {sportTab === 'ALL' ? '' : sportTab + ' '}games today.</p>}
         </>
       )}
 
