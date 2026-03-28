@@ -21,6 +21,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
   const [layLocked, setLayLocked] = useState(false)
   const [sportTab, setSportTab] = useState('ALL')
   const [mlbPitchers, setMlbPitchers] = useState({})
+  const [gamesBrowserOpen, setGamesBrowserOpen] = useState(true)
+  const [todayFilter, setTodayFilter] = useState('today')
 
   // ── F5 / Halftime state ──
   const [f5State, setF5State] = useState({})
@@ -29,6 +31,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
   const [f5LinesLoading, setF5LinesLoading] = useState(false)
   const [f5LinesCache, setF5LinesCache] = useState({})
   const [f5SelIdx, setF5SelIdx] = useState(null)  // F5 modal selected option index
+  const [f5DateFilter, setF5DateFilter] = useState('today') // 'today' | 'future'
 
   const F5_LABELS = {
     MLB: { title: 'First 5 Innings', short: 'F5', emoji: '⚾', color: '#4c9be8' },
@@ -64,54 +67,18 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
 
   async function openF5Game(game) {
     const sport = game.sportLabel
-    const sportKey = SPORT_KEY_MAP_F5[sport]
-    if (!sportKey || !F5_LABELS[sport]) return
+    if (!F5_LABELS[sport]) return
     setF5LinesLoading(true)
-    // Check in-memory cache first, then localStorage
-    let linesData = f5LinesCache[game.id]
-    if (!linesData) {
-      try { linesData = JSON.parse(localStorage.getItem(`f5odds_${game.id}`)) || null } catch {}
-    }
-    if (!linesData) {
-      const markets = sport === 'MLB'
-        ? 'h2h_first_5_innings,spreads_first_5_innings'
-        : 'h2h_h1,spreads_h1'
-      try {
-        // Resolve ESPN game ID → odds-api event ID (cached in localStorage)
-        const cacheKey = `oddsApiEventId_${game.id}`
-        let oddsEventId = localStorage.getItem(cacheKey)
-        if (!oddsEventId) {
-          const eventsRes = await fetch(`https://api.the-odds-api.com/v4/sports/${sportKey}/events?apiKey=${F5_API_KEY}&oddsFormat=american`)
-          const events = eventsRes.ok ? await eventsRes.json() : []
-          const match = events.find(e => {
-            const ht = e.home_team?.toLowerCase()
-            const at = e.away_team?.toLowerCase()
-            const lockH = game.home_team?.toLowerCase()
-            const lockA = game.away_team?.toLowerCase()
-            return ht && lockH && (lockH.includes(ht) || ht.includes(lockH)) &&
-                   at && lockA && (lockA.includes(at) || at.includes(lockA))
-          })
-          if (match?.id) {
-            oddsEventId = match.id
-            localStorage.setItem(cacheKey, oddsEventId)
-          }
-        }
-        if (oddsEventId) {
-          const res = await fetch(`https://api.the-odds-api.com/v4/sports/${sportKey}/events/${oddsEventId}/odds?apiKey=${F5_API_KEY}&regions=us&markets=${markets}&oddsFormat=american&bookmakers=draftkings`)
-          linesData = res.ok ? await res.json() : null
-        }
-      } catch { linesData = null }
-      if (linesData) {
-        setF5LinesCache(c => ({ ...c, [game.id]: linesData }))
-        try { localStorage.setItem(`f5odds_${game.id}`, JSON.stringify(linesData)) } catch {}
-      }
-    }
+
+    // _dk is already merged onto ESPN games by odds.js — just read it directly
+    let linesData = game._dk?.f5 || null
+
     setF5LinesLoading(false)
-    setF5SelIdx(null)  // reset selection when opening new modal
+    setF5SelIdx(null)
     setF5Modal({ game, sport, linesData })
   }
 
-  async function confirmF5Pick(pickData) {
+    async function confirmF5Pick(pickData) {
     const updated = { ...f5State, [todayKey]: { ...todayF5, [pickData.sport]: pickData } }
     await saveF5(updated)
     setF5SelIdx(null)
@@ -236,7 +203,10 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
       const isDog = game.id === dogGameId && !isLock
       const team = isLock ? todayLock?.team : isDog ? todayDog?.team : selectedTeams[game.id]
       const odds = isLock ? (todayLock?.odds ?? null) : isDog ? (todayDog?.odds ?? null) : (selectedOdds[game.id] ?? null)
-      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, isLock, isDog, result: null }
+      // Store market + point so the resolver can check spread coverage, not just ML win
+      const market = isLock ? (todayLock?.market ?? 'h2h') : 'h2h'
+      const point  = isLock ? (todayLock?.point  ?? null) : null
+      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, result: null }
     }).sort((a, b) => { const rank = l => l.isLock ? 0 : l.isDog ? 1 : 2; return rank(a) - rank(b) })
     const updated = { ...predictionsHistory, [todayKey]: { legs, lockedAt: Date.now() } }
     await savePredictions(updated)
@@ -252,7 +222,9 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
       const isDog = game.id === dogGameId && !isLock
       const team = isLock ? todayLock?.team : isDog ? todayDog?.team : selectedTeams[game.id]
       const odds = isLock ? (todayLock?.odds ?? null) : isDog ? (todayDog?.odds ?? null) : (selectedOdds[game.id] ?? null)
-      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, isLock, isDog, result: null }
+      const market = isLock ? (todayLock?.market ?? 'h2h') : 'h2h'
+      const point  = isLock ? (todayLock?.point  ?? null) : null
+      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, result: null }
     }).sort((a, b) => { const rank = l => l.isLock ? 0 : l.isDog ? 1 : 2; return rank(a) - rank(b) })
     const hist = await loadLayHistory()
     const updated = { ...hist, [todayKey]: { legs, lockedAt: Date.now() } }
@@ -285,10 +257,31 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
             if (!event) continue
             const comp = event.competitions?.[0]
             if (!comp?.status?.type?.completed) continue
-            const winner = comp.competitors?.find(c => c.winner)
-            if (!winner) continue
-            const winnerName = winner.team.displayName
-            const won = winnerName.toLowerCase().includes(leg.team.toLowerCase()) || leg.team.toLowerCase().includes(winnerName.toLowerCase())
+
+            // Spread picks: check if picked team covered the line, not just won
+            // ML picks (or no market stored): check who won
+            let won
+            if (leg.market === 'spreads' && leg.point != null) {
+              const competitors = comp.competitors || []
+              const pickedComp = competitors.find(c =>
+                c.team.displayName.toLowerCase().includes(leg.team.toLowerCase()) ||
+                leg.team.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
+                c.team.shortDisplayName?.toLowerCase().includes(leg.team.toLowerCase().split(' ').pop())
+              )
+              if (!pickedComp) continue
+              const oppComp = competitors.find(c => c.id !== pickedComp.id)
+              const pickedScore = parseFloat(pickedComp.score)
+              const oppScore    = parseFloat(oppComp?.score ?? 0)
+              if (isNaN(pickedScore)) continue
+              // leg.point is the spread for picked team (e.g. -1.5 = fav, +1.5 = dog)
+              // Covers if pickedScore + leg.point > oppScore (push = loss per standard rules)
+              won = (pickedScore - oppScore + leg.point) > 0
+            } else {
+              const winner = comp.competitors?.find(c => c.winner)
+              if (!winner) continue
+              const winnerName = winner.team.displayName
+              won = winnerName.toLowerCase().includes(leg.team.toLowerCase()) || leg.team.toLowerCase().includes(winnerName.toLowerCase())
+            }
             hist[date].legs[i].result = won ? 'W' : 'L'
             changed = true
           } catch(e) { console.error('[Predictions resolve]', e) }
@@ -313,7 +306,9 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
       let changed = false
       for (const [date, entry] of Object.entries(hist)) {
         if (!entry || !entry.legs) continue
-        const allResolved = entry.legs.every(l => l.result !== null)
+        // Only skip if every leg with a team is resolved AND overallResult already set
+        const legsWithTeam = entry.legs.filter(l => l.team)
+        const allResolved = legsWithTeam.every(l => l.result !== null)
         if (allResolved && entry.overallResult) continue
         for (let i = 0; i < entry.legs.length; i++) {
           const leg = entry.legs[i]
@@ -331,16 +326,36 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
             if (!event) continue
             const comp = event.competitions?.[0]
             if (!comp?.status?.type?.completed) continue
-            const winner = comp.competitors?.find(c => c.winner)
-            if (!winner) continue
-            const winnerName = winner.team.displayName
-            const won = winnerName.toLowerCase().includes(leg.team.toLowerCase()) || leg.team.toLowerCase().includes(winnerName.toLowerCase())
+
+            // Spread picks: check coverage against the line, not just who won
+            // ML picks (or legs without market stored): check winner
+            let won
+            if (leg.market === 'spreads' && leg.point != null) {
+              const competitors = comp.competitors || []
+              const pickedComp = competitors.find(c =>
+                c.team.displayName.toLowerCase().includes(leg.team.toLowerCase()) ||
+                leg.team.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
+                c.team.shortDisplayName?.toLowerCase().includes(leg.team.toLowerCase().split(' ').pop())
+              )
+              if (!pickedComp) continue
+              const oppComp = competitors.find(c => c.id !== pickedComp.id)
+              const pickedScore = parseFloat(pickedComp.score)
+              const oppScore    = parseFloat(oppComp?.score ?? 0)
+              if (isNaN(pickedScore)) continue
+              won = (pickedScore - oppScore + leg.point) > 0
+            } else {
+              const winner = comp.competitors?.find(c => c.winner)
+              if (!winner) continue
+              const winnerName = winner.team.displayName
+              won = winnerName.toLowerCase().includes(leg.team.toLowerCase()) || leg.team.toLowerCase().includes(winnerName.toLowerCase())
+            }
             hist[date].legs[i].result = won ? 'W' : 'L'
             changed = true
           } catch(e) { console.error('[Lay resolve]', e) }
         }
-        const resolvedLegs = hist[date].legs.filter(l => l.result !== null)
-        if (resolvedLegs.length === hist[date].legs.length && resolvedLegs.length > 0 && !hist[date].overallResult) {
+        // Only set overallResult once ALL legs with teams are resolved
+        const resolvedLegs = legsWithTeam.filter(l => l.result !== null)
+        if (resolvedLegs.length === legsWithTeam.length && legsWithTeam.length > 0 && !hist[date].overallResult) {
           const hits = resolvedLegs.filter(l => l.result === 'W').length
           hist[date].overallResult = hits / resolvedLegs.length >= 0.7 ? 'W' : 'L'
           hist[date].hitCount = hits
@@ -560,6 +575,67 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
               ) : (
                 <>
                   {/* ── GAME BROWSER — tap to add to slip ── */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <button
+                      onClick={() => setGamesBrowserOpen(o => !o)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0 }}
+                    >
+                      <span style={{ fontSize: '0.65rem', color: '#444', fontWeight: 'bold', letterSpacing: '0.07em' }}>
+                        🎮 GAME BROWSER
+                      </span>
+                      <span style={{ color: '#333', fontSize: '0.65rem' }}>{gamesBrowserOpen ? '▲' : '▼'}</span>
+                    </button>
+                    {gamesBrowserOpen && (
+                      <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                        {['today', 'all'].map(f => (
+                          <button key={f} onClick={() => setTodayFilter(f)} style={{
+                            fontSize: '0.62rem', padding: '0.15rem 0.55rem',
+                            background: todayFilter === f ? '#1a1a1a' : 'none',
+                            border: `1px solid ${todayFilter === f ? '#333' : '#1a1a1a'}`,
+                            borderRadius: '4px', color: todayFilter === f ? '#aaa' : '#444',
+                            cursor: 'pointer', fontWeight: todayFilter === f ? 'bold' : 'normal',
+                          }}>
+                            {f === 'today' ? "📅 Today" : "📋 All"}
+                          </button>
+                        ))}
+                        <button onClick={() => {
+                          // Select all visible (filtered, non-final, non-live, non-auto) games
+                          const now = new Date()
+                          const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+                          const tomorrowMidnight = new Date(todayMidnight.getTime() + 86400000)
+                          const visibleGames = filterBySport(allGames, sportTab).filter(game => {
+                            if (game.id === lockGameId || game.id === dogGameId) return false
+                            const espnState = game.espnStatus?.type?.state
+                            if (espnState === 'post' || game.espnStatus?.type?.completed) return false
+                            if (espnState === 'in') return false
+                            if (todayFilter === 'today') {
+                              const gd = new Date(game.commence_time)
+                              if (gd < todayMidnight || gd >= tomorrowMidnight) return false
+                            }
+                            return true
+                          })
+                          const visibleIds = visibleGames.map(g => g.id)
+                          const allSelected = visibleIds.every(id => selectedGames.includes(id))
+                          if (allSelected) {
+                            // Deselect all visible
+                            setSelectedGames(s => s.filter(id => !visibleIds.includes(id)))
+                            setSelectedTeams(t => { const n = {...t}; visibleIds.forEach(id => delete n[id]); return n })
+                          } else {
+                            // Select all visible
+                            setSelectedGames(s => [...new Set([...s, ...visibleIds])])
+                          }
+                        }} style={{
+                          fontSize: '0.62rem', padding: '0.15rem 0.6rem',
+                          background: 'none', border: '1px solid #00ff8822',
+                          borderRadius: '4px', color: '#00ff8888', cursor: 'pointer',
+                        }}>
+                          ✓ All
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {gamesBrowserOpen && (
+                    <>
                   <SportFilter games={allGames} value={sportTab} onChange={setSportTab} label="game" />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1.25rem' }}>
                     {filterBySport(allGames, sportTab).map(game => {
@@ -571,6 +647,14 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                       const isFinal = espnState === 'post' || game.espnStatus?.type?.completed
                       const isLive = espnState === 'in'
                       if (isFinal) return null  // hide completed games
+                      // Today filter: only show today's games (or always show lock/dog games)
+                      if (todayFilter === 'today' && !isAutoIncluded) {
+                        const gameDate = new Date(game.commence_time)
+                        const now = new Date()
+                        const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+                        const tomorrowMidnight = new Date(todayMidnight.getTime() + 86400000)
+                        if (gameDate < todayMidnight || gameDate >= tomorrowMidnight) return null
+                      }
                       return (
                         <div
                           key={game.id}
@@ -605,6 +689,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                       )
                     })}
                   </div>
+                    </>
+                  )}
 
                   {/* ── SLIP — all legs with team pickers, combined odds, lock button ── */}
                   {predictionsSlip.length > 0 && (
@@ -614,23 +700,29 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.85rem' }}>
                         {predictionsSlip.map((leg, i) => {
-                          const game = allGames.find(g => g.id === leg.gameId)
+                          // Pre-lock: leg is a raw game object (has .id). Post-lock: leg has .gameId
+                          const gid = leg.id || leg.gameId
+                          const game = allGames.find(g => g.id === gid) || leg
                           const bm = game?.bookmakers?.[0]
                           const ml = bm?.markets?.find(m => m.key === 'h2h')
-                          const isLockLeg = leg.isLock
-                          const isDogLeg = leg.isDog
+                          const isLockLeg = gid === lockGameId
+                          const isDogLeg = gid === dogGameId && !isLockLeg
                           const isAutoLeg = isLockLeg || isDogLeg
-                          const chosenTeam = leg.team
-                          const chosenOdds = leg.odds
+                          // Pre-lock: team comes from selectedTeams; post-lock: from leg.team
+                          const chosenTeam = leg.team || selectedTeams[gid]
+                          const chosenOdds = leg.odds || selectedOdds[gid]
+                          const awayName = leg.away_team || leg.away
+                          const homeName = leg.home_team || leg.home
+                          const sportName = leg.sportLabel || leg.sport
                           return (
-                            <div key={leg.gameId} style={{ background: '#111', border: `1px solid ${isLockLeg ? '#00ff8833' : isDogLeg ? '#ff994433' : '#222'}`, borderRadius: '8px', overflow: 'hidden' }}>
+                            <div key={gid || i} style={{ background: '#111', border: `1px solid ${isLockLeg ? '#00ff8833' : isDogLeg ? '#ff994433' : '#222'}`, borderRadius: '8px', overflow: 'hidden' }}>
                               <div style={{ padding: '0.6rem 0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
                                   <div style={{ fontSize: '0.6rem', color: isLockLeg ? '#00ff88' : isDogLeg ? '#ff9944' : '#555', marginBottom: '0.1rem' }}>
-                                    {isLockLeg ? '🔒 LOCK · ' : isDogLeg ? '🐕 DOG · ' : `LEG ${i + 1} · `}{leg.sport}
+                                    {isLockLeg ? '🔒 LOCK · ' : isDogLeg ? '🐕 DOG · ' : `LEG ${i + 1} · `}{sportName}
                                   </div>
                                   <div style={{ fontWeight: 'bold', fontSize: '0.82rem' }}>
-                                    {leg.away} <span style={{ color: '#333' }}>@</span> {leg.home}
+                                    {awayName} <span style={{ color: '#333' }}>@</span> {homeName}
                                   </div>
                                 </div>
                                 {chosenTeam && (
@@ -647,7 +739,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                                     const isChosen = chosenTeam === o.name
                                     return (
                                       <button key={o.name}
-                                        onClick={() => { setSelectedTeams(t => ({ ...t, [leg.gameId]: o.name })); setSelectedOdds(t => ({ ...t, [leg.gameId]: odds })) }}
+                                        onClick={() => { setSelectedTeams(t => ({ ...t, [gid]: o.name })); setSelectedOdds(t => ({ ...t, [gid]: odds })) }}
                                         style={{
                                           flex: 1, padding: '0.55rem 0.4rem', border: 'none',
                                           background: isChosen ? '#0a2a1a' : '#141414',
@@ -673,7 +765,11 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                       {/* Combined odds */}
                       {(() => {
                         const slipOdds = calcSlipOdds(predictionsSlip)
-                        const allPicked = predictionsSlip.every(l => l.team)
+                        const allPicked = predictionsSlip.every(l => {
+                          const gid = l.id || l.gameId
+                          const isAuto = gid === lockGameId || gid === dogGameId
+                          return isAuto || l.team || selectedTeams[gid]
+                        })
                         return slipOdds ? (
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0', borderTop: '1px solid #1a2a1a', marginBottom: '0.75rem' }}>
                             <div>
@@ -688,16 +784,19 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                         ) : null
                       })()}
                       <button
-                        disabled={predictionsSlip.length < 2 || !predictionsSlip.every(l => l.team)}
+                        disabled={predictionsSlip.length < 2 || !predictionsSlip.every(l => { const gid = l.id || l.gameId; return gid === lockGameId || gid === dogGameId || l.team || selectedTeams[gid] })}
                         onClick={lockPredictions}
-                        style={{
-                          width: '100%', padding: '0.85rem', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.9rem', border: 'none',
-                          background: predictionsSlip.length >= 2 && predictionsSlip.every(l => l.team) ? '#00ff88' : '#1a2a1a',
-                          color: predictionsSlip.length >= 2 && predictionsSlip.every(l => l.team) ? '#000' : '#335533',
-                          cursor: predictionsSlip.length >= 2 && predictionsSlip.every(l => l.team) ? 'pointer' : 'not-allowed',
-                          transition: 'all 0.15s',
-                        }}>
-                        {predictionsSlip.length < 2 ? 'Add at least 2 games' : !predictionsSlip.every(l => l.team) ? 'Pick a team for each leg' : `Lock Parlay (${predictionsSlip.length} legs) 🔒`}
+                        style={(() => {
+                          const ready = predictionsSlip.length >= 2 && predictionsSlip.every(l => { const gid = l.id || l.gameId; return gid === lockGameId || gid === dogGameId || l.team || selectedTeams[gid] })
+                          return {
+                            width: '100%', padding: '0.85rem', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.9rem', border: 'none',
+                            background: ready ? '#00ff88' : '#1a2a1a',
+                            color: ready ? '#000' : '#335533',
+                            cursor: ready ? 'pointer' : 'not-allowed',
+                            transition: 'all 0.15s',
+                          }
+                        })()}>
+                        {predictionsSlip.length < 2 ? 'Add at least 2 games' : !predictionsSlip.every(l => { const gid = l.id || l.gameId; return gid === lockGameId || gid === dogGameId || l.team || selectedTeams[gid] }) ? 'Pick a team for each leg' : `Lock Parlay (${predictionsSlip.length} legs) 🔒`}
                       </button>
                     </div>
                   )}
@@ -943,19 +1042,43 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
             const sportsInGames = new Set(allGames.map(g => g.sportLabel))
             const unpicked = Object.keys(F5_LABELS).filter(s => sportsInGames.has(s) && !todayF5[s])
             if (!unpicked.length || f5Locked) return null
+            const now = new Date()
+            const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+            const tomorrowMidnight = new Date(todayMidnight.getTime() + 86400000)
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {/* Date filter tabs */}
+                <div style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.25rem' }}>
+                  {['today', 'future'].map(f => (
+                    <button key={f} onClick={() => setF5DateFilter(f)} style={{
+                      fontSize: '0.62rem', padding: '0.15rem 0.6rem',
+                      background: f5DateFilter === f ? '#1a1a1a' : 'none',
+                      border: `1px solid ${f5DateFilter === f ? '#333' : '#1a1a1a'}`,
+                      borderRadius: '4px', color: f5DateFilter === f ? '#aaa' : '#444',
+                      cursor: 'pointer', fontWeight: f5DateFilter === f ? 'bold' : 'normal',
+                    }}>
+                      {f === 'today' ? '📅 Today' : '🌅 Future'}
+                    </button>
+                  ))}
+                </div>
                 {unpicked.map(sport => {
                   const meta = F5_LABELS[sport]
-                  // Only show games that haven't started yet
+                  // Filter by date tab and game state
                   const sportGames = allGames.filter(g => {
                     if (g.sportLabel !== sport) return false
                     const state = g.espnStatus?.type?.state
                     const completed = g.espnStatus?.type?.completed
                     if (completed || state === 'post' || state === 'in') return false
+                    const gd = new Date(g.commence_time)
+                    if (f5DateFilter === 'today') return gd >= todayMidnight && gd < tomorrowMidnight
+                    if (f5DateFilter === 'future') return gd >= tomorrowMidnight
                     return true
                   })
-                  if (!sportGames.length) return null
+                  if (!sportGames.length) return (
+                    <div key={sport} style={{ fontSize: '0.7rem', color: '#333', padding: '0.5rem 0' }}>
+                      {meta.emoji} No {sport} games {f5DateFilter === 'today' ? 'today' : 'upcoming'}
+                    </div>
+                  )
                   return (
                     <div key={sport}>
                       <div style={{ fontSize: '0.68rem', color: meta.color, fontWeight: 'bold', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>
@@ -1017,14 +1140,18 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
       {f5Modal && (() => {
         const { game, sport, linesData } = f5Modal
         const meta = F5_LABELS[sport]
-        const bm = linesData?.bookmakers?.[0]
-        const mlKey = sport === 'MLB' ? 'h2h_first_5_innings' : 'h2h_h1'
-        const spKey = sport === 'MLB' ? 'spreads_first_5_innings' : 'spreads_h1'
-        const mlMarket = bm?.markets?.find(m => m.key === mlKey)
-        const spMarket = bm?.markets?.find(m => m.key === spKey)
+        // linesData is now { h2h, runline, total } from /dk-f5 (scraper format)
         const options = []
-        mlMarket?.outcomes?.forEach(o => options.push({ team: o.name, odds: ensureAmerican(o.price), marketType: 'moneyline', point: null, label: 'Moneyline' }))
-        spMarket?.outcomes?.forEach(o => options.push({ team: o.name, odds: ensureAmerican(o.price), marketType: 'spread', point: o.point, label: `Spread ${o.point > 0 ? '+' : ''}${o.point}` }))
+        if (linesData?.h2h) {
+          const { homeName, awayName, homeOdds, awayOdds } = linesData.h2h
+          options.push({ team: awayName || game.away_team, odds: awayOdds, marketType: 'moneyline', point: null, label: 'Moneyline' })
+          options.push({ team: homeName || game.home_team, odds: homeOdds, marketType: 'moneyline', point: null, label: 'Moneyline' })
+        }
+        if (linesData?.runline) {
+          const { homeName, awayName, homeOdds, awayOdds, homePoint, awayPoint } = linesData.runline
+          options.push({ team: awayName || game.away_team, odds: awayOdds, marketType: 'spread', point: awayPoint, label: `Run Line ${awayPoint > 0 ? '+' : ''}${awayPoint}` })
+          options.push({ team: homeName || game.home_team, odds: homeOdds, marketType: 'spread', point: homePoint, label: `Run Line ${homePoint > 0 ? '+' : ''}${homePoint}` })
+        }
         const noLines = options.length === 0
         const sel = f5SelIdx !== null ? options[f5SelIdx] : null
         return (

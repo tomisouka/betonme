@@ -10,6 +10,8 @@ import PropsTab from './tabs/PropsTab.jsx'
 import MediaTab from './tabs/MediaTab.jsx'
 import LiveTab from './tabs/LiveTab.jsx'
 import WinsTab from './tabs/WinsTab.jsx'
+import FavsTab from './tabs/FavsTab.jsx'
+import HateWatchTab from './tabs/HateWatchTab.jsx'
 
 const API_KEY = '9556a1b199876f898bdc45023a854ed2'
 
@@ -215,6 +217,14 @@ export default function App() {
     setTodayLock(s.picks?.[getTodayKey()] || null)
   }
 
+
+  // Quick-nav from Favs/Hate tab buttons
+  useEffect(() => {
+    const handler = (e) => setTab(e.detail.tab)
+    window.addEventListener('betonme:quicknav', handler)
+    return () => window.removeEventListener('betonme:quicknav', handler)
+  }, [])
+
   async function refreshTodayDog() {
     try {
       const s = await loadDogState()
@@ -281,7 +291,7 @@ export default function App() {
 
       // ── Coin grant — 1 per day max, no back-claiming missed days ──────────
       const day = new Date().getDay() // 0=Sun,1=Mon,...,6=Sat
-      const earnedToday = day === 6 ? 2 : 1  // Saturday = 2, every other day = 1
+      const earnedToday = 1  // always 1 coin per day
       if (!alreadyClaimed) {
         s.coins = (s.coins || 0) + earnedToday
         s.lastCoinDate = todayKey
@@ -327,6 +337,13 @@ export default function App() {
     refreshTodayLock()
     refreshTodayDog()
 
+    // Auto-refresh odds every 5 minutes — hits scrape-now (DK + results) then reloads ESPN
+    const interval = setInterval(async () => {
+      try { await fetch(`${SERVER}/scrape-now`, { method: 'POST' }) } catch {}
+      setLastScrape(new Date())
+      await fetchOdds(true)
+    }, 5 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [])
 
   async function devAction(action, value) {
@@ -405,6 +422,8 @@ export default function App() {
     ['odds',    '🎮 Games'],
     ['lock',    '🔒 Lock'],
     ['dogs',    '🐕 Dogs'],
+    ['favs',    '⭐ Favs'],
+    ['hate',    '😤 Hate'],
     ['pastlay', '📋 Past Lays'],
     ['parlays', '🎰 Parlays'],
     ['wins',    '🏆 Wins'],
@@ -569,6 +588,8 @@ export default function App() {
       {tab === 'wins'    && <WinsTab />}
       {tab === 'parlays' && <ParlaysTab allGames={allGames} loading={loading} todayLock={todayLock} todayDog={todayDog} onLockChange={refreshTodayLock} />}
       {tab === 'props'   && <PropsTab todayLock={todayLock} allGames={allGames} />}
+      {tab === 'favs'    && <FavsTab allGames={allGames} todayLock={todayLock} todayDog={todayDog} onLockChange={refreshTodayLock} onDogChange={refreshTodayDog} />}
+      {tab === 'hate'    && <HateWatchTab allGames={allGames} todayLock={todayLock} todayDog={todayDog} onLockChange={refreshTodayLock} onDogChange={refreshTodayDog} />}
       {tab === 'media'   && <MediaTab />}
       {tab === 'live'    && <LiveTab todayLock={todayLock} todayDog={todayDog} />}
 
@@ -625,6 +646,7 @@ export default function App() {
                   { id: 'TICKET-009', tab: 'Games', title: 'Game card 7-day team records', desc: 'No historical context on cards. Needs historical results API (SportsDataIO, ActionNetwork, or paid odds-api tier).' },
                   { id: 'TICKET-010', tab: 'Dogs', title: 'Dog tab 7-day underdog record', desc: 'No straight-up win rate shown per underdog. Same API dependency as TICKET-009.' },
                   { id: 'TICKET-011', tab: 'Props', title: 'Player team color split unreliable', desc: 'Heuristic name split breaks on some matchups. Needs real roster API to map player → team.' },
+                  { id: 'TICKET-016', tab: 'Games · Parlays', title: 'F5 / First-Half lines scope', desc: 'F5 (First 5 Innings) button currently only appears on the Games tab. Research DraftKings and FanDuel to determine: (1) which sports offer halftime/F5 lines (MLB F5, NBA H1, NFL H1), (2) whether these should be pickable as standalone slip legs or only as modifiers on a moneyline pick, (3) how DK/FD surface them in their UI — then implement consistently across Games and Parlays tabs.' },
                 ]
               },
               {

@@ -1,7 +1,7 @@
 {
   "app": {
     "coins": 0,
-    "lastCoinDate": "2026-03-26",
+    "lastCoinDate": "2026-03-27",
     "picks": {
       "2026-03-04": {
         "gameId": "5e27bbc527b9df8725ac9fcf03174b8c",
@@ -127,6 +127,20 @@
         "commenceTime": "2026-03-26T20:10:00Z",
         "stake": 3,
         "profit": 3.54,
+        "result": "L"
+      },
+      "2026-03-27": {
+        "gameId": "401814703",
+        "team": "HOU Astros",
+        "odds": 129,
+        "market": "spreads",
+        "point": -1.5,
+        "home": "Houston Astros",
+        "away": "Los Angeles Angels",
+        "sport": "MLB",
+        "commenceTime": "2026-03-28T00:10Z",
+        "stake": 1,
+        "profit": 1.29,
         "result": null
       }
     },
@@ -138,6 +152,7 @@
       "W",
       "W",
       "W",
+      "L",
       "L"
     ],
     "streakDates": [
@@ -148,7 +163,8 @@
       "2026-03-09",
       "2026-03-10",
       "2026-03-11",
-      "2026-03-12"
+      "2026-03-12",
+      "2026-03-26"
     ],
     "loginDates": [
       "2026-03-04",
@@ -159,7 +175,8 @@
       "2026-03-10",
       "2026-03-11",
       "2026-03-12",
-      "2026-03-26"
+      "2026-03-26",
+      "2026-03-27"
     ]
   },
   "predictions": {
@@ -683,7 +700,7 @@
           "odds": 118,
           "isLock": true,
           "isDog": false,
-          "result": null
+          "result": "L"
         },
         {
           "gameId": "5c8789e78ef558dfaf6b887deacec21c",
@@ -694,7 +711,7 @@
           "odds": 159,
           "isLock": false,
           "isDog": true,
-          "result": null
+          "result": "W"
         },
         {
           "gameId": "7dc467f8d7fca948c9e9ca103825d968",
@@ -705,7 +722,7 @@
           "odds": -122,
           "isLock": false,
           "isDog": false,
-          "result": null
+          "result": "W"
         },
         {
           "gameId": "afb66747c7f054c593a2674b7b304b4e",
@@ -716,7 +733,7 @@
           "odds": -186,
           "isLock": false,
           "isDog": false,
-          "result": null
+          "result": "W"
         },
         {
           "gameId": "4de2590a17bdf6f8b4a906f4c63162c0",
@@ -727,7 +744,7 @@
           "odds": -230,
           "isLock": false,
           "isDog": false,
-          "result": null
+          "result": "L"
         },
         {
           "gameId": "c52d19ac74eb2f89bfb7bc284970d655",
@@ -738,7 +755,7 @@
           "odds": -143,
           "isLock": false,
           "isDog": false,
-          "result": null
+          "result": "W"
         },
         {
           "gameId": "3954fca33e068341fbcf893afefbc2e6",
@@ -749,7 +766,7 @@
           "odds": 134,
           "isLock": false,
           "isDog": false,
-          "result": null
+          "result": "L"
         },
         {
           "gameId": "ded68cb95818777b5dd185d53a79acff",
@@ -760,7 +777,7 @@
           "odds": 113,
           "isLock": false,
           "isDog": false,
-          "result": null
+          "result": "L"
         },
         {
           "gameId": "ac57f6f9aed299cfeb9551b910fa7248",
@@ -771,7 +788,7 @@
           "odds": 129,
           "isLock": false,
           "isDog": false,
-          "result": null
+          "result": "L"
         },
         {
           "gameId": "cfdeb0596b2f626db8901c8a4dc5ea7c",
@@ -782,7 +799,7 @@
           "odds": -126,
           "isLock": false,
           "isDog": false,
-          "result": null
+          "result": "L"
         },
         {
           "gameId": "a6a0dde319f89b70eb1cf1e004b81fe6",
@@ -793,7 +810,7 @@
           "odds": -250,
           "isLock": false,
           "isDog": false,
-          "result": null
+          "result": "W"
         },
         {
           "gameId": "f827191f31f31298e4dd836d72eabdbc",
@@ -863,6 +880,209 @@
         }
       ],
       "lockedAt": 1774532850158
+    },
+    "2026-03-27": {
+      "legs": [
+        {
+          "gameId": "401814703",
+          "home": "Houston Astros",
+          "away": "Los Angeles Angels",
+          "sport": "MLB",
+          "team": "HOU Astros",
+          "odds": 129,
+          "isLock": true,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401810929",
+          "home": "Portland Trail Blazers",
+          "away": "Dallas Mavericks",
+          "sport": "NBA",
+          "team": "DAL Mavericks",
+          "odds": 360,
+          "isLock": false,
+          "isDog": true,
+          "result": null
+        },
+        {
+          "gameId": "401814721",
+          "home": "San Francisco Giants",
+          "away": "New York Yankees",
+          "sport": "MLB",
+          "team": "SF Giants",
+          "odds": 113,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401814688",
+          "home": "Toronto Blue Jays",
+          "away": "Athletics",
+          "sport": "MLB",
+          "team": "TOR Blue Jays",
+          "odds": -181,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401814690",
+          "home": "Miami Marlins",
+          "away": "Colorado Rockies",
+          "sport": "MLB",
+          "team": "COL Rockies",
+          "odds": 163,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401814691",
+          "home": "Atlanta Braves",
+          "away": "Kansas City Royals",
+          "sport": "MLB",
+          "team": "ATL Braves",
+          "odds": -143,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401814705",
+          "home": "Seattle Mariners",
+          "away": "Cleveland Guardians",
+          "sport": "MLB",
+          "team": "CLE Guardians",
+          "odds": 141,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401814706",
+          "home": "San Diego Padres",
+          "away": "Detroit Tigers",
+          "sport": "MLB",
+          "team": "SD Padres",
+          "odds": -131,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401814704",
+          "home": "Los Angeles Dodgers",
+          "away": "Arizona Diamondbacks",
+          "sport": "MLB",
+          "team": "ARI Diamondbacks",
+          "odds": 209,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401810921",
+          "home": "Indiana Pacers",
+          "away": "LA Clippers",
+          "sport": "NBA",
+          "team": "LA Clippers",
+          "odds": -380,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401810922",
+          "home": "Boston Celtics",
+          "away": "Atlanta Hawks",
+          "sport": "NBA",
+          "team": "BOS Celtics",
+          "odds": -205,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401810923",
+          "home": "Cleveland Cavaliers",
+          "away": "Miami Heat",
+          "sport": "NBA",
+          "team": "CLE Cavaliers",
+          "odds": -218,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401810924",
+          "home": "Memphis Grizzlies",
+          "away": "Houston Rockets",
+          "sport": "NBA",
+          "team": "HOU Rockets",
+          "odds": -900,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401810925",
+          "home": "Oklahoma City Thunder",
+          "away": "Chicago Bulls",
+          "sport": "NBA",
+          "team": "OKC Thunder",
+          "odds": -2100,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401810926",
+          "home": "Toronto Raptors",
+          "away": "New Orleans Pelicans",
+          "sport": "NBA",
+          "team": "NO Pelicans",
+          "odds": 270,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401810927",
+          "home": "Denver Nuggets",
+          "away": "Utah Jazz",
+          "sport": "NBA",
+          "team": "DEN Nuggets",
+          "odds": -2100,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401810928",
+          "home": "Golden State Warriors",
+          "away": "Washington Wizards",
+          "sport": "NBA",
+          "team": "GS Warriors",
+          "odds": -950,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401810930",
+          "home": "Los Angeles Lakers",
+          "away": "Brooklyn Nets",
+          "sport": "NBA",
+          "team": "LA Lakers",
+          "odds": -1450,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        }
+      ],
+      "lockedAt": 1774639801153
     }
   },
   "lay": {
@@ -1149,7 +1369,7 @@
           "odds": 118,
           "isLock": true,
           "isDog": false,
-          "result": null
+          "result": "L"
         },
         {
           "gameId": "5c8789e78ef558dfaf6b887deacec21c",
@@ -1160,7 +1380,7 @@
           "odds": 159,
           "isLock": false,
           "isDog": true,
-          "result": null
+          "result": "W"
         },
         {
           "gameId": "7dc467f8d7fca948c9e9ca103825d968",
@@ -1171,7 +1391,7 @@
           "odds": -122,
           "isLock": false,
           "isDog": false,
-          "result": null
+          "result": "W"
         },
         {
           "gameId": "afb66747c7f054c593a2674b7b304b4e",
@@ -1182,10 +1402,62 @@
           "odds": -186,
           "isLock": false,
           "isDog": false,
+          "result": "W"
+        }
+      ],
+      "lockedAt": 1774532910747,
+      "overallResult": "W",
+      "hitCount": 3,
+      "totalCount": 4
+    },
+    "2026-03-27": {
+      "legs": [
+        {
+          "gameId": "401814703",
+          "home": "Houston Astros",
+          "away": "Los Angeles Angels",
+          "sport": "MLB",
+          "team": "HOU Astros",
+          "odds": 129,
+          "isLock": true,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401810929",
+          "home": "Portland Trail Blazers",
+          "away": "Dallas Mavericks",
+          "sport": "NBA",
+          "team": "DAL Mavericks",
+          "odds": 360,
+          "isLock": false,
+          "isDog": true,
+          "result": null
+        },
+        {
+          "gameId": "401814688",
+          "home": "Toronto Blue Jays",
+          "away": "Athletics",
+          "sport": "MLB",
+          "team": "TOR Blue Jays",
+          "odds": -181,
+          "isLock": false,
+          "isDog": false,
+          "result": null
+        },
+        {
+          "gameId": "401814704",
+          "home": "Los Angeles Dodgers",
+          "away": "Arizona Diamondbacks",
+          "sport": "MLB",
+          "team": "ARI Diamondbacks",
+          "odds": 209,
+          "isLock": false,
+          "isDog": false,
           "result": null
         }
       ],
-      "lockedAt": 1774532910747
+      "lockedAt": 1774639855761
     }
   },
   "dog": {
@@ -1260,25 +1532,27 @@
         "away": "Cleveland Guardians",
         "sport": "MLB",
         "gameId": "5c8789e78ef558dfaf6b887deacec21c",
+        "result": "W"
+      },
+      "2026-03-27": {
+        "team": "DAL Mavericks",
+        "odds": 360,
+        "home": "Portland Trail Blazers",
+        "away": "Dallas Mavericks",
+        "sport": "NBA",
+        "gameId": "401810929",
         "result": null
       }
     },
     "dogStreak": {
-      "type": "L",
+      "type": "W",
       "count": 1,
-      "since": "2026-03-10"
+      "since": "2026-03-26"
     }
   },
   "propPick": {
     "2026-03-04": {
-      "player": "Jalen Brunson",
-      "label": "Points O/U",
-      "line": 24.5,
-      "side": "over",
-      "odds": -108,
-      "sport": "NBA",
-      "result": null,
-      "New York Knicks": {
+      "New York Knicks||player_points": {
         "player": "Jalen Brunson",
         "marketKey": "player_points",
         "label": "Points O/U",
@@ -1291,7 +1565,7 @@
       }
     },
     "2026-03-07": {
-      "Detroit Pistons": {
+      "Detroit Pistons||player_points": {
         "player": "Michael Porter Jr",
         "marketKey": "player_points",
         "label": "Points O/U",
@@ -1304,7 +1578,7 @@
       }
     },
     "2026-03-08": {
-      "San Antonio Spurs": {
+      "San Antonio Spurs||player_points": {
         "player": "Alperen Sengun",
         "marketKey": "player_points",
         "label": "Points O/U",
@@ -1317,7 +1591,7 @@
       }
     },
     "2026-03-09": {
-      "Oklahoma City Thunder": {
+      "Oklahoma City Thunder||player_points": {
         "player": "Jamal Murray",
         "marketKey": "player_points",
         "label": "Points O/U",
@@ -1330,7 +1604,7 @@
       }
     },
     "2026-03-10": {
-      "Milwaukee Bucks": {
+      "Milwaukee Bucks||player_points": {
         "player": "Devin Booker",
         "marketKey": "player_points",
         "label": "Points O/U",
@@ -1343,7 +1617,7 @@
       }
     },
     "2026-03-26": {
-      "Houston Astros": {
+      "Houston Astros||pitcher_strikeouts": {
         "player": "Hunter Brown",
         "marketKey": "pitcher_strikeouts",
         "label": "Strikeouts O/U",
@@ -1353,16 +1627,27 @@
         "sport": "MLB",
         "team": "Houston Astros",
         "result": null
-      },
-      "Los Angeles Angels": {
-        "player": "Jose Soriano",
-        "marketKey": "pitcher_strikeouts",
-        "label": "Strikeouts O/U",
-        "line": 4.5,
+      }
+    },
+    "2026-03-27": {
+      "Mike Burrows||15221": {
+        "player": "Mike Burrows",
+        "marketKey": "15221",
+        "label": "Strikeouts Thrown O/U",
+        "line": 5.5,
         "side": "over",
-        "odds": 109,
+        "odds": -128,
         "sport": "MLB",
-        "team": "Los Angeles Angels",
+        "result": null
+      },
+      "Yusei Kikuchi||15221": {
+        "player": "Yusei Kikuchi",
+        "marketKey": "15221",
+        "label": "Strikeouts Thrown O/U",
+        "line": 4.5,
+        "side": "under",
+        "odds": -118,
+        "sport": "MLB",
         "result": null
       }
     }
@@ -1413,10 +1698,47 @@
     "2026-03-26": {
       "name": "Over",
       "point": 8,
-      "odds": -115
+      "odds": -115,
+      "result": "L"
+    },
+    "2026-03-27": {
+      "name": "Under",
+      "point": 8.5,
+      "odds": -105
     }
   },
   "f5": {
-    "2026-03-26": {}
-  }
+    "2026-03-26": {
+      "NBA": {
+        "noGuess": true,
+        "sport": "NBA",
+        "result": null,
+        "date": "2026-03-26"
+      },
+      "MLB": {
+        "noGuess": true,
+        "sport": "MLB",
+        "result": null,
+        "date": "2026-03-26"
+      },
+      "_locked": true
+    },
+    "2026-03-27": {
+      "MLB": {
+        "team": "ATL Braves",
+        "odds": 105,
+        "marketType": "spread",
+        "point": -0.5,
+        "label": "Run Line -0.5",
+        "sport": "MLB",
+        "gameId": "401814691",
+        "home": "Atlanta Braves",
+        "away": "Kansas City Royals",
+        "date": "2026-03-27",
+        "result": null
+      },
+      "_locked": true
+    }
+  },
+  "_version": 1
 }

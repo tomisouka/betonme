@@ -274,6 +274,195 @@
           "underOdds": -102
         },
         "ts": 1774590682194
+      },
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T20:35:00.0000000Z",
+        "ml": {
+          "home": 109,
+          "away": -131
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -163,
+          "awayOdds": 135
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -102,
+          "underOdds": -118
+        },
+        "ts": 1774606902501
+      },
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T20:35:00.0000000Z",
+        "ml": {
+          "home": 109,
+          "away": -131
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -163,
+          "awayOdds": 135
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774610503755
+      },
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T20:35:00.0000000Z",
+        "ml": {
+          "home": 109,
+          "away": -131
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -156,
+          "awayOdds": 129
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774617706085
+      },
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T20:35:00.0000000Z",
+        "ml": {
+          "home": 113,
+          "away": -136
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -156,
+          "awayOdds": 129
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774621307240
+      },
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T20:35:00.0000000Z",
+        "ml": {
+          "home": 113,
+          "away": -136
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -156,
+          "awayOdds": 129
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -107,
+          "underOdds": -113
+        },
+        "ts": 1774624908192
+      },
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T20:35:00.0000000Z",
+        "ml": {
+          "home": 109,
+          "away": -131
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -156,
+          "awayOdds": 129
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -102,
+          "underOdds": -118
+        },
+        "ts": 1774626708739
+      },
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T20:35:00.0000000Z",
+        "ml": {
+          "home": 113,
+          "away": -136
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -149,
+          "awayOdds": 123
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -104,
+          "underOdds": -116
+        },
+        "ts": 1774631219214
+      },
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T20:35:12.0000000Z",
+        "ml": {
+          "home": -118,
+          "away": -110
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -202,
+          "awayOdds": 153
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -121,
+          "underOdds": -108
+        },
+        "ts": 1774644131852
+      },
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T20:35:12.0000000Z",
+        "ml": {
+          "home": -102,
+          "away": -127
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -174,
+          "awayOdds": 133
+        },
+        "total": {
+          "point": 6.5,
+          "overOdds": -133,
+          "underOdds": 102
+        },
+        "ts": 1774644714346
       }
     ],
     "Athletics@Jays_2026-03-27": [
@@ -297,6 +486,111 @@
           "underOdds": -102
         },
         "ts": 1774588865502
+      },
+      {
+        "home": "TOR Blue Jays",
+        "away": "Athletics",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:07:00.0000000Z",
+        "ml": {
+          "home": -171,
+          "away": 141
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 119,
+          "awayOdds": -143
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774597899739
+      },
+      {
+        "home": "TOR Blue Jays",
+        "away": "Athletics",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:07:00.0000000Z",
+        "ml": {
+          "home": -175,
+          "away": 144
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 119,
+          "awayOdds": -143
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774599700203
+      },
+      {
+        "home": "TOR Blue Jays",
+        "away": "Athletics",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:07:00.0000000Z",
+        "ml": {
+          "home": -181,
+          "away": 149
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 113,
+          "awayOdds": -136
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774615905557
+      },
+      {
+        "home": "TOR Blue Jays",
+        "away": "Athletics",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:07:00.0000000Z",
+        "ml": {
+          "home": -175,
+          "away": 144
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 113,
+          "awayOdds": -136
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -120,
+          "underOdds": 100
+        },
+        "ts": 1774617706087
+      },
+      {
+        "home": "TOR Blue Jays",
+        "away": "Athletics",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:07:00.0000000Z",
+        "ml": {
+          "home": -181,
+          "away": 149
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 113,
+          "awayOdds": -136
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774624908193
       }
     ],
     "Rockies@Marlins_2026-03-27": [
@@ -320,6 +614,90 @@
           "underOdds": -118
         },
         "ts": 1774588865504
+      },
+      {
+        "home": "MIA Marlins",
+        "away": "COL Rockies",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:10:00.0000000Z",
+        "ml": {
+          "home": -199,
+          "away": 163
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 113,
+          "awayOdds": -136
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -102,
+          "underOdds": -118
+        },
+        "ts": 1774621307243
+      },
+      {
+        "home": "MIA Marlins",
+        "away": "COL Rockies",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:10:00.0000000Z",
+        "ml": {
+          "home": -194,
+          "away": 159
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 113,
+          "awayOdds": -136
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -102,
+          "underOdds": -118
+        },
+        "ts": 1774626708741
+      },
+      {
+        "home": "MIA Marlins",
+        "away": "COL Rockies",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:10:00.0000000Z",
+        "ml": {
+          "home": -199,
+          "away": 163
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 109,
+          "awayOdds": -131
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774632596086
+      },
+      {
+        "home": "MIA Marlins",
+        "away": "COL Rockies",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:10:00.0000000Z",
+        "ml": {
+          "home": -199,
+          "away": 163
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 109,
+          "awayOdds": -131
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -104,
+          "underOdds": -116
+        },
+        "ts": 1774636926673
       }
     ],
     "Royals@Braves_2026-03-27": [
@@ -343,6 +721,111 @@
           "underOdds": -120
         },
         "ts": 1774588865506
+      },
+      {
+        "home": "ATL Braves",
+        "away": "KC Royals",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:15:00.0000000Z",
+        "ml": {
+          "home": -149,
+          "away": 123
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 149,
+          "awayOdds": -181
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": 100,
+          "underOdds": -120
+        },
+        "ts": 1774628509201
+      },
+      {
+        "home": "ATL Braves",
+        "away": "KC Royals",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:15:00.0000000Z",
+        "ml": {
+          "home": -143,
+          "away": 119
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 153,
+          "awayOdds": -186
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": 100,
+          "underOdds": -120
+        },
+        "ts": 1774632596088
+      },
+      {
+        "home": "ATL Braves",
+        "away": "KC Royals",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:15:00.0000000Z",
+        "ml": {
+          "home": -143,
+          "away": 119
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 153,
+          "awayOdds": -186
+        },
+        "total": {
+          "point": 7,
+          "overOdds": -120,
+          "underOdds": -101
+        },
+        "ts": 1774636029146
+      },
+      {
+        "home": "ATL Braves",
+        "away": "KC Royals",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:15:00.0000000Z",
+        "ml": {
+          "home": -143,
+          "away": 119
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 153,
+          "awayOdds": -186
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": 100,
+          "underOdds": -120
+        },
+        "ts": 1774637210854
+      },
+      {
+        "home": "ATL Braves",
+        "away": "KC Royals",
+        "sport": "MLB",
+        "commence_time": "2026-03-27T23:15:00.0000000Z",
+        "ml": {
+          "home": -149,
+          "away": 123
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 149,
+          "awayOdds": -181
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -112,
+          "underOdds": -108
+        },
+        "ts": 1774641113266
       }
     ],
     "Angels@Astros_2026-03-28": [
@@ -366,6 +849,132 @@
           "underOdds": -105
         },
         "ts": 1774588865509
+      },
+      {
+        "home": "HOU Astros",
+        "away": "LA Angels",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T00:15:00.0000000Z",
+        "ml": {
+          "home": -168,
+          "away": 139
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 129,
+          "awayOdds": -156
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774621307246
+      },
+      {
+        "home": "HOU Astros",
+        "away": "LA Angels",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T00:15:00.0000000Z",
+        "ml": {
+          "home": -163,
+          "away": 135
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 129,
+          "awayOdds": -156
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774623107706
+      },
+      {
+        "home": "HOU Astros",
+        "away": "LA Angels",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T00:15:00.0000000Z",
+        "ml": {
+          "home": -168,
+          "away": 139
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 123,
+          "awayOdds": -149
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774640524203
+      },
+      {
+        "home": "HOU Astros",
+        "away": "LA Angels",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T00:15:00.0000000Z",
+        "ml": {
+          "home": -171,
+          "away": 141
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 123,
+          "awayOdds": -149
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774641113267
+      },
+      {
+        "home": "HOU Astros",
+        "away": "LA Angels",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T00:15:00.0000000Z",
+        "ml": {
+          "home": -169,
+          "away": 140
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 117,
+          "awayOdds": -141
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774642328132
+      },
+      {
+        "home": "HOU Astros",
+        "away": "LA Angels",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:10:00.0000000Z",
+        "ml": {
+          "home": -149,
+          "away": 123
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 141,
+          "awayOdds": -171
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774668526598
       }
     ],
     "Tigers@Padres_2026-03-28": [
@@ -389,6 +998,510 @@
           "underOdds": -118
         },
         "ts": 1774588865512
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:00.0000000Z",
+        "ml": {
+          "home": -131,
+          "away": 109
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 169,
+          "awayOdds": -207
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774632110311
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:00.0000000Z",
+        "ml": {
+          "home": -126,
+          "away": 104
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -202,
+          "awayOdds": 166
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774632596091
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:00.0000000Z",
+        "ml": {
+          "home": -126,
+          "away": 104
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -206,
+          "awayOdds": 169
+        },
+        "total": {
+          "point": 7,
+          "overOdds": -120,
+          "underOdds": 100
+        },
+        "ts": 1774636196440
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:00.0000000Z",
+        "ml": {
+          "home": -131,
+          "away": 109
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 169,
+          "awayOdds": -207
+        },
+        "total": {
+          "point": 7,
+          "overOdds": -120,
+          "underOdds": 100
+        },
+        "ts": 1774636926677
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:00.0000000Z",
+        "ml": {
+          "home": -131,
+          "away": 109
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 169,
+          "awayOdds": -207
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774637210857
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:00.0000000Z",
+        "ml": {
+          "home": -131,
+          "away": 109
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -206,
+          "awayOdds": 168
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774640268640
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:00.0000000Z",
+        "ml": {
+          "home": -131,
+          "away": 109
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 169,
+          "awayOdds": -207
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774641113269
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:00.0000000Z",
+        "ml": {
+          "home": -136,
+          "away": 113
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 163,
+          "awayOdds": -199
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774644131859
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": -557,
+          "away": 362
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 165,
+          "awayOdds": -220
+        },
+        "total": {
+          "point": 4.5,
+          "overOdds": -148,
+          "underOdds": 114
+        },
+        "ts": 1774668526547
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": -650,
+          "away": 406
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 160,
+          "awayOdds": -213
+        },
+        "total": {
+          "point": 4.5,
+          "overOdds": -128,
+          "underOdds": -101
+        },
+        "ts": 1774668692093
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": -650,
+          "away": 405
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 164,
+          "awayOdds": -218
+        },
+        "total": {
+          "point": 4.5,
+          "overOdds": -127,
+          "underOdds": -102
+        },
+        "ts": 1774668708396
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": -564,
+          "away": 366
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 215,
+          "awayOdds": -294
+        },
+        "total": {
+          "point": 4.5,
+          "overOdds": -113,
+          "underOdds": -115
+        },
+        "ts": 1774668999044
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": -521,
+          "away": 344
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 328,
+          "awayOdds": -491
+        },
+        "total": {
+          "point": 3.5,
+          "overOdds": -128,
+          "underOdds": -102
+        },
+        "ts": 1774669105835
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": -409,
+          "away": 284
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 333,
+          "awayOdds": -499
+        },
+        "total": {
+          "point": 4.5,
+          "overOdds": -101,
+          "underOdds": -129
+        },
+        "ts": 1774669496303
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": -220,
+          "away": 165
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -488,
+          "awayOdds": 327
+        },
+        "total": {
+          "point": 4.5,
+          "overOdds": -178,
+          "underOdds": 136
+        },
+        "ts": 1774669727302
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": -106,
+          "away": -122
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -260,
+          "awayOdds": 192
+        },
+        "total": {
+          "point": 6.5,
+          "overOdds": -104,
+          "underOdds": -125
+        },
+        "ts": 1774670223227
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": 1000,
+          "away": -3700
+        },
+        "spread": {
+          "point": 3.5,
+          "homeOdds": -217,
+          "awayOdds": 163
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": 111,
+          "underOdds": -144
+        },
+        "ts": 1774670495858
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": 980,
+          "away": -3400
+        },
+        "spread": {
+          "point": 3.5,
+          "homeOdds": -263,
+          "awayOdds": 194
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": 129,
+          "underOdds": -169
+        },
+        "ts": 1774670600930
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": 610,
+          "away": -1060
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": 106,
+          "awayOdds": -138
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": 107,
+          "underOdds": -139
+        },
+        "ts": 1774670901430
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": 1600,
+          "away": -10000
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": 318,
+          "awayOdds": -472
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": 168,
+          "underOdds": -224
+        },
+        "ts": 1774671412121
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": 1700,
+          "away": -10000
+        },
+        "spread": {
+          "point": 3.5,
+          "homeOdds": -481,
+          "awayOdds": 323
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": 126,
+          "underOdds": -165
+        },
+        "ts": 1774671581343
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": 1640,
+          "away": -10000
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": 321,
+          "awayOdds": -477
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": 124,
+          "underOdds": -162
+        },
+        "ts": 1774671694477
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": 3400,
+          "away": null
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": 527,
+          "awayOdds": -950
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": 524,
+          "underOdds": -940
+        },
+        "ts": 1774671995463
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:40:43.0000000Z",
+        "ml": {
+          "home": 8700,
+          "away": null
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": 1100,
+          "awayOdds": -5300
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": 1100,
+          "underOdds": -5200
+        },
+        "ts": 1774672133855
       }
     ],
     "Guardians@Mariners_2026-03-28": [
@@ -412,6 +1525,300 @@
           "underOdds": -102
         },
         "ts": 1774588865515
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:45:00.0000000Z",
+        "ml": {
+          "home": -175,
+          "away": 144
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 129,
+          "awayOdds": -156
+        },
+        "total": {
+          "point": 7,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774617706095
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:45:00.0000000Z",
+        "ml": {
+          "home": -171,
+          "away": 141
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 129,
+          "awayOdds": -156
+        },
+        "total": {
+          "point": 6.5,
+          "overOdds": -122,
+          "underOdds": 102
+        },
+        "ts": 1774636029154
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:45:00.0000000Z",
+        "ml": {
+          "home": -171,
+          "away": 141
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 129,
+          "awayOdds": -156
+        },
+        "total": {
+          "point": 7,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774637210860
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:45:00.0000000Z",
+        "ml": {
+          "home": -175,
+          "away": 144
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 129,
+          "awayOdds": -156
+        },
+        "total": {
+          "point": 7,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774644131861
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:46:11.0000000Z",
+        "ml": {
+          "home": -1820,
+          "away": 760
+        },
+        "spread": {
+          "point": -2.5,
+          "homeOdds": -117,
+          "awayOdds": -111
+        },
+        "total": {
+          "point": 6.5,
+          "overOdds": -112,
+          "underOdds": -115
+        },
+        "ts": 1774668526556
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:46:11.0000000Z",
+        "ml": {
+          "home": null,
+          "away": 2400
+        },
+        "spread": {
+          "point": -4.5,
+          "homeOdds": 117,
+          "awayOdds": -153
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -145,
+          "underOdds": 111
+        },
+        "ts": 1774668692100
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:46:11.0000000Z",
+        "ml": {
+          "home": null,
+          "away": 1480
+        },
+        "spread": {
+          "point": -4.5,
+          "homeOdds": 147,
+          "awayOdds": -194
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -123,
+          "underOdds": -105
+        },
+        "ts": 1774668999050
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:46:11.0000000Z",
+        "ml": {
+          "home": null,
+          "away": 1540
+        },
+        "spread": {
+          "point": -4.5,
+          "homeOdds": 169,
+          "awayOdds": -225
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -122,
+          "underOdds": -106
+        },
+        "ts": 1774669105837
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:46:11.0000000Z",
+        "ml": {
+          "home": null,
+          "away": 2300
+        },
+        "spread": {
+          "point": -4.5,
+          "homeOdds": 148,
+          "awayOdds": -195
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -110,
+          "underOdds": -118
+        },
+        "ts": 1774669496306
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:46:11.0000000Z",
+        "ml": {
+          "home": null,
+          "away": 2500
+        },
+        "spread": {
+          "point": -4.5,
+          "homeOdds": 167,
+          "awayOdds": -223
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": 128,
+          "underOdds": -168
+        },
+        "ts": 1774669727304
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:46:11.0000000Z",
+        "ml": {
+          "home": null,
+          "away": 2200
+        },
+        "spread": {
+          "point": -3.5,
+          "homeOdds": -276,
+          "awayOdds": 203
+        },
+        "total": {
+          "point": 6.5,
+          "overOdds": -119,
+          "underOdds": -109
+        },
+        "ts": 1774670223231
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:46:11.0000000Z",
+        "ml": {
+          "home": null,
+          "away": 2500
+        },
+        "spread": {
+          "point": -3.5,
+          "homeOdds": -308,
+          "awayOdds": 223
+        },
+        "total": {
+          "point": 6.5,
+          "overOdds": -113,
+          "underOdds": -115
+        },
+        "ts": 1774670495862
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:46:11.0000000Z",
+        "ml": {
+          "home": null,
+          "away": 2600
+        },
+        "spread": {
+          "point": -3.5,
+          "homeOdds": -287,
+          "awayOdds": 210
+        },
+        "total": {
+          "point": 6.5,
+          "overOdds": -125,
+          "underOdds": -104
+        },
+        "ts": 1774670600933
+      },
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T01:46:11.0000000Z",
+        "ml": {
+          "home": null,
+          "away": 4900
+        },
+        "spread": {
+          "point": -3.5,
+          "homeOdds": -581,
+          "awayOdds": 374
+        },
+        "total": {
+          "point": 6.5,
+          "overOdds": 261,
+          "underOdds": -370
+        },
+        "ts": 1774670901434
       }
     ],
     "Diamondbacks@Dodgers_2026-03-28": [
@@ -435,6 +1842,657 @@
           "underOdds": -105
         },
         "ts": 1774588865519
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -232,
+          "away": 189
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774605101926
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -240,
+          "away": 194
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -118,
+          "awayOdds": -102
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774610503766
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -252,
+          "away": 203
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -118,
+          "awayOdds": -102
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774615905566
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -259,
+          "away": 209
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -122,
+          "awayOdds": 102
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774624908201
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -252,
+          "away": 203
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -122,
+          "awayOdds": 102
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774626708747
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -259,
+          "away": 209
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -126,
+          "awayOdds": 104
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774628509207
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -390,
+          "away": 287
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -142,
+          "awayOdds": 109
+        },
+        "total": {
+          "point": 12.5,
+          "overOdds": -113,
+          "underOdds": -115
+        },
+        "ts": 1774668526560
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -273,
+          "away": 218
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 111,
+          "awayOdds": -144
+        },
+        "total": {
+          "point": 13.5,
+          "overOdds": 115,
+          "underOdds": -151
+        },
+        "ts": 1774668692104
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -283,
+          "away": 223
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 116,
+          "awayOdds": -151
+        },
+        "total": {
+          "point": 12.5,
+          "overOdds": -139,
+          "underOdds": 106
+        },
+        "ts": 1774668999054
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -231,
+          "away": 173
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 134,
+          "awayOdds": -176
+        },
+        "total": {
+          "point": 12.5,
+          "overOdds": -125,
+          "underOdds": -104
+        },
+        "ts": 1774669105840
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -245,
+          "away": 182
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 133,
+          "awayOdds": -174
+        },
+        "total": {
+          "point": 12.5,
+          "overOdds": -103,
+          "underOdds": -126
+        },
+        "ts": 1774669496308
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -300,
+          "away": 218
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 119,
+          "awayOdds": -155
+        },
+        "total": {
+          "point": 11.5,
+          "overOdds": -139,
+          "underOdds": 107
+        },
+        "ts": 1774669727307
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -218,
+          "away": 164
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 162,
+          "awayOdds": -216
+        },
+        "total": {
+          "point": 11.5,
+          "overOdds": -109,
+          "underOdds": -119
+        },
+        "ts": 1774670223233
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -197,
+          "away": 149
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 188,
+          "awayOdds": -254
+        },
+        "total": {
+          "point": 11.5,
+          "overOdds": -102,
+          "underOdds": -127
+        },
+        "ts": 1774670301519
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -156,
+          "away": 120
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 225,
+          "awayOdds": -310
+        },
+        "total": {
+          "point": 11.5,
+          "overOdds": -126,
+          "underOdds": -103
+        },
+        "ts": 1774670495865
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -147,
+          "away": 113
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -302,
+          "awayOdds": 220
+        },
+        "total": {
+          "point": 11.5,
+          "overOdds": -132,
+          "underOdds": 102
+        },
+        "ts": 1774670600935
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -214,
+          "away": 161
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 181,
+          "awayOdds": -243
+        },
+        "total": {
+          "point": 11.5,
+          "overOdds": 107,
+          "underOdds": -140
+        },
+        "ts": 1774670901438
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -222,
+          "away": 167
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 180,
+          "awayOdds": -242
+        },
+        "total": {
+          "point": 11.5,
+          "overOdds": 111,
+          "underOdds": -144
+        },
+        "ts": 1774670906364
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -283,
+          "away": 207
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 154,
+          "awayOdds": -205
+        },
+        "total": {
+          "point": 11.5,
+          "overOdds": 115,
+          "underOdds": -150
+        },
+        "ts": 1774671412126
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -203,
+          "away": 154
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 230,
+          "awayOdds": -319
+        },
+        "total": {
+          "point": 10.5,
+          "overOdds": -148,
+          "underOdds": 114
+        },
+        "ts": 1774671581347
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -184,
+          "away": 140
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 259,
+          "awayOdds": -366
+        },
+        "total": {
+          "point": 10.5,
+          "overOdds": -144,
+          "underOdds": 110
+        },
+        "ts": 1774671694481
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -171,
+          "away": 130
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 267,
+          "awayOdds": -380
+        },
+        "total": {
+          "point": 10.5,
+          "overOdds": -153,
+          "underOdds": 117
+        },
+        "ts": 1774671995468
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -231,
+          "away": 173
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 239,
+          "awayOdds": -333
+        },
+        "total": {
+          "point": 10.5,
+          "overOdds": -123,
+          "underOdds": -105
+        },
+        "ts": 1774672133858
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -263,
+          "away": 195
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 232,
+          "awayOdds": -322
+        },
+        "total": {
+          "point": 10.5,
+          "overOdds": -106,
+          "underOdds": -122
+        },
+        "ts": 1774672299287
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -198,
+          "away": 150
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 347,
+          "awayOdds": -526
+        },
+        "total": {
+          "point": 10.5,
+          "overOdds": 107,
+          "underOdds": -140
+        },
+        "ts": 1774672432409
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -169,
+          "away": 129
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -475,
+          "awayOdds": 320
+        },
+        "total": {
+          "point": 10.5,
+          "overOdds": 112,
+          "underOdds": -145
+        },
+        "ts": 1774672508928
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -202,
+          "away": 153
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 376,
+          "awayOdds": -586
+        },
+        "total": {
+          "point": 9.5,
+          "overOdds": -143,
+          "underOdds": 109
+        },
+        "ts": 1774672706900
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -255,
+          "away": 189
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 353,
+          "awayOdds": -538
+        },
+        "total": {
+          "point": 9.5,
+          "overOdds": -131,
+          "underOdds": 101
+        },
+        "ts": 1774672822943
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -535,
+          "away": 372
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 139,
+          "awayOdds": -183
+        },
+        "total": {
+          "point": 10.5,
+          "overOdds": 127,
+          "underOdds": -166
+        },
+        "ts": 1774673123210
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -1620,
+          "away": 720
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 223,
+          "awayOdds": -307
+        },
+        "total": {
+          "point": 9.5,
+          "overOdds": 108,
+          "underOdds": -140
+        },
+        "ts": 1774673423445
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -1160,
+          "away": 598
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -4900,
+          "awayOdds": 1080
+        },
+        "total": {
+          "point": 9.5,
+          "overOdds": 356,
+          "underOdds": -544
+        },
+        "ts": 1774673723314
       }
     ],
     "Clippers@Pacers_2026-03-27": [
@@ -458,6 +2516,48 @@
           "underOdds": -115
         },
         "ts": 1774590682211
+      },
+      {
+        "home": "IND Pacers",
+        "away": "LA Clippers",
+        "sport": "NBA",
+        "commence_time": "2026-03-27T23:10:00.0000000Z",
+        "ml": {
+          "home": 300,
+          "away": -380
+        },
+        "spread": {
+          "point": 8.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 238.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774631219226
+      },
+      {
+        "home": "IND Pacers",
+        "away": "LA Clippers",
+        "sport": "NBA",
+        "commence_time": "2026-03-27T23:10:00.0000000Z",
+        "ml": {
+          "home": 300,
+          "away": -380
+        },
+        "spread": {
+          "point": 9.5,
+          "homeOdds": -118,
+          "awayOdds": -102
+        },
+        "total": {
+          "point": 238.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774638497587
       }
     ],
     "Hawks@Celtics_2026-03-27": [
@@ -481,6 +2581,90 @@
           "underOdds": -105
         },
         "ts": 1774590682214
+      },
+      {
+        "home": "BOS Celtics",
+        "away": "ATL Hawks",
+        "sport": "NBA",
+        "commence_time": "2026-03-27T23:40:00.0000000Z",
+        "ml": {
+          "home": -205,
+          "away": 170
+        },
+        "spread": {
+          "point": -4.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 225.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774631219227
+      },
+      {
+        "home": "BOS Celtics",
+        "away": "ATL Hawks",
+        "sport": "NBA",
+        "commence_time": "2026-03-27T23:40:00.0000000Z",
+        "ml": {
+          "home": -218,
+          "away": 180
+        },
+        "spread": {
+          "point": -5.5,
+          "homeOdds": -105,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 225.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774633607059
+      },
+      {
+        "home": "BOS Celtics",
+        "away": "ATL Hawks",
+        "sport": "NBA",
+        "commence_time": "2026-03-27T23:40:00.0000000Z",
+        "ml": {
+          "home": -205,
+          "away": 170
+        },
+        "spread": {
+          "point": -4.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 225.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774635389644
+      },
+      {
+        "home": "BOS Celtics",
+        "away": "ATL Hawks",
+        "sport": "NBA",
+        "commence_time": "2026-03-27T23:40:00.0000000Z",
+        "ml": {
+          "home": -205,
+          "away": 170
+        },
+        "spread": {
+          "point": -4.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 224.5,
+          "overOdds": -112,
+          "underOdds": -108
+        },
+        "ts": 1774639167363
       }
     ],
     "Heat@Cavaliers_2026-03-27": [
@@ -504,6 +2688,111 @@
           "underOdds": -112
         },
         "ts": 1774590682216
+      },
+      {
+        "home": "CLE Cavaliers",
+        "away": "MIA Heat",
+        "sport": "NBA",
+        "commence_time": "2026-03-27T23:40:00.0000000Z",
+        "ml": {
+          "home": -230,
+          "away": 190
+        },
+        "spread": {
+          "point": -5.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 243.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774631219229
+      },
+      {
+        "home": "CLE Cavaliers",
+        "away": "MIA Heat",
+        "sport": "NBA",
+        "commence_time": "2026-03-27T23:40:00.0000000Z",
+        "ml": {
+          "home": -218,
+          "away": 180
+        },
+        "spread": {
+          "point": -5.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 243.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774631661495
+      },
+      {
+        "home": "CLE Cavaliers",
+        "away": "MIA Heat",
+        "sport": "NBA",
+        "commence_time": "2026-03-27T23:40:00.0000000Z",
+        "ml": {
+          "home": -218,
+          "away": 180
+        },
+        "spread": {
+          "point": -5.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 242.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774636029166
+      },
+      {
+        "home": "CLE Cavaliers",
+        "away": "MIA Heat",
+        "sport": "NBA",
+        "commence_time": "2026-03-27T23:40:00.0000000Z",
+        "ml": {
+          "home": -205,
+          "away": 170
+        },
+        "spread": {
+          "point": -5.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 243.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774638497592
+      },
+      {
+        "home": "CLE Cavaliers",
+        "away": "MIA Heat",
+        "sport": "NBA",
+        "commence_time": "2026-03-27T23:40:00.0000000Z",
+        "ml": {
+          "home": -218,
+          "away": 180
+        },
+        "spread": {
+          "point": -5.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 242.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774639167365
       }
     ],
     "Bulls@Thunder_2026-03-28": [
@@ -527,6 +2816,90 @@
           "underOdds": -105
         },
         "ts": 1774590682219
+      },
+      {
+        "home": "OKC Thunder",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T00:10:00.0000000Z",
+        "ml": {
+          "home": -2800,
+          "away": 1300
+        },
+        "spread": {
+          "point": -19.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 238.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774631219231
+      },
+      {
+        "home": "OKC Thunder",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T00:10:00.0000000Z",
+        "ml": {
+          "home": -2100,
+          "away": 1100
+        },
+        "spread": {
+          "point": -18.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 239.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774635389648
+      },
+      {
+        "home": "OKC Thunder",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T00:10:00.0000000Z",
+        "ml": {
+          "home": -2100,
+          "away": 1100
+        },
+        "spread": {
+          "point": -18.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 238.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774638497594
+      },
+      {
+        "home": "OKC Thunder",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T00:10:00.0000000Z",
+        "ml": {
+          "home": -2100,
+          "away": 1100
+        },
+        "spread": {
+          "point": -18.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 239.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774638648864
       }
     ],
     "Rockets@Grizzlies_2026-03-28": [
@@ -550,6 +2923,27 @@
           "underOdds": -110
         },
         "ts": 1774590682221
+      },
+      {
+        "home": "MEM Grizzlies",
+        "away": "HOU Rockets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T00:10:00.0000000Z",
+        "ml": {
+          "home": 600,
+          "away": -900
+        },
+        "spread": {
+          "point": 13.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 227.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774631219233
       }
     ],
     "Pelicans@Raptors_2026-03-28": [
@@ -573,6 +2967,111 @@
           "underOdds": -110
         },
         "ts": 1774590682223
+      },
+      {
+        "home": "TOR Raptors",
+        "away": "NO Pelicans",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T00:40:00.0000000Z",
+        "ml": {
+          "home": -380,
+          "away": 300
+        },
+        "spread": {
+          "point": -9.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 228.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774631219235
+      },
+      {
+        "home": "TOR Raptors",
+        "away": "NO Pelicans",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T00:40:00.0000000Z",
+        "ml": {
+          "home": -380,
+          "away": 300
+        },
+        "spread": {
+          "point": -9.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 227.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774635389653
+      },
+      {
+        "home": "TOR Raptors",
+        "away": "NO Pelicans",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T00:40:00.0000000Z",
+        "ml": {
+          "home": -360,
+          "away": 285
+        },
+        "spread": {
+          "point": -8.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 228.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774636926689
+      },
+      {
+        "home": "TOR Raptors",
+        "away": "NO Pelicans",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T00:40:00.0000000Z",
+        "ml": {
+          "home": -340,
+          "away": 270
+        },
+        "spread": {
+          "point": -8.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 228.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774637622117
+      },
+      {
+        "home": "TOR Raptors",
+        "away": "NO Pelicans",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T00:40:00.0000000Z",
+        "ml": {
+          "home": -340,
+          "away": 270
+        },
+        "spread": {
+          "point": -8.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 227.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774637831043
       }
     ],
     "Jazz@Nuggets_2026-03-28": [
@@ -596,6 +3095,69 @@
           "underOdds": -110
         },
         "ts": 1774590682226
+      },
+      {
+        "home": "DEN Nuggets",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T01:10:00.0000000Z",
+        "ml": {
+          "home": -2100,
+          "away": 1100
+        },
+        "spread": {
+          "point": -18.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 248.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774633607071
+      },
+      {
+        "home": "DEN Nuggets",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T01:10:00.0000000Z",
+        "ml": {
+          "home": -2100,
+          "away": 1100
+        },
+        "spread": {
+          "point": -19.5,
+          "homeOdds": -105,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 248.5,
+          "overOdds": -112,
+          "underOdds": -108
+        },
+        "ts": 1774642328144
+      },
+      {
+        "home": "DEN Nuggets",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T01:10:00.0000000Z",
+        "ml": {
+          "home": -2100,
+          "away": 1100
+        },
+        "spread": {
+          "point": -18.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 249.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774644131870
       }
     ],
     "Mavericks@Blazers_2026-03-28": [
@@ -619,6 +3181,426 @@
           "underOdds": -105
         },
         "ts": 1774590682228
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -470,
+          "away": 360
+        },
+        "spread": {
+          "point": -10.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 239.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774631219239
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -455,
+          "away": 350
+        },
+        "spread": {
+          "point": -9.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 239.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774637210872
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -440,
+          "away": 340
+        },
+        "spread": {
+          "point": -9.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 239.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774637622121
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -470,
+          "away": 360
+        },
+        "spread": {
+          "point": -10.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 240.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774644131872
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": -250,
+          "away": 190
+        },
+        "spread": {
+          "point": -4.5,
+          "homeOdds": -125,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 228.5,
+          "overOdds": -125,
+          "underOdds": -105
+        },
+        "ts": 1774668526638
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": -330,
+          "away": 240
+        },
+        "spread": {
+          "point": -6.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 228.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774668692154
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": -360,
+          "away": 260
+        },
+        "spread": {
+          "point": -6.5,
+          "homeOdds": -115,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 228.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774668708441
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": -210,
+          "away": 160
+        },
+        "spread": {
+          "point": -3.5,
+          "homeOdds": -120,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 225.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774668999084
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": -160,
+          "away": 124
+        },
+        "spread": {
+          "point": -2.5,
+          "homeOdds": -115,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 218.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774669496335
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": -110,
+          "away": -120
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -130,
+          "awayOdds": 100
+        },
+        "total": {
+          "point": 216.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774669727335
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": -125,
+          "away": -105
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 212.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774670223263
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": -154,
+          "away": 120
+        },
+        "spread": {
+          "point": -2.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 210.5,
+          "overOdds": -125,
+          "underOdds": -105
+        },
+        "ts": 1774670301553
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": -105,
+          "away": -125
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -125,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 211.5,
+          "overOdds": -110,
+          "underOdds": -120
+        },
+        "ts": 1774670330111
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": 140,
+          "away": -180
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": -115,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 203.5,
+          "overOdds": -105,
+          "underOdds": -125
+        },
+        "ts": 1774670495896
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": 160,
+          "away": -210
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 198.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774670600965
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": 220,
+          "away": -298
+        },
+        "spread": {
+          "point": 3.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 196.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774670901472
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": 340,
+          "away": -500
+        },
+        "spread": {
+          "point": 4.5,
+          "homeOdds": -120,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 198.5,
+          "overOdds": -125,
+          "underOdds": -105
+        },
+        "ts": 1774671412155
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": 220,
+          "away": -298
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": -110,
+          "awayOdds": -120
+        },
+        "total": {
+          "point": 196.5,
+          "overOdds": -125,
+          "underOdds": -105
+        },
+        "ts": 1774671581387
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": 1200,
+          "away": -2800
+        },
+        "spread": {
+          "point": 4.5,
+          "homeOdds": -120,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": null,
+          "overOdds": null,
+          "underOdds": null
+        },
+        "ts": 1774671694515
+      },
+      {
+        "home": "POR Trail Blazers",
+        "away": "DAL Mavericks",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:12:03.0000000Z",
+        "ml": {
+          "home": null,
+          "away": null
+        },
+        "spread": {
+          "point": 6.5,
+          "homeOdds": -154,
+          "awayOdds": 120
+        },
+        "total": {
+          "point": null,
+          "overOdds": null,
+          "underOdds": null
+        },
+        "ts": 1774671995514
       }
     ],
     "Wizards@Warriors_2026-03-28": [
@@ -642,6 +3624,405 @@
           "underOdds": -115
         },
         "ts": 1774590682231
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -1000,
+          "away": 650
+        },
+        "spread": {
+          "point": -13.5,
+          "homeOdds": -118,
+          "awayOdds": -102
+        },
+        "total": {
+          "point": 232.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774631219241
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -950,
+          "away": 625
+        },
+        "spread": {
+          "point": -13.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 232.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774639167374
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -750,
+          "away": 525
+        },
+        "spread": {
+          "point": -12.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 233.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774640268655
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -700,
+          "away": 500
+        },
+        "spread": {
+          "point": -12.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 230.5,
+          "overOdds": -112,
+          "underOdds": -108
+        },
+        "ts": 1774642328147
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:10:00.0000000Z",
+        "ml": {
+          "home": -900,
+          "away": 600
+        },
+        "spread": {
+          "point": -13.5,
+          "homeOdds": -105,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 231.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774644131874
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -720,
+          "away": 450
+        },
+        "spread": {
+          "point": -9.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 247.5,
+          "overOdds": -110,
+          "underOdds": -120
+        },
+        "ts": 1774668526636
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -620,
+          "away": 400
+        },
+        "spread": {
+          "point": -8.5,
+          "homeOdds": -115,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 242.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774668692151
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -810,
+          "away": 500
+        },
+        "spread": {
+          "point": -9.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 241.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774668708439
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -1150,
+          "away": 650
+        },
+        "spread": {
+          "point": -9.5,
+          "homeOdds": -125,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 240.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774668999082
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -280,
+          "away": 210
+        },
+        "spread": {
+          "point": -4.5,
+          "homeOdds": -110,
+          "awayOdds": -120
+        },
+        "total": {
+          "point": 243.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774669496332
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -280,
+          "away": 210
+        },
+        "spread": {
+          "point": -4.5,
+          "homeOdds": -115,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 239.5,
+          "overOdds": -125,
+          "underOdds": -105
+        },
+        "ts": 1774669727332
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -166,
+          "away": 130
+        },
+        "spread": {
+          "point": -2.5,
+          "homeOdds": -110,
+          "awayOdds": -120
+        },
+        "total": {
+          "point": 240.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774670223260
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -230,
+          "away": 175
+        },
+        "spread": {
+          "point": -3.5,
+          "homeOdds": -110,
+          "awayOdds": -120
+        },
+        "total": {
+          "point": 241.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774670301550
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -245,
+          "away": 185
+        },
+        "spread": {
+          "point": -3.5,
+          "homeOdds": -110,
+          "awayOdds": -120
+        },
+        "total": {
+          "point": 241.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774670330108
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -130,
+          "away": 100
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -110,
+          "awayOdds": -120
+        },
+        "total": {
+          "point": 245.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774670495893
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -120,
+          "away": -110
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 105,
+          "awayOdds": -135
+        },
+        "total": {
+          "point": 245.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774670600962
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -280,
+          "away": 210
+        },
+        "spread": {
+          "point": -3.5,
+          "homeOdds": -110,
+          "awayOdds": -120
+        },
+        "total": {
+          "point": 250.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774670901469
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -100000,
+          "away": 4000
+        },
+        "spread": {
+          "point": -8.5,
+          "homeOdds": -115,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 252.5,
+          "overOdds": -130,
+          "underOdds": 100
+        },
+        "ts": 1774671412153
+      },
+      {
+        "home": "GS Warriors",
+        "away": "WAS Wizards",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:11:05.0000000Z",
+        "ml": {
+          "home": -20000,
+          "away": 3000
+        },
+        "spread": {
+          "point": -6.5,
+          "homeOdds": -140,
+          "awayOdds": 110
+        },
+        "total": {
+          "point": 251.5,
+          "overOdds": 105,
+          "underOdds": -135
+        },
+        "ts": 1774671581384
       }
     ],
     "Nets@Lakers_2026-03-28": [
@@ -686,6 +4067,2362 @@
           "underOdds": -115
         },
         "ts": 1774591100018
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:00.0000000Z",
+        "ml": {
+          "home": -1650,
+          "away": 950
+        },
+        "spread": {
+          "point": -15.5,
+          "homeOdds": -118,
+          "awayOdds": -102
+        },
+        "total": {
+          "point": 222.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774631219244
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:00.0000000Z",
+        "ml": {
+          "home": -1450,
+          "away": 850
+        },
+        "spread": {
+          "point": -15.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 222.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774639167375
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:00.0000000Z",
+        "ml": {
+          "home": -1600,
+          "away": 900
+        },
+        "spread": {
+          "point": -17.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 223.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774642328149
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:00.0000000Z",
+        "ml": {
+          "home": -1600,
+          "away": 900
+        },
+        "spread": {
+          "point": -17.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 224.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774644131875
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -2800,
+          "away": 1200
+        },
+        "spread": {
+          "point": -16.5,
+          "homeOdds": -120,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 229.5,
+          "overOdds": -110,
+          "underOdds": -120
+        },
+        "ts": 1774668526643
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -2100,
+          "away": 1000
+        },
+        "spread": {
+          "point": -14.5,
+          "homeOdds": -120,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 226.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774668692156
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -1950,
+          "away": 950
+        },
+        "spread": {
+          "point": -14.5,
+          "homeOdds": -110,
+          "awayOdds": -120
+        },
+        "total": {
+          "point": 227.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774668708444
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -1300,
+          "away": 700
+        },
+        "spread": {
+          "point": -12.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 229.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774668999088
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -1300,
+          "away": 700
+        },
+        "spread": {
+          "point": -12.5,
+          "homeOdds": -110,
+          "awayOdds": -120
+        },
+        "total": {
+          "point": 230.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774669496338
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -2100,
+          "away": 1000
+        },
+        "spread": {
+          "point": -12.5,
+          "homeOdds": -120,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 232.5,
+          "overOdds": -110,
+          "underOdds": -120
+        },
+        "ts": 1774670223266
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -2500,
+          "away": 1100
+        },
+        "spread": {
+          "point": -13.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 230.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774670495899
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -2100,
+          "away": 1000
+        },
+        "spread": {
+          "point": -12.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 229.5,
+          "overOdds": -110,
+          "underOdds": -120
+        },
+        "ts": 1774670600968
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -1600,
+          "away": 800
+        },
+        "spread": {
+          "point": -10.5,
+          "homeOdds": -125,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 226.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774670901475
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -850,
+          "away": 520
+        },
+        "spread": {
+          "point": -9.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 227.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774671412158
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -600,
+          "away": 390
+        },
+        "spread": {
+          "point": -8.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 228.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774671581390
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -660,
+          "away": 420
+        },
+        "spread": {
+          "point": -8.5,
+          "homeOdds": -105,
+          "awayOdds": -125
+        },
+        "total": {
+          "point": 226.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774671694518
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -810,
+          "away": 500
+        },
+        "spread": {
+          "point": -8.5,
+          "homeOdds": 100,
+          "awayOdds": -130
+        },
+        "total": {
+          "point": 225.5,
+          "overOdds": -110,
+          "underOdds": -120
+        },
+        "ts": 1774671995518
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -750,
+          "away": 470
+        },
+        "spread": {
+          "point": -7.5,
+          "homeOdds": -125,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 222.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774672133893
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -810,
+          "away": 500
+        },
+        "spread": {
+          "point": -8.5,
+          "homeOdds": -110,
+          "awayOdds": -120
+        },
+        "total": {
+          "point": 223.5,
+          "overOdds": -110,
+          "underOdds": -120
+        },
+        "ts": 1774672299321
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -1150,
+          "away": 650
+        },
+        "spread": {
+          "point": -8.5,
+          "homeOdds": -120,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 220.5,
+          "overOdds": -120,
+          "underOdds": -110
+        },
+        "ts": 1774672432442
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -520,
+          "away": 350
+        },
+        "spread": {
+          "point": -6.5,
+          "homeOdds": -110,
+          "awayOdds": -120
+        },
+        "total": {
+          "point": 221.5,
+          "overOdds": -110,
+          "underOdds": -120
+        },
+        "ts": 1774672508967
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -1050,
+          "away": 600
+        },
+        "spread": {
+          "point": -7.5,
+          "homeOdds": -115,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 221.5,
+          "overOdds": -105,
+          "underOdds": -125
+        },
+        "ts": 1774672822971
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -950,
+          "away": 575
+        },
+        "spread": {
+          "point": -7.5,
+          "homeOdds": -115,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 220.5,
+          "overOdds": -125,
+          "underOdds": -105
+        },
+        "ts": 1774673123259
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": -4000,
+          "away": 1500
+        },
+        "spread": {
+          "point": -8.5,
+          "homeOdds": -125,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 222.5,
+          "overOdds": -115,
+          "underOdds": -115
+        },
+        "ts": 1774673423485
+      },
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": null,
+          "away": null
+        },
+        "spread": {
+          "point": -11.5,
+          "homeOdds": -125,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 219.5,
+          "overOdds": 105,
+          "underOdds": -135
+        },
+        "ts": 1774673723349
+      }
+    ],
+    "Rays@Cardinals_2026-03-28": [
+      {
+        "home": "STL Cardinals",
+        "away": "TB Rays",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T18:15:00.0000000Z",
+        "ml": {
+          "home": -110,
+          "away": -110
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -194,
+          "awayOdds": 159
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774668526563
+      }
+    ],
+    "Nationals@Cubs_2026-03-28": [
+      {
+        "home": "CHI Cubs",
+        "away": "WAS Nationals",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T18:20:00.0000000Z",
+        "ml": {
+          "home": -219,
+          "away": 179
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 9.5,
+          "overOdds": -102,
+          "underOdds": -118
+        },
+        "ts": 1774668526575
+      },
+      {
+        "home": "CHI Cubs",
+        "away": "WAS Nationals",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T18:20:00.0000000Z",
+        "ml": {
+          "home": -219,
+          "away": 179
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 9,
+          "overOdds": -119,
+          "underOdds": -102
+        },
+        "ts": 1774671581353
+      }
+    ],
+    "Athletics@Jays_2026-03-28": [
+      {
+        "home": "TOR Blue Jays",
+        "away": "Athletics",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T19:07:00.0000000Z",
+        "ml": {
+          "home": -186,
+          "away": 153
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 119,
+          "awayOdds": -143
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774668526579
+      },
+      {
+        "home": "TOR Blue Jays",
+        "away": "Athletics",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T19:07:00.0000000Z",
+        "ml": {
+          "home": -186,
+          "away": 153
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 119,
+          "awayOdds": -143
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774673723322
+      }
+    ],
+    "Rangers@Phillies_2026-03-28": [
+      {
+        "home": "PHI Phillies",
+        "away": "TEX Rangers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:05:00.0000000Z",
+        "ml": {
+          "home": -122,
+          "away": 102
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -194,
+          "awayOdds": 159
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -112,
+          "underOdds": -108
+        },
+        "ts": 1774668526582
+      },
+      {
+        "home": "PHI Phillies",
+        "away": "TEX Rangers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:05:00.0000000Z",
+        "ml": {
+          "home": -120,
+          "away": 100
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -194,
+          "awayOdds": 159
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774671412133
+      },
+      {
+        "home": "PHI Phillies",
+        "away": "TEX Rangers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:05:00.0000000Z",
+        "ml": {
+          "home": -120,
+          "away": 100
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -197,
+          "awayOdds": 162
+        },
+        "total": {
+          "point": 7,
+          "overOdds": -124,
+          "underOdds": 103
+        },
+        "ts": 1774673423455
+      }
+    ],
+    "Twins@Orioles_2026-03-28": [
+      {
+        "home": "BAL Orioles",
+        "away": "MIN Twins",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:05:00.0000000Z",
+        "ml": {
+          "home": -163,
+          "away": 135
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 141,
+          "awayOdds": -171
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774668526586
+      }
+    ],
+    "Pirates@Mets_2026-03-28": [
+      {
+        "home": "NY Mets",
+        "away": "PIT Pirates",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:10:00.0000000Z",
+        "ml": {
+          "home": -163,
+          "away": 135
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 135,
+          "awayOdds": -163
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774668526588
+      },
+      {
+        "home": "NY Mets",
+        "away": "PIT Pirates",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:10:00.0000000Z",
+        "ml": {
+          "home": -171,
+          "away": 141
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 129,
+          "awayOdds": -156
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -102,
+          "underOdds": -118
+        },
+        "ts": 1774671995484
+      }
+    ],
+    "Sox@Reds_2026-03-28": [
+      {
+        "home": "CIN Reds",
+        "away": "BOS Red Sox",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:10:00.0000000Z",
+        "ml": {
+          "home": 129,
+          "away": -156
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -131,
+          "awayOdds": 109
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774668526591
+      }
+    ],
+    "Rockies@Marlins_2026-03-28": [
+      {
+        "home": "MIA Marlins",
+        "away": "COL Rockies",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:10:00.0000000Z",
+        "ml": {
+          "home": -193,
+          "away": 159
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 119,
+          "awayOdds": -143
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774668526594
+      }
+    ],
+    "Sox@Brewers_2026-03-28": [
+      {
+        "home": "MIL Brewers",
+        "away": "CHI White Sox",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:10:00.0000000Z",
+        "ml": {
+          "home": -199,
+          "away": 163
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 113,
+          "awayOdds": -136
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774668526596
+      }
+    ],
+    "Yankees@Giants_2026-03-28": [
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:15:00.0000000Z",
+        "ml": {
+          "home": 104,
+          "away": -126
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -156,
+          "awayOdds": 129
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -119,
+          "underOdds": -101
+        },
+        "ts": 1774668526600
+      },
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:15:00.0000000Z",
+        "ml": {
+          "home": 109,
+          "away": -131
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -156,
+          "awayOdds": 129
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -119,
+          "underOdds": -101
+        },
+        "ts": 1774671694502
+      }
+    ],
+    "Royals@Braves_2026-03-28": [
+      {
+        "home": "ATL Braves",
+        "away": "KC Royals",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:15:00.0000000Z",
+        "ml": {
+          "home": -149,
+          "away": 123
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 141,
+          "awayOdds": -171
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774668526603
+      },
+      {
+        "home": "ATL Braves",
+        "away": "KC Royals",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:15:00.0000000Z",
+        "ml": {
+          "home": -156,
+          "away": 129
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 141,
+          "awayOdds": -171
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774671694505
+      }
+    ],
+    "Tigers@Padres_2026-03-29": [
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-29T00:40:00.0000000Z",
+        "ml": {
+          "home": -102,
+          "away": -118
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -175,
+          "awayOdds": 144
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -102,
+          "underOdds": -118
+        },
+        "ts": 1774668526606
+      },
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-29T00:40:00.0000000Z",
+        "ml": {
+          "home": -105,
+          "away": -115
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -175,
+          "awayOdds": 144
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774672432437
+      }
+    ],
+    "Diamondbacks@Dodgers_2026-03-29": [
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-29T01:10:00.0000000Z",
+        "ml": {
+          "home": -259,
+          "away": 209
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774668526621
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-29T01:10:00.0000000Z",
+        "ml": {
+          "home": -252,
+          "away": 203
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774668999078
+      }
+    ],
+    "Guardians@Mariners_2026-03-29": [
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-29T01:40:00.0000000Z",
+        "ml": {
+          "home": -194,
+          "away": 159
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 113,
+          "awayOdds": -136
+        },
+        "total": {
+          "point": 7,
+          "overOdds": -122,
+          "underOdds": 102
+        },
+        "ts": 1774668526625
+      }
+    ],
+    "Spurs@Bucks_2026-03-28": [
+      {
+        "home": "MIL Bucks",
+        "away": "SA Spurs",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T19:10:00.0000000Z",
+        "ml": {
+          "home": 1100,
+          "away": -2100
+        },
+        "spread": {
+          "point": 18.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 227.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774668526645
+      },
+      {
+        "home": "MIL Bucks",
+        "away": "SA Spurs",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T19:10:00.0000000Z",
+        "ml": {
+          "home": 1100,
+          "away": -2100
+        },
+        "spread": {
+          "point": 18.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 226.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774668999091
+      }
+    ],
+    "Pistons@Timberwolves_2026-03-28": [
+      {
+        "home": "MIN Timberwolves",
+        "away": "DET Pistons",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T21:40:00.0000000Z",
+        "ml": {
+          "home": -125,
+          "away": 105
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -110,
+          "awayOdds": -110
+        },
+        "total": {
+          "point": 223.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774668526655
+      },
+      {
+        "home": "MIN Timberwolves",
+        "away": "DET Pistons",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T21:40:00.0000000Z",
+        "ml": {
+          "home": -135,
+          "away": 114
+        },
+        "spread": {
+          "point": -2.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 223.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774670223271
+      }
+    ],
+    "76ers@Hornets_2026-03-28": [
+      {
+        "home": "CHA Hornets",
+        "away": "PHI 76ers",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T22:10:00.0000000Z",
+        "ml": {
+          "home": -218,
+          "away": 180
+        },
+        "spread": {
+          "point": -5.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 231.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774668526658
+      }
+    ],
+    "Kings@Hawks_2026-03-28": [
+      {
+        "home": "ATL Hawks",
+        "away": "SAC Kings",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T23:40:00.0000000Z",
+        "ml": {
+          "home": -1050,
+          "away": 675
+        },
+        "spread": {
+          "point": -14.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 237.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774668526660
+      },
+      {
+        "home": "ATL Hawks",
+        "away": "SAC Kings",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T23:40:00.0000000Z",
+        "ml": {
+          "home": -1000,
+          "away": 650
+        },
+        "spread": {
+          "point": -14.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 237.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774671581398
+      }
+    ],
+    "Bulls@Grizzlies_2026-03-29": [
+      {
+        "home": "MEM Grizzlies",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T00:10:00.0000000Z",
+        "ml": {
+          "home": 140,
+          "away": -166
+        },
+        "spread": {
+          "point": 3.5,
+          "homeOdds": -118,
+          "awayOdds": -102
+        },
+        "total": {
+          "point": 244.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774668526662
+      },
+      {
+        "home": "MEM Grizzlies",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T00:10:00.0000000Z",
+        "ml": {
+          "home": 140,
+          "away": -166
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": -102,
+          "awayOdds": -118
+        },
+        "total": {
+          "point": 244.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774668692169
+      },
+      {
+        "home": "MEM Grizzlies",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T00:10:00.0000000Z",
+        "ml": {
+          "home": 140,
+          "away": -166
+        },
+        "spread": {
+          "point": 3.5,
+          "homeOdds": -118,
+          "awayOdds": -102
+        },
+        "total": {
+          "point": 244.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774668999099
+      },
+      {
+        "home": "MEM Grizzlies",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T00:10:00.0000000Z",
+        "ml": {
+          "home": 140,
+          "away": -166
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": -102,
+          "awayOdds": -118
+        },
+        "total": {
+          "point": 244.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774669496346
+      }
+    ],
+    "Jazz@Suns_2026-03-29": [
+      {
+        "home": "PHO Suns",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T02:10:00.0000000Z",
+        "ml": {
+          "home": -1350,
+          "away": 800
+        },
+        "spread": {
+          "point": -17.5,
+          "homeOdds": -105,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 230.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774668526665
+      },
+      {
+        "home": "PHO Suns",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T02:10:00.0000000Z",
+        "ml": {
+          "home": -1350,
+          "away": 800
+        },
+        "spread": {
+          "point": -17.5,
+          "homeOdds": -105,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 229.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774669496348
+      },
+      {
+        "home": "PHO Suns",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T02:10:00.0000000Z",
+        "ml": {
+          "home": -1350,
+          "away": 800
+        },
+        "spread": {
+          "point": -16.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 229.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774672822983
+      },
+      {
+        "home": "PHO Suns",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T02:10:00.0000000Z",
+        "ml": {
+          "home": -1350,
+          "away": 800
+        },
+        "spread": {
+          "point": -16.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 230.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774673123279
+      }
+    ]
+  },
+  "2026-03-28": {
+    "Diamondbacks@Dodgers_2026-03-28": [
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T02:11:38.0000000Z",
+        "ml": {
+          "home": -1040,
+          "away": 557
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -6300,
+          "awayOdds": 1160
+        },
+        "total": {
+          "point": 9.5,
+          "overOdds": 318,
+          "underOdds": -471
+        },
+        "ts": 1774674023616
+      }
+    ],
+    "Rays@Cardinals_2026-03-28": [
+      {
+        "home": "STL Cardinals",
+        "away": "TB Rays",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T18:15:00.0000000Z",
+        "ml": {
+          "home": -110,
+          "away": -110
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -194,
+          "awayOdds": 159
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774674023619
+      },
+      {
+        "home": "STL Cardinals",
+        "away": "TB Rays",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T18:15:00.0000000Z",
+        "ml": {
+          "home": -112,
+          "away": -108
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -199,
+          "awayOdds": 163
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": 100,
+          "underOdds": -120
+        },
+        "ts": 1774676115945
+      }
+    ],
+    "Nationals@Cubs_2026-03-28": [
+      {
+        "home": "CHI Cubs",
+        "away": "WAS Nationals",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T18:20:00.0000000Z",
+        "ml": {
+          "home": -219,
+          "away": 179
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 9,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774674023623
+      },
+      {
+        "home": "CHI Cubs",
+        "away": "WAS Nationals",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T18:20:00.0000000Z",
+        "ml": {
+          "home": -226,
+          "away": 184
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 9,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774677919427
+      }
+    ],
+    "Athletics@Jays_2026-03-28": [
+      {
+        "home": "TOR Blue Jays",
+        "away": "Athletics",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T19:07:00.0000000Z",
+        "ml": {
+          "home": -186,
+          "away": 153
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 119,
+          "awayOdds": -143
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774674023627
+      }
+    ],
+    "Rangers@Phillies_2026-03-28": [
+      {
+        "home": "PHI Phillies",
+        "away": "TEX Rangers",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:05:00.0000000Z",
+        "ml": {
+          "home": -120,
+          "away": 100
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -197,
+          "awayOdds": 162
+        },
+        "total": {
+          "point": 7,
+          "overOdds": -124,
+          "underOdds": 103
+        },
+        "ts": 1774674023631
+      }
+    ],
+    "Twins@Orioles_2026-03-28": [
+      {
+        "home": "BAL Orioles",
+        "away": "MIN Twins",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:05:00.0000000Z",
+        "ml": {
+          "home": -163,
+          "away": 135
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 141,
+          "awayOdds": -171
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774674023635
+      }
+    ],
+    "Pirates@Mets_2026-03-28": [
+      {
+        "home": "NY Mets",
+        "away": "PIT Pirates",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:10:00.0000000Z",
+        "ml": {
+          "home": -171,
+          "away": 141
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 129,
+          "awayOdds": -156
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -102,
+          "underOdds": -118
+        },
+        "ts": 1774674023639
+      },
+      {
+        "home": "NY Mets",
+        "away": "PIT Pirates",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:10:00.0000000Z",
+        "ml": {
+          "home": -175,
+          "away": 144
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 129,
+          "awayOdds": -156
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774677919437
+      }
+    ],
+    "Sox@Reds_2026-03-28": [
+      {
+        "home": "CIN Reds",
+        "away": "BOS Red Sox",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:10:00.0000000Z",
+        "ml": {
+          "home": 129,
+          "away": -156
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -131,
+          "awayOdds": 109
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -102,
+          "underOdds": -118
+        },
+        "ts": 1774674023643
+      },
+      {
+        "home": "CIN Reds",
+        "away": "BOS Red Sox",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:10:00.0000000Z",
+        "ml": {
+          "home": 129,
+          "away": -156
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -131,
+          "awayOdds": 109
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -114,
+          "underOdds": -106
+        },
+        "ts": 1774674680565
+      }
+    ],
+    "Rockies@Marlins_2026-03-28": [
+      {
+        "home": "MIA Marlins",
+        "away": "COL Rockies",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T20:10:00.0000000Z",
+        "ml": {
+          "home": -193,
+          "away": 159
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 119,
+          "awayOdds": -143
+        },
+        "total": {
+          "point": 7.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774674023647
+      }
+    ],
+    "Sox@Brewers_2026-03-28": [
+      {
+        "home": "MIL Brewers",
+        "away": "CHI White Sox",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:10:00.0000000Z",
+        "ml": {
+          "home": -199,
+          "away": 163
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 113,
+          "awayOdds": -136
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774674023651
+      },
+      {
+        "home": "MIL Brewers",
+        "away": "CHI White Sox",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:10:00.0000000Z",
+        "ml": {
+          "home": -199,
+          "away": 163
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 113,
+          "awayOdds": -136
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -103,
+          "underOdds": -117
+        },
+        "ts": 1774674312372
+      }
+    ],
+    "Angels@Astros_2026-03-28": [
+      {
+        "home": "HOU Astros",
+        "away": "LA Angels",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:10:00.0000000Z",
+        "ml": {
+          "home": -149,
+          "away": 123
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 141,
+          "awayOdds": -171
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -122,
+          "underOdds": 102
+        },
+        "ts": 1774674023655
+      },
+      {
+        "home": "HOU Astros",
+        "away": "LA Angels",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:10:00.0000000Z",
+        "ml": {
+          "home": -149,
+          "away": 123
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 141,
+          "awayOdds": -171
+        },
+        "total": {
+          "point": 9,
+          "overOdds": 102,
+          "underOdds": -122
+        },
+        "ts": 1774685863000
+      }
+    ],
+    "Yankees@Giants_2026-03-28": [
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:15:00.0000000Z",
+        "ml": {
+          "home": 109,
+          "away": -131
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -156,
+          "awayOdds": 129
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -119,
+          "underOdds": -101
+        },
+        "ts": 1774674023659
+      },
+      {
+        "home": "SF Giants",
+        "away": "NY Yankees",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:15:00.0000000Z",
+        "ml": {
+          "home": 109,
+          "away": -131
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -156,
+          "awayOdds": 129
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774675345077
+      }
+    ],
+    "Royals@Braves_2026-03-28": [
+      {
+        "home": "ATL Braves",
+        "away": "KC Royals",
+        "sport": "MLB",
+        "commence_time": "2026-03-28T23:15:00.0000000Z",
+        "ml": {
+          "home": -156,
+          "away": 129
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 141,
+          "awayOdds": -171
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774674023662
+      }
+    ],
+    "Tigers@Padres_2026-03-29": [
+      {
+        "home": "SD Padres",
+        "away": "DET Tigers",
+        "sport": "MLB",
+        "commence_time": "2026-03-29T00:40:00.0000000Z",
+        "ml": {
+          "home": -105,
+          "away": -115
+        },
+        "spread": {
+          "point": 1.5,
+          "homeOdds": -175,
+          "awayOdds": 144
+        },
+        "total": {
+          "point": 8,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774674023666
+      }
+    ],
+    "Diamondbacks@Dodgers_2026-03-29": [
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-29T01:10:00.0000000Z",
+        "ml": {
+          "home": -252,
+          "away": 203
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 8.5,
+          "overOdds": -118,
+          "underOdds": -102
+        },
+        "ts": 1774674023670
+      },
+      {
+        "home": "LA Dodgers",
+        "away": "ARI Diamondbacks",
+        "sport": "MLB",
+        "commence_time": "2026-03-29T01:10:00.0000000Z",
+        "ml": {
+          "home": -252,
+          "away": 203
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 9,
+          "overOdds": 100,
+          "underOdds": -120
+        },
+        "ts": 1774675345084
+      }
+    ],
+    "Guardians@Mariners_2026-03-29": [
+      {
+        "home": "SEA Mariners",
+        "away": "CLE Guardians",
+        "sport": "MLB",
+        "commence_time": "2026-03-29T01:40:00.0000000Z",
+        "ml": {
+          "home": -194,
+          "away": 159
+        },
+        "spread": {
+          "point": -1.5,
+          "homeOdds": 113,
+          "awayOdds": -136
+        },
+        "total": {
+          "point": 7,
+          "overOdds": -112,
+          "underOdds": -108
+        },
+        "ts": 1774674023674
+      }
+    ],
+    "Nets@Lakers_2026-03-28": [
+      {
+        "home": "LA Lakers",
+        "away": "BKN Nets",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T02:40:56.0000000Z",
+        "ml": {
+          "home": null,
+          "away": null
+        },
+        "spread": {
+          "point": -16.5,
+          "homeOdds": -250,
+          "awayOdds": 190
+        },
+        "total": {
+          "point": null,
+          "overOdds": null,
+          "underOdds": null
+        },
+        "ts": 1774674023678
+      }
+    ],
+    "Spurs@Bucks_2026-03-28": [
+      {
+        "home": "MIL Bucks",
+        "away": "SA Spurs",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T19:10:00.0000000Z",
+        "ml": {
+          "home": 1100,
+          "away": -2100
+        },
+        "spread": {
+          "point": 18.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 226.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774674023682
+      },
+      {
+        "home": "MIL Bucks",
+        "away": "SA Spurs",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T19:10:00.0000000Z",
+        "ml": {
+          "home": 1100,
+          "away": -2100
+        },
+        "spread": {
+          "point": 18.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 225.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774680917176
+      },
+      {
+        "home": "MIL Bucks",
+        "away": "SA Spurs",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T19:10:00.0000000Z",
+        "ml": {
+          "home": 1100,
+          "away": -2100
+        },
+        "spread": {
+          "point": 18.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 226.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774681526956
+      },
+      {
+        "home": "MIL Bucks",
+        "away": "SA Spurs",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T19:10:00.0000000Z",
+        "ml": {
+          "home": 1100,
+          "away": -2100
+        },
+        "spread": {
+          "point": 18.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 225.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774683533727
+      }
+    ],
+    "Pistons@Timberwolves_2026-03-28": [
+      {
+        "home": "MIN Timberwolves",
+        "away": "DET Pistons",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T21:40:00.0000000Z",
+        "ml": {
+          "home": -135,
+          "away": 114
+        },
+        "spread": {
+          "point": -2.5,
+          "homeOdds": -108,
+          "awayOdds": -112
+        },
+        "total": {
+          "point": 223.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774674023686
+      }
+    ],
+    "76ers@Hornets_2026-03-28": [
+      {
+        "home": "CHA Hornets",
+        "away": "PHI 76ers",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T22:10:00.0000000Z",
+        "ml": {
+          "home": -218,
+          "away": 180
+        },
+        "spread": {
+          "point": -5.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 231.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774674023690
+      },
+      {
+        "home": "CHA Hornets",
+        "away": "PHI 76ers",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T22:10:00.0000000Z",
+        "ml": {
+          "home": -218,
+          "away": 180
+        },
+        "spread": {
+          "point": -5.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 232.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774675345093
+      },
+      {
+        "home": "CHA Hornets",
+        "away": "PHI 76ers",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T22:10:00.0000000Z",
+        "ml": {
+          "home": -218,
+          "away": 180
+        },
+        "spread": {
+          "point": -5.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 233.5,
+          "overOdds": -108,
+          "underOdds": -112
+        },
+        "ts": 1774682260759
+      }
+    ],
+    "Kings@Hawks_2026-03-28": [
+      {
+        "home": "ATL Hawks",
+        "away": "SAC Kings",
+        "sport": "NBA",
+        "commence_time": "2026-03-28T23:40:00.0000000Z",
+        "ml": {
+          "home": -1000,
+          "away": 650
+        },
+        "spread": {
+          "point": -14.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 237.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774674023693
+      }
+    ],
+    "Bulls@Grizzlies_2026-03-29": [
+      {
+        "home": "MEM Grizzlies",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T00:10:00.0000000Z",
+        "ml": {
+          "home": 140,
+          "away": -166
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": -102,
+          "awayOdds": -118
+        },
+        "total": {
+          "point": 244.5,
+          "overOdds": -110,
+          "underOdds": -110
+        },
+        "ts": 1774674023697
+      },
+      {
+        "home": "MEM Grizzlies",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T00:10:00.0000000Z",
+        "ml": {
+          "home": 140,
+          "away": -166
+        },
+        "spread": {
+          "point": 2.5,
+          "homeOdds": -102,
+          "awayOdds": -118
+        },
+        "total": {
+          "point": 245.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774674680592
+      },
+      {
+        "home": "MEM Grizzlies",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T00:10:00.0000000Z",
+        "ml": {
+          "home": 140,
+          "away": -166
+        },
+        "spread": {
+          "point": 3.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 244.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774675345098
+      },
+      {
+        "home": "MEM Grizzlies",
+        "away": "CHI Bulls",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T00:10:00.0000000Z",
+        "ml": {
+          "home": 145,
+          "away": -175
+        },
+        "spread": {
+          "point": 3.5,
+          "homeOdds": -112,
+          "awayOdds": -108
+        },
+        "total": {
+          "point": 244.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774679019806
+      }
+    ],
+    "Jazz@Suns_2026-03-29": [
+      {
+        "home": "PHO Suns",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T02:10:00.0000000Z",
+        "ml": {
+          "home": -1350,
+          "away": 800
+        },
+        "spread": {
+          "point": -16.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 230.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774674023701
+      },
+      {
+        "home": "PHO Suns",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T02:10:00.0000000Z",
+        "ml": {
+          "home": -1350,
+          "away": 800
+        },
+        "spread": {
+          "point": -17.5,
+          "homeOdds": -105,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 229.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774676397063
+      },
+      {
+        "home": "PHO Suns",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T02:10:00.0000000Z",
+        "ml": {
+          "home": -1350,
+          "away": 800
+        },
+        "spread": {
+          "point": -16.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 229.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774676697360
+      },
+      {
+        "home": "PHO Suns",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T02:10:00.0000000Z",
+        "ml": {
+          "home": -1350,
+          "away": 800
+        },
+        "spread": {
+          "point": -17.5,
+          "homeOdds": -105,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 230.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774679019809
+      },
+      {
+        "home": "PHO Suns",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T02:10:00.0000000Z",
+        "ml": {
+          "home": -1350,
+          "away": 800
+        },
+        "spread": {
+          "point": -16.5,
+          "homeOdds": -115,
+          "awayOdds": -105
+        },
+        "total": {
+          "point": 230.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774679619464
+      },
+      {
+        "home": "PHO Suns",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T02:10:00.0000000Z",
+        "ml": {
+          "home": -1350,
+          "away": 800
+        },
+        "spread": {
+          "point": -17.5,
+          "homeOdds": -105,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 230.5,
+          "overOdds": -105,
+          "underOdds": -115
+        },
+        "ts": 1774679919701
+      },
+      {
+        "home": "PHO Suns",
+        "away": "UTA Jazz",
+        "sport": "NBA",
+        "commence_time": "2026-03-29T02:10:00.0000000Z",
+        "ml": {
+          "home": -1350,
+          "away": 800
+        },
+        "spread": {
+          "point": -17.5,
+          "homeOdds": -105,
+          "awayOdds": -115
+        },
+        "total": {
+          "point": 229.5,
+          "overOdds": -115,
+          "underOdds": -105
+        },
+        "ts": 1774684922063
       }
     ]
   }

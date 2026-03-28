@@ -442,90 +442,88 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
           </div>
           {coins < 1 && <p style={{ color: '#ff4444' }}>No coins — come back tomorrow!</p>}
           {loading && <p style={{ color: '#888' }}>Fetching games...</p>}
-          <SportFilter games={allGames} value={sportTab} onChange={setSportTab} label="game" />
-          {filterBySport(allGames, sportTab).map(game => {
-            const bm = game.bookmakers?.[0]
-            const ml = bm?.markets?.find(m => m.key === 'h2h')
-            const sp = bm?.markets?.find(m => m.key === 'spreads')
-            const status = getGameStatus(game)
-            const isLive = status?.state === 'in'
-            const isFinal = status?.state === 'post'
-            const isUnavailable = isLive || isFinal
-            const isMlb = game.sportLabel === 'MLB'
-            const awayPitcher = isMlb ? getProbablePitcher(game.away_team, mlbPitchers) : null
-            const homePitcher = isMlb ? getProbablePitcher(game.home_team, mlbPitchers) : null
-            return (
-              <div key={game.id} style={{
-                background: '#1a1a1a',
-                border: `1px solid ${isLive ? '#ff994433' : isFinal ? '#2a2a2a' : '#2a2a2a'}`,
-                borderRadius: '10px', padding: '1.25rem', marginBottom: '1rem',
-                opacity: isFinal ? 0.45 : 1,
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: isMlb ? '0.3rem' : '0.75rem' }}>
-                  <div>
-                    <span style={{ color: '#555', fontSize: '0.75rem', marginRight: '0.5rem' }}>{game.sportLabel}</span>
-                    <strong>{game.home_team}</strong>
-                    <span style={{ color: '#444', margin: '0 0.5rem' }}>vs</span>
-                    <strong>{game.away_team}</strong>
+          {(() => {
+            const lds = (iso) => { const d = new Date(iso); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') }
+            const now = new Date()
+            const todayStr    = lds(now.toISOString())
+            const tomorrowStr = lds(new Date(now.getTime() + 86400000).toISOString())
+            const all = filterBySport(allGames, sportTab)
+              .filter(g => g.espnStatus?.type?.state !== 'post')  // no finals in lock tab
+              .sort((a, b) => new Date(a.commence_time) - new Date(b.commence_time))
+            const todayGames    = all.filter(g => lds(g.commence_time) === todayStr)
+            const tomorrowGames = all.filter(g => lds(g.commence_time) === tomorrowStr)
+            const laterGames    = all.filter(g => lds(g.commence_time) > tomorrowStr)
+
+            const renderGame = (game) => {
+              const bm = game.bookmakers?.[0]
+              const ml = bm?.markets?.find(m => m.key === 'h2h')
+              const sp = bm?.markets?.find(m => m.key === 'spreads')
+              const status = getGameStatus(game)
+              const isLive = status?.state === 'in'
+              const isMlb = game.sportLabel === 'MLB'
+              const awayPitcher = isMlb ? getProbablePitcher(game.away_team, mlbPitchers) : null
+              const homePitcher = isMlb ? getProbablePitcher(game.home_team, mlbPitchers) : null
+              return (
+                <div key={game.id} style={{ background: '#1a1a1a', border: `1px solid ${isLive ? '#ff994433' : '#2a2a2a'}`, borderRadius: '10px', padding: '1.25rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: isMlb ? '0.3rem' : '0.75rem' }}>
+                    <div>
+                      <span style={{ color: '#555', fontSize: '0.75rem', marginRight: '0.5rem' }}>{game.sportLabel}</span>
+                      <strong>{game.home_team}</strong>
+                      <span style={{ color: '#444', margin: '0 0.5rem' }}>vs</span>
+                      <strong>{game.away_team}</strong>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      {isLive && <span style={{ fontSize: '0.68rem', fontWeight: 'bold', padding: '0.15rem 0.5rem', background: '#2a1500', border: '1px solid #ff994466', borderRadius: '4px', color: '#ff9944' }}>🔴 LIVE · {status.label}</span>}
+                      <span style={{ color: '#444', fontSize: '0.8rem' }}>{getGameDateLabel(game.commence_time)}</span>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                    {isLive && (
-                      <span style={{
-                        fontSize: '0.68rem', fontWeight: 'bold', padding: '0.15rem 0.5rem',
-                        background: '#2a1500', border: '1px solid #ff994466',
-                        borderRadius: '4px', color: '#ff9944',
-                      }}>🔴 LIVE · {status.label}</span>
-                    )}
-                    {isFinal && (
-                      <span style={{
-                        fontSize: '0.68rem', fontWeight: 'bold', padding: '0.15rem 0.5rem',
-                        background: '#111', border: '1px solid #2a2a2a',
-                        borderRadius: '4px', color: '#444',
-                      }}>✓ {status.label}</span>
-                    )}
-                    <span style={{ color: '#444', fontSize: '0.8rem' }}>
-                      {getGameDateLabel(game.commence_time)}
-                    </span>
-                  </div>
+                  {isMlb && (
+                    <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.72rem', marginBottom: '0.75rem' }}>
+                      <span>⚾ <span style={{ color: '#4c9be8' }}>{game.away_team.split(' ').pop()}:</span> <span style={{ color: awayPitcher ? '#aaa' : '#444' }}>{awayPitcher || 'TBA'}</span></span>
+                      <span>⚾ <span style={{ color: '#4c9be8' }}>{game.home_team.split(' ').pop()}:</span> <span style={{ color: homePitcher ? '#aaa' : '#444' }}>{homePitcher || 'TBA'}</span></span>
+                    </div>
+                  )}
+                  {isLive ? (
+                    <div style={{ fontSize: '0.78rem', color: '#ff9944', fontStyle: 'italic' }}>Game in progress — betting closed</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      {ml?.outcomes.map(o => (
+                        <button key={`ml-${o.name}`} onClick={() => openModal(game, o.name, o.price, 'h2h', null)} disabled={coins < 1} style={{ padding: '0.5rem 1rem', borderRadius: '6px', cursor: coins < 1 ? 'not-allowed' : 'pointer', background: o.price < 0 ? '#0a2a1a' : '#2a1a0a', border: `1px solid ${o.price < 0 ? '#00ff88' : '#ff9944'}`, color: o.price < 0 ? '#00ff88' : '#ff9944', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                          {o.name} ML {formatOdds(o.price)}
+                          <span style={{ display: 'block', fontSize: '0.7rem', color: '#666' }}>+{calcProfit(o.price, 1)} profit per coin</span>
+                        </button>
+                      ))}
+                      {sp?.outcomes.map(o => (
+                        <button key={`sp-${o.name}`} onClick={() => openModal(game, o.name, o.price, 'spreads', o.point)} disabled={coins < 1} style={{ padding: '0.5rem 1rem', borderRadius: '6px', cursor: coins < 1 ? 'not-allowed' : 'pointer', background: '#1a1a2a', border: '1px solid #4444aa', color: '#8888ff', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                          {o.name} {o.point > 0 ? '+' : ''}{o.point} ({formatOdds(o.price)})
+                          <span style={{ display: 'block', fontSize: '0.7rem', color: '#666' }}>+{calcProfit(o.price, 1)} profit per coin</span>
+                        </button>
+                      ))}
+                      {!ml && <span style={{ color: '#444', fontSize: '0.78rem', fontStyle: 'italic' }}>Lines not yet posted</span>}
+                    </div>
+                  )}
                 </div>
-                {isMlb && (
-                  <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.72rem', marginBottom: '0.75rem' }}>
-                    <span>⚾ <span style={{ color: '#4c9be8' }}>{game.away_team.split(' ').pop()}:</span> <span style={{ color: awayPitcher ? '#aaa' : '#444' }}>{awayPitcher || 'TBA'}</span></span>
-                    <span>⚾ <span style={{ color: '#4c9be8' }}>{game.home_team.split(' ').pop()}:</span> <span style={{ color: homePitcher ? '#aaa' : '#444' }}>{homePitcher || 'TBA'}</span></span>
-                  </div>
-                )}
-                {isUnavailable ? (
-                  <div style={{ fontSize: '0.78rem', color: '#444', fontStyle: 'italic' }}>
-                    {isLive ? 'Game in progress — betting closed' : 'Game over — betting closed'}
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {ml?.outcomes.map(o => (
-                      <button key={`ml-${o.name}`} onClick={() => openModal(game, o.name, o.price, 'h2h', null)} disabled={coins < 1} style={{
-                        padding: '0.5rem 1rem', borderRadius: '6px', cursor: coins < 1 ? 'not-allowed' : 'pointer',
-                        background: o.price < 0 ? '#0a2a1a' : '#2a1a0a',
-                        border: `1px solid ${o.price < 0 ? '#00ff88' : '#ff9944'}`,
-                        color: o.price < 0 ? '#00ff88' : '#ff9944', fontSize: '0.85rem', fontWeight: 'bold',
-                      }}>
-                        {o.name} ML {formatOdds(o.price)}
-                        <span style={{ display: 'block', fontSize: '0.7rem', color: '#666' }}>+{calcProfit(o.price, 1)} profit per coin</span>
-                      </button>
-                    ))}
-                    {sp?.outcomes.map(o => (
-                      <button key={`sp-${o.name}`} onClick={() => openModal(game, o.name, o.price, 'spreads', o.point)} disabled={coins < 1} style={{
-                        padding: '0.5rem 1rem', borderRadius: '6px', cursor: coins < 1 ? 'not-allowed' : 'pointer',
-                        background: '#1a1a2a', border: '1px solid #4444aa', color: '#8888ff', fontSize: '0.85rem', fontWeight: 'bold',
-                      }}>
-                        {o.name} {o.point > 0 ? '+' : ''}{o.point} ({formatOdds(o.price)})
-                        <span style={{ display: 'block', fontSize: '0.7rem', color: '#666' }}>+{calcProfit(o.price, 1)} profit per coin</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )
+            }
+
+            return (
+              <>
+                {!loading && all.length === 0 && <p style={{ color: '#555' }}>No {sportTab === 'ALL' ? '' : sportTab + ' '}games available.</p>}
+                {todayGames.length > 0 && <>
+                  <div style={{ fontSize: '0.62rem', color: '#555', fontWeight: 'bold', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>🏟️ TODAY · {todayGames.length} game{todayGames.length !== 1 ? 's' : ''}</div>
+                  {todayGames.map(renderGame)}
+                </>}
+                {tomorrowGames.length > 0 && <>
+                  <div style={{ fontSize: '0.62rem', color: '#4c9be8', fontWeight: 'bold', letterSpacing: '0.08em', margin: '1rem 0 0.5rem' }}>🌅 TOMORROW · {tomorrowGames.length} game{tomorrowGames.length !== 1 ? 's' : ''}</div>
+                  {tomorrowGames.map(renderGame)}
+                </>}
+                {laterGames.length > 0 && <>
+                  <div style={{ fontSize: '0.62rem', color: '#444', fontWeight: 'bold', letterSpacing: '0.08em', margin: '1rem 0 0.5rem' }}>📆 LATER · {laterGames.length} game{laterGames.length !== 1 ? 's' : ''}</div>
+                  {laterGames.map(renderGame)}
+                </>}
+              </>
             )
-          })}
-          {!loading && filterBySport(allGames, sportTab).length === 0 && <p style={{ color: '#555' }}>No {sportTab === 'ALL' ? '' : sportTab + ' '}games today.</p>}
+          })()}
         </>
       )}
 

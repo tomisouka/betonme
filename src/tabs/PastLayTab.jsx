@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { loadLayHistory, loadPredictions, loadState, loadDogState, loadOuPick, loadPropPick } from '../hooks/useSaveData.js'
+import { loadLayHistory, saveLayHistory, loadPredictions, savePredictions, loadState, loadDogState, loadOuPick, loadPropPick, fetchEspnDate } from '../hooks/useSaveData.js'
 import { formatOdds } from '../utils/odds.js'
 
 function fmtDateLabel(key) {
@@ -101,6 +101,120 @@ export default function PastLayTab() {
       const [appState, dogState, layHist, predHist, ouHist, propHist] = await Promise.all([
         loadState(), loadDogState(), loadLayHistory(), loadPredictions(), loadOuPick(), loadPropPick(),
       ])
+
+      // Resolve any unresolved lay legs
+      let layChanged = false
+      for (const [date, entry] of Object.entries(layHist)) {
+        if (!entry?.legs) continue
+        const legsWithTeam = entry.legs.filter(l => l.team)
+        if (legsWithTeam.every(l => l.result !== null) && entry.overallResult) continue
+        for (let i = 0; i < entry.legs.length; i++) {
+          const leg = entry.legs[i]
+          if (leg.result !== null || !leg.team || !leg.sport) continue
+          try {
+            const events = await fetchEspnDate(leg.sport, date.replace(/-/g, ''))
+            const event = events.find(e =>
+              (e.competitions?.[0]?.competitors || []).some(c =>
+                leg.home?.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
+                c.team.displayName.toLowerCase().includes(leg.home?.toLowerCase())
+              )
+            )
+            if (!event) continue
+            const comp = event.competitions?.[0]
+            if (!comp?.status?.type?.completed) continue
+
+            // Spread picks: check coverage, not just winner
+            let won
+            if (leg.market === 'spreads' && leg.point != null) {
+              const competitors = comp.competitors || []
+              const pickedComp = competitors.find(c =>
+                c.team.displayName.toLowerCase().includes(leg.team.toLowerCase()) ||
+                leg.team.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
+                c.team.shortDisplayName?.toLowerCase().includes(leg.team.toLowerCase().split(' ').pop())
+              )
+              if (!pickedComp) continue
+              const oppComp = competitors.find(c => c.id !== pickedComp.id)
+              const pickedScore = parseFloat(pickedComp.score)
+              const oppScore    = parseFloat(oppComp?.score ?? 0)
+              if (isNaN(pickedScore)) continue
+              won = (pickedScore - oppScore + leg.point) > 0
+            } else {
+              const winner = comp.competitors?.find(c => c.winner)
+              if (!winner) continue
+              const winnerName = winner.team.displayName
+              won = winnerName.toLowerCase().includes(leg.team.toLowerCase()) || leg.team.toLowerCase().includes(winnerName.toLowerCase())
+            }
+            layHist[date].legs[i].result = won ? 'W' : 'L'
+            layChanged = true
+          } catch(e) {}
+        }
+        const resolved = legsWithTeam.filter(l => l.result !== null)
+        if (resolved.length === legsWithTeam.length && legsWithTeam.length > 0 && !layHist[date].overallResult) {
+          const hits = resolved.filter(l => l.result === 'W').length
+          layHist[date].overallResult = hits / resolved.length >= 0.7 ? 'W' : 'L'
+          layHist[date].hitCount = hits
+          layHist[date].totalCount = resolved.length
+          layChanged = true
+        }
+      }
+      if (layChanged) await saveLayHistory(layHist)
+
+      // Resolve any unresolved prediction legs
+      let predChanged = false
+      for (const [date, entry] of Object.entries(predHist)) {
+        if (!entry?.legs) continue
+        if (entry.legs.every(l => l.result !== null) && entry.overallResult) continue
+        for (let i = 0; i < entry.legs.length; i++) {
+          const leg = entry.legs[i]
+          if (leg.result !== null || !leg.team || !leg.sport) continue
+          try {
+            const events = await fetchEspnDate(leg.sport, date.replace(/-/g, ''))
+            const event = events.find(e =>
+              (e.competitions?.[0]?.competitors || []).some(c =>
+                leg.home?.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
+                c.team.displayName.toLowerCase().includes(leg.home?.toLowerCase())
+              )
+            )
+            if (!event) continue
+            const comp = event.competitions?.[0]
+            if (!comp?.status?.type?.completed) continue
+
+            // Spread picks: check coverage, not just winner
+            let won
+            if (leg.market === 'spreads' && leg.point != null) {
+              const competitors = comp.competitors || []
+              const pickedComp = competitors.find(c =>
+                c.team.displayName.toLowerCase().includes(leg.team.toLowerCase()) ||
+                leg.team.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
+                c.team.shortDisplayName?.toLowerCase().includes(leg.team.toLowerCase().split(' ').pop())
+              )
+              if (!pickedComp) continue
+              const oppComp = competitors.find(c => c.id !== pickedComp.id)
+              const pickedScore = parseFloat(pickedComp.score)
+              const oppScore    = parseFloat(oppComp?.score ?? 0)
+              if (isNaN(pickedScore)) continue
+              won = (pickedScore - oppScore + leg.point) > 0
+            } else {
+              const winner = comp.competitors?.find(c => c.winner)
+              if (!winner) continue
+              const winnerName = winner.team.displayName
+              won = winnerName.toLowerCase().includes(leg.team.toLowerCase()) || leg.team.toLowerCase().includes(winnerName.toLowerCase())
+            }
+            predHist[date].legs[i].result = won ? 'W' : 'L'
+            predChanged = true
+          } catch(e) {}
+        }
+        const resolved = predHist[date].legs.filter(l => l.result !== null)
+        if (resolved.length === predHist[date].legs.length && resolved.length > 0 && !predHist[date].overallResult) {
+          const hits = resolved.filter(l => l.result === 'W').length
+          predHist[date].overallResult = hits / resolved.length >= 0.7 ? 'W' : 'L'
+          predHist[date].hitCount = hits
+          predHist[date].totalCount = resolved.length
+          predChanged = true
+        }
+      }
+      if (predChanged) await savePredictions(predHist)
+
       setAllData({ appState, dogState, layHist, predHist, ouHist, propHist })
       const today = getTodayKey()
       const allDays = new Set([

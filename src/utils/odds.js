@@ -31,18 +31,22 @@ function normalizeEspnEvent(event, sportLabel) {
   const home = comp.competitors?.find(c => c.homeAway === 'home')
   const away = comp.competitors?.find(c => c.homeAway === 'away')
   if (!home || !away) return null
+  const getPitcher = c => {
+    const p = c.probables?.[0]
+    return p?.athlete?.displayName || p?.athlete?.shortName || null
+  }
   return {
-    id:            event.id,           // ESPN game ID (different from odds-api ID)
+    id:            event.id,
     espnId:        event.id,
     home_team:     home.team.displayName,
     away_team:     away.team.displayName,
     commence_time: event.date,
     sportLabel,
     sportKey:      Object.keys(ESPN_SPORT_MAP).find(k => ESPN_SPORT_MAP[k].label === sportLabel) || '',
-    bookmakers:    [],                 // populated later if user locks the game
-    // ESPN-specific extras for live scores
-    espnStatus: event.competitions?.[0]?.status,
-    espnScores: { home: home.score, away: away.score },
+    bookmakers:    [],
+    espnStatus:    event.competitions?.[0]?.status,
+    espnScores:    { home: home.score, away: away.score },
+    pitchers:      sportLabel === 'MLB' ? { home: getPitcher(home), away: getPitcher(away) } : null,
   }
 }
 
@@ -205,16 +209,40 @@ export async function fetchMlbProbablePitchers() {
   }
 }
 
+// Fetch ESPN scoreboard for a specific sport and date string (YYYYMMDD)
+// Used by DogTab to resolve past pick results
+export async function fetchEspnDate(sportKey, dateStr) {
+  const mapping = ESPN_SPORT_MAP[sportKey]
+  if (!mapping) return []
+  try {
+    const url = `https://site.api.espn.com/apis/site/v2/sports/${mapping.endpoint}/scoreboard?dates=${dateStr}`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.events || []
+  } catch (e) {
+    console.error(`[ESPN] fetchEspnDate failed for ${sportKey} ${dateStr}`, e)
+    return []
+  }
+}
+
 // Given a team name from the odds API and the ESPN pitcher map, return pitcher name or null
 export function getProbablePitcher(teamName, pitcherMap) {
   if (!teamName || !pitcherMap) return null
-  // Exact match
+  // Exact match first
   if (pitcherMap[teamName] !== undefined) return pitcherMap[teamName]
-  // Partial match — find a key that contains or is contained by teamName
   const lower = teamName.toLowerCase()
+  const lastWord = lower.split(' ').pop()  // e.g. "rockies", "marlins"
+  // Last-word match against keys (most reliable for "Colorado Rockies" -> "Rockies")
   for (const [key, val] of Object.entries(pitcherMap)) {
     const kl = key.toLowerCase()
-    if (lower.includes(kl) || kl.includes(lower)) return val
+    const kLast = kl.split(' ').pop()
+    if (lastWord && lastWord === kLast) return val
+  }
+  // Abbreviation match — only if key is 2-3 chars (pure abbrev, not a partial name)
+  for (const [key, val] of Object.entries(pitcherMap)) {
+    const kl = key.toLowerCase()
+    if (kl.length <= 3 && lower.includes(kl)) return val
   }
   return null
 }

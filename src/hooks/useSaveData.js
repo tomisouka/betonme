@@ -130,6 +130,19 @@ export async function loadOuPick() {
 export async function saveOuPick(picks) {
   return enqueueWrite('ouPick', picks)
 }
+// ─── USER PREFS (fav team, hate team, etc.) ───────────────────────────────────
+
+export async function loadPrefs() {
+  try {
+    const data = await loadAllData()
+    return data.prefs || {}
+  } catch { return {} }
+}
+
+export async function savePrefs(prefs) {
+  return enqueueWrite('prefs', prefs)
+}
+
 
 // ─── ODDS CACHE (localStorage) ───────────────────────────────────────────────
 

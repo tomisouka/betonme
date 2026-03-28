@@ -49,13 +49,13 @@ export default function PropsInsightPanel({ propPick }) {
       e.picks.push({ date, ...pick })
       if (pick.result === 'W') {
         e.wins++
-        if (pick.side === 'over') e.overWins++; else e.underWins++
+        if (pick.side === 'over') { e.overWins++; e.overTotal++ } else { e.underWins++; e.underTotal++ }
       } else if (pick.result === 'L') {
         e.losses++
+        if (pick.side === 'over') e.overTotal++; else e.underTotal++
       } else {
         e.pending++
       }
-      if (pick.side === 'over') e.overTotal++; else e.underTotal++
     })
   })
 

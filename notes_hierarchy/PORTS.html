@@ -1,0 +1,750 @@
+<!--
+  PORTS — How ports work, where they come from, and why the type matters
+  Built on VISUAL_NOTE_TEMPLATEV2
+-->
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;700&family=Archivo:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#f2ede4;--black:#111;--white:#fff;
+  --gold:#c8920a;--gold-light:rgba(200,146,10,0.1);--gold-border:rgba(200,146,10,0.45);
+  --danger:#c0392b;--danger-light:rgba(192,57,43,0.08);--danger-border:rgba(192,57,43,0.35);
+}
+body{background:var(--color-background-tertiary,#f2ede4);font-family:'Archivo',sans-serif}
+.wrap{display:grid;grid-template-columns:1fr 300px;min-height:600px;max-width:920px;margin:0 auto;border:2px solid var(--black)}
+.strata-col{background:var(--color-background-secondary,#fafaf6);border-right:2px solid var(--black);display:flex;flex-direction:column;padding:1.2rem 1.4rem 0.8rem 1.4rem;position:relative;}
+.strata-label{font-family:'JetBrains Mono',monospace;font-size:0.52rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--color-text-secondary,#888);margin-bottom:0.9rem;}
+.perspective-wrap{perspective:900px;perspective-origin:50% -20%;flex:1;display:flex;flex-direction:column;justify-content:center;position:relative;}
+.stack-3d{transform:rotateX(8deg);transform-style:preserve-3d;display:flex;flex-direction:column;gap:0;margin-left:2rem;}
+.left-gutter{position:absolute;left:1.4rem;top:0;bottom:0;width:1.5rem;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
+.gutter-crown{font-size:1rem;line-height:1;padding-top:4px;color:var(--gold);flex-shrink:0;}
+.gutter-line-top{width:2px;background:linear-gradient(180deg,var(--gold-border),rgba(200,146,10,0.1));flex-shrink:0;}
+.gutter-distro-bar{width:4px;border-radius:2px;background:linear-gradient(180deg,var(--gold),rgba(200,146,10,0.35));position:relative;flex-shrink:0;}
+.gutter-distro-label{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:0.37rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);writing-mode:vertical-rl;white-space:nowrap;}
+.gutter-line-bot{width:2px;flex:1;background:linear-gradient(180deg,rgba(200,146,10,0.15),transparent);}
+.stratum{position:relative;cursor:pointer;transition:filter 0.18s,transform 0.18s;}
+.stratum:hover{filter:brightness(1.06);transform:scaleX(1.02);}
+.stratum.active{transform:scaleX(1.04);filter:brightness(1.1);}
+.stratum.prereq-lit .stratum-face{outline:2px solid var(--gold) !important;outline-offset:-2px;}
+.stratum.variant-layer .stratum-face{border-left:3px solid rgba(200,146,10,0.6) !important;}
+.stratum-face{height:62px;display:flex;align-items:center;padding:0 0.9rem 0 0.9rem;position:relative;overflow:hidden;border-left:3px solid transparent;}
+.stratum-face::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(93deg,transparent 0px,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px);pointer-events:none;}
+.stratum-edge{height:7px;opacity:0.45;background:rgba(0,0,0,0.22);clip-path:polygon(0 0,100% 0,99% 100%,1% 100%);}
+@keyframes pulse-sweep{0%{top:-4px;opacity:0}20%{opacity:0.7}80%{opacity:0.4}100%{top:calc(100% + 4px);opacity:0}}
+.pulse-line{position:absolute;left:0;right:0;height:2px;background:rgba(255,255,255,0.8);animation:pulse-sweep 0.6s ease-in forwards;pointer-events:none;top:-4px;}
+.st-num{font-family:'JetBrains Mono',monospace;font-size:0.5rem;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.1em;flex-shrink:0;margin-right:0.6rem;}
+.st-text{flex:1;min-width:0;}
+.st-name{font-family:'Archivo Black',sans-serif;font-size:0.78rem;color:#fff;line-height:1.1;}
+.st-examples{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px;}
+.st-ex-tag{font-family:'JetBrains Mono',monospace;font-size:0.4rem;padding:1px 5px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.65);border-radius:2px;white-space:nowrap;}
+.st-badge{font-family:'JetBrains Mono',monospace;font-size:0.48rem;font-weight:700;padding:2px 6px;border-radius:2px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.06em;margin-left:0.5rem;opacity:0.85;}
+.st-rank{margin-left:0.4rem;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;}
+.st-rank-icon{font-size:0.9rem;line-height:1;}
+.st-rank-label{font-family:'JetBrains Mono',monospace;font-size:0.36rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.07em;white-space:nowrap;}
+.st-difficulty{display:flex;flex-direction:column;align-items:center;gap:2px;margin-left:0.4rem;flex-shrink:0;}
+.st-diff-dots{display:flex;gap:2px;}
+.st-diff-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.18);}
+.st-diff-dot.on{background:rgba(255,255,255,0.75);}
+.st-diff-label{font-family:'JetBrains Mono',monospace;font-size:0.3rem;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;}
+.depth-gap{height:4px;background:linear-gradient(180deg,rgba(0,0,0,0.18) 0,rgba(0,0,0,0.04) 100%);}
+.stack-footer{display:flex;flex-direction:column;gap:0.5rem;margin-top:0.8rem;}
+.strata-nav{display:flex;align-items:center;gap:0.5rem;}
+.nav-btn{font-family:'JetBrains Mono',monospace;font-size:0.6rem;padding:4px 12px;border:2px solid var(--black);background:var(--white);cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;transition:background 0.12s,color 0.12s;}
+.nav-btn:hover{background:var(--black);color:var(--white);}
+.nav-btn:disabled{opacity:0.25;pointer-events:none;}
+.nav-dots{display:flex;gap:4px;margin:0 auto;}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--color-border-secondary,#ccc);cursor:pointer;transition:background 0.15s,transform 0.15s;}
+.nav-dot.on{background:var(--black);transform:scale(1.3);}
+.nav-ctr{font-family:'JetBrains Mono',monospace;font-size:0.56rem;color:var(--color-text-secondary,#999);}
+.variant-key-row{display:flex;align-items:center;gap:0.55rem;padding:0.38rem 0.6rem;border:1.5px solid var(--gold-border);background:var(--gold-light);}
+.variant-key-bar{width:4px;height:22px;background:linear-gradient(180deg,var(--gold),rgba(200,146,10,0.35));border-radius:2px;flex-shrink:0;}
+.variant-key-text{font-family:'JetBrains Mono',monospace;font-size:0.48rem;color:var(--color-text-secondary,#666);line-height:1.55;flex:1;}
+.variant-key-text strong{font-family:'Archivo Black',sans-serif;font-size:0.52rem;color:var(--gold);display:block;}
+.variant-toggle-btn{font-family:'JetBrains Mono',monospace;font-size:0.5rem;padding:4px 10px;border:1.5px solid var(--gold-border);background:var(--white);color:var(--gold);cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;transition:all 0.14s;white-space:nowrap;flex-shrink:0;}
+.variant-toggle-btn:hover,.variant-toggle-btn.on{background:var(--gold);color:#fff;border-color:var(--gold);}
+.detail-col{background:var(--color-background-primary,#fff);display:flex;flex-direction:column;overflow:hidden;}
+.layer-panel{display:flex;flex-direction:column;height:100%;}
+.detail-header{padding:0.8rem 1.2rem 0.7rem;border-bottom:2px solid var(--black);transition:background 0.3s;flex-shrink:0;}
+.d-eyebrow{font-family:'JetBrains Mono',monospace;font-size:0.53rem;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:0.2rem;}
+.d-title{font-family:'Archivo Black',sans-serif;font-size:1rem;color:#fff;line-height:1.1;}
+.d-meta-row{display:flex;align-items:center;gap:0.6rem;margin-top:0.35rem;}
+.d-diff-row{display:flex;align-items:center;gap:4px;}
+.d-diff-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.2);}
+.d-diff-dot.on{background:rgba(255,255,255,0.9);}
+.d-diff-label{font-family:'JetBrains Mono',monospace;font-size:0.42rem;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.1em;}
+.d-prereq-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.d-prereq-label{font-family:'JetBrains Mono',monospace;font-size:0.42rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;}
+.d-prereq-tag{font-family:'JetBrains Mono',monospace;font-size:0.4rem;padding:1px 6px;background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);border-radius:2px;cursor:pointer;transition:background 0.12s;}
+.d-prereq-tag:hover{background:rgba(255,255,255,0.3);}
+.detail-body{flex:1;padding:0.85rem 1.2rem;overflow-y:auto;}
+.detail-body-inner{opacity:1;transform:translateY(0);transition:opacity 0.16s,transform 0.16s;}
+.detail-body-inner.out{opacity:0;transform:translateY(8px);}
+.detail-body-inner.in{animation:din 0.2s ease forwards;}
+@keyframes din{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.mech-why{font-family:'Archivo',sans-serif;font-size:0.68rem;color:var(--color-text-secondary,#555);line-height:1.45;border-left:3px solid var(--ac,#333);padding-left:0.6rem;margin-bottom:0.65rem;font-style:italic;transition:border-color 0.3s;}
+.mech-why strong{font-family:'Archivo Black',sans-serif;font-style:normal;color:var(--ac,#333);font-size:0.6rem;display:block;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px;transition:color 0.3s;}
+.mech-block{margin-bottom:0.9rem;}
+.mech-title{font-family:'JetBrains Mono',monospace;font-size:0.51rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--color-text-secondary,#999);margin-bottom:0.4rem;}
+.mech-rows{display:flex;flex-direction:column;gap:3px;}
+.mech-row{display:flex;align-items:center;gap:7px;}
+.mech-box{font-family:'JetBrains Mono',monospace;font-size:0.6rem;font-weight:700;padding:5px 8px;border:1.5px solid currentColor;min-width:76px;text-align:center;letter-spacing:0.03em;flex-shrink:0;}
+.mech-arrow{font-size:0.65rem;flex-shrink:0;opacity:0.5;}
+.mech-caption{font-family:'Archivo',sans-serif;font-size:0.66rem;color:var(--color-text-secondary,#555);line-height:1.4;flex:1;}
+.chips-section-label{font-family:'JetBrains Mono',monospace;font-size:0.51rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--color-text-secondary,#999);margin:0.7rem 0 0.35rem;display:flex;align-items:center;gap:0.5rem;}
+.chips-section-label .self-test-btn{font-family:'JetBrains Mono',monospace;font-size:0.45rem;padding:1px 7px;border:1.5px solid var(--color-border-tertiary,#ddd);background:var(--white);color:var(--color-text-secondary,#888);cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;margin-left:auto;transition:all 0.12s;border-radius:2px;}
+.self-test-btn:hover,.self-test-btn.on{border-color:var(--ac,#333);background:var(--ac,#333);color:#fff;}
+.chips{display:flex;flex-wrap:wrap;gap:4px;}
+.chip{font-family:'JetBrains Mono',monospace;font-size:0.57rem;padding:3px 8px;border:1.5px solid var(--color-border-tertiary,#ddd);background:var(--color-background-primary,#fff);cursor:pointer;transition:all 0.12s;}
+.chip:hover,.chip.on{border-color:var(--ac,#333);background:var(--ac-bg,#f5f5f5);color:var(--ac,#333);}
+.chip.trap{border-color:var(--danger-border);color:var(--danger,#c0392b);}
+.chip.trap:hover,.chip.trap.on{border-color:var(--danger,#c0392b);background:var(--danger-light);color:var(--danger,#c0392b);}
+.misconception-label{font-family:'JetBrains Mono',monospace;font-size:0.51rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--danger,#c0392b);margin:0.55rem 0 0.3rem;opacity:0.75;}
+.chip-info{margin-top:0.45rem;min-height:2.2rem;font-size:0.68rem;color:var(--color-text-secondary,#555);line-height:1.5;border-left:3px solid var(--color-border-secondary,#ddd);padding-left:0.55rem;transition:border-color 0.15s;}
+.chip-info.lit{border-color:var(--ac,#333);}
+.chip-info.trap-lit{border-color:var(--danger,#c0392b) !important;}
+.chip-connect{display:inline-block;margin-top:5px;font-family:'JetBrains Mono',monospace;font-size:0.52rem;color:var(--ac,#333);cursor:pointer;border-bottom:1px dashed currentColor;opacity:0.7;transition:opacity 0.12s;}
+.chip-connect:hover{opacity:1;}
+.chip-info.hidden-test{background:repeating-linear-gradient(45deg,#f5f5f0,#f5f5f0 4px,#ededea 4px,#ededea 8px);color:transparent;user-select:none;cursor:pointer;border-color:var(--color-border-secondary,#ddd) !important;position:relative;}
+.chip-info.hidden-test::after{content:'click to reveal';position:absolute;left:0.55rem;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:0.5rem;color:var(--color-text-secondary,#aaa);text-transform:uppercase;letter-spacing:0.08em;}
+.sowhat{border:2px solid var(--black);display:grid;grid-template-columns:5px 1fr;margin-top:0.9rem;overflow:hidden;}
+.sw-bar{background:var(--ac,#333);transition:background 0.3s;}
+.sw-body{padding:0.55rem 0.7rem;font-size:0.7rem;color:var(--color-text-primary,#222);line-height:1.55;}
+.sw-body strong{font-family:'Archivo Black',sans-serif;color:var(--ac,#333);transition:color 0.3s;}
+.trace-bar{border-top:2px solid var(--black);background:var(--color-background-secondary,#f5f5f0);padding:0.55rem 1.2rem;flex-shrink:0;}
+.trace-label{font-family:'JetBrains Mono',monospace;font-size:0.48rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--color-text-secondary,#aaa);margin-bottom:0.35rem;}
+.trace-rows{display:flex;flex-direction:column;gap:2px;}
+.trace-row{display:flex;align-items:center;gap:6px;opacity:0.3;transition:opacity 0.3s;}
+.trace-row.lit{opacity:1;}
+.trace-dot{width:6px;height:6px;border-radius:50%;background:var(--color-border-secondary,#ccc);flex-shrink:0;transition:background 0.3s;}
+.trace-row.lit .trace-dot{background:var(--ac,#333);}
+.trace-txt{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--color-text-secondary,#666);}
+.trace-tag{font-family:'JetBrains Mono',monospace;font-size:0.47rem;padding:1px 5px;background:var(--color-background-tertiary,#eee);color:var(--color-text-secondary,#aaa);margin-left:auto;}
+.trace-row.lit .trace-tag{background:var(--ac-bg,#eee);color:var(--ac,#555);}
+.variant-panel{display:none;flex-direction:column;height:100%;}
+.variant-panel.visible{display:flex;}
+.vp-header{padding:0.8rem 1.2rem 0.65rem;border-bottom:2px solid var(--black);background:var(--gold);flex-shrink:0;}
+.vp-header-title{font-family:'Archivo Black',sans-serif;font-size:0.95rem;color:#fff;}
+.vp-header-sub{font-family:'JetBrains Mono',monospace;font-size:0.46rem;color:rgba(255,255,255,0.75);margin-top:2px;letter-spacing:0.08em;}
+.vp-tabs{display:flex;border-bottom:2px solid var(--black);flex-shrink:0;overflow-x:auto;}
+.vp-tab{flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:0.5rem;padding:0.45rem 0.2rem 0.4rem;text-align:center;cursor:pointer;border-right:1px solid var(--color-border-secondary,#ddd);text-transform:uppercase;letter-spacing:0.04em;transition:background 0.12s;color:var(--color-text-secondary,#777);white-space:nowrap;}
+.vp-tab:last-child{border-right:none;}
+.vp-tab.on{background:var(--black);color:#fff;}
+.vp-tab-dot{display:block;width:7px;height:7px;border-radius:50%;margin:0 auto 3px;}
+.vp-body{flex:1;overflow-y:auto;padding:0.7rem 0.9rem;}
+.vp-layer-row{display:grid;grid-template-columns:68px 1fr;margin-bottom:3px;border:1px solid var(--color-border-secondary,#e0e0e0);border-radius:2px;overflow:hidden;}
+.vp-layer-label{padding:0.45rem 0.5rem;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--color-border-secondary,#e0e0e0);}
+.vp-layer-name{font-family:'Archivo Black',sans-serif;font-size:0.56rem;color:#fff;line-height:1.1;}
+.vp-layer-num{font-family:'JetBrains Mono',monospace;font-size:0.38rem;color:rgba(255,255,255,0.5);margin-top:1px;}
+.vp-layer-val{padding:0.4rem 0.6rem;display:flex;flex-direction:column;justify-content:center;background:var(--color-background-primary,#fff);}
+.vp-val-main{font-family:'JetBrains Mono',monospace;font-size:0.58rem;font-weight:700;color:var(--color-text-primary,#222);}
+.vp-val-note{font-family:'Archivo',sans-serif;font-size:0.57rem;color:var(--color-text-secondary,#666);margin-top:2px;line-height:1.35;}
+.vp-note{margin-top:0.65rem;padding:0.5rem 0.65rem;border-left:3px solid var(--gold);background:var(--gold-light);font-size:0.64rem;line-height:1.55;color:var(--color-text-primary,#333);}
+.vp-note strong{font-family:'Archivo Black',sans-serif;color:var(--gold);}
+</style>
+
+<div class="wrap">
+  <div class="strata-col">
+    <div class="strata-label" id="strata-subtitle">Cross-section — click any stratum</div>
+    <div class="perspective-wrap">
+      <div class="left-gutter" id="left-gutter">
+        <div class="gutter-crown" id="gutter-crown">⬛</div>
+        <div class="gutter-line-top" id="gutter-line-top"></div>
+        <div class="gutter-distro-bar" id="gutter-distro-bar">
+          <span class="gutter-distro-label" id="gutter-bar-label">scope</span>
+        </div>
+        <div class="gutter-line-bot"></div>
+      </div>
+      <div class="stack-3d" id="stack"></div>
+    </div>
+    <div class="stack-footer">
+      <div class="strata-nav">
+        <button class="nav-btn" id="btn-prev" onclick="step(-1)">← Prev</button>
+        <div class="nav-dots" id="nav-dots"></div>
+        <button class="nav-btn" id="btn-next" onclick="step(1)">Next →</button>
+        <span class="nav-ctr" id="nav-ctr"></span>
+      </div>
+      <div class="variant-key-row">
+        <div class="variant-key-bar"></div>
+        <div class="variant-key-text">
+          <strong id="variant-key-heading">Protocol Comparison</strong>
+          <span id="variant-key-body">protocols that all use port numbers — very different behaviors</span>
+        </div>
+        <button class="variant-toggle-btn" id="variant-toggle-btn" onclick="toggleVariantPanel()">Compare →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-col">
+    <div class="layer-panel" id="layer-panel">
+      <div class="detail-header" id="d-header">
+        <div class="d-eyebrow" id="d-eyebrow"></div>
+        <div class="d-title" id="d-title"></div>
+        <div class="d-meta-row">
+          <div class="d-diff-row" id="d-diff-row"></div>
+          <div class="d-prereq-row" id="d-prereq-row"></div>
+        </div>
+      </div>
+      <div class="detail-body">
+        <div class="detail-body-inner" id="dbi">
+          <div class="mech-why" id="mech-why"></div>
+          <div id="mech-block"></div>
+          <div class="chips-section-label">
+            Components — click to inspect
+            <button class="self-test-btn" id="self-test-btn" onclick="toggleSelfTest()">Self-test</button>
+          </div>
+          <div class="chips" id="chips"></div>
+          <div class="misconception-label" id="misconception-label" style="display:none">⚠ Common misconceptions</div>
+          <div class="chips" id="misconception-chips"></div>
+          <div class="chip-info" id="chip-info">pick a component above ↑</div>
+          <div class="sowhat" id="sowhat">
+            <div class="sw-bar" id="sw-bar"></div>
+            <div class="sw-body" id="sw-body"></div>
+          </div>
+        </div>
+      </div>
+      <div class="trace-bar">
+        <div class="trace-label" id="trace-label">Trace — a packet arriving at your machine</div>
+        <div class="trace-rows" id="trace-rows"></div>
+      </div>
+    </div>
+
+    <div class="variant-panel" id="variant-panel">
+      <div class="vp-header">
+        <div class="vp-header-title" id="vp-title">Protocol Comparison</div>
+        <div class="vp-header-sub" id="vp-subtitle">Protocols that use port numbers — different delivery contracts</div>
+      </div>
+      <div class="vp-tabs" id="vp-tabs"></div>
+      <div class="vp-body" id="vp-body"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CONCEPT_META = {
+  strataSubtitle:    'Cross-section — click any stratum',
+  gutterBarLabel:    'scope',
+  variantKeyHeading: 'Protocol Comparison',
+  variantKeyBody:    'protocols that all use port numbers — very different behaviors',
+  variantBtnLabel:   'Compare →',
+  variantPanelTitle: 'Protocol Comparison',
+  variantPanelSub:   'Protocols that use port numbers — different delivery contracts',
+  traceLabel:        'Trace — a packet arriving at your machine',
+  chipsTitle:        'Components — click to inspect',
+};
+
+const DIFF_LABELS = { 1:'trivial', 2:'easy', 3:'medium', 4:'hard', 5:'expert' };
+
+// ─── LAYERS ──────────────────────────────────────────────────────────────────
+const LAYERS = [
+  {
+    key:      'what',
+    label:    'What is a Port?',
+    badge:    'Concept',
+    difficulty: 1,
+    prereqs:  [],
+    lc:       '#1a3a5c',
+    badgeBg:  'rgba(255,255,255,0.12)',
+    badgeFg:  'rgba(255,255,255,0.7)',
+    rank:     { icon: '①', label: 'Start' },
+    examples: ['port 80', 'port 3001', 'port 5173'],
+    eyebrow:  'Layer 0 — The concept',
+    title:    'What is a Port?',
+    ac:       '#1a3a5c',
+    acBg:     '#dce8f5',
+    mech: {
+      why: 'A computer has one IP address but runs many programs at once. Ports are how the OS knows which program should receive each incoming packet.',
+      title: 'A port is just a number',
+      rows: [
+        { box: 'IP address', filled: false, arrow: '→', cap: 'Identifies the machine on the network. Like a street address.' },
+        { box: 'Port number', filled: true,  arrow: '→', cap: 'Identifies the program on that machine. Like an apartment number.' },
+        { box: '0 – 65535',  filled: false, arrow: '',  cap: 'The full range. Only one program can own a given port at a time.' },
+      ]
+    },
+    chips: [
+      { n: 'Port number',   i: 'A 16-bit integer (0–65535). It lives in the TCP/UDP packet header, not in the IP header.' },
+      { n: 'Socket',        i: 'The combination of IP + port + protocol. That triplet uniquely identifies one communication endpoint.' },
+      { n: 'Binding',       i: 'When a program calls bind(), the OS reserves that port for it. No other program can use it until the first one releases it.' },
+      { n: 'Listening',     i: 'A server "listens" on a port — it sits waiting for incoming connections. Your Express server does this on 3001.' },
+      { n: 'Ephemeral port',i: 'When YOUR machine connects out to a server, the OS picks a random high port (49152–65535) for the outgoing side of the connection.', connects: { layer: 'ranges', chip: 'Ephemeral' } },
+    ],
+    misconceptions: [
+      { n: 'Ports are hardware', i: 'Ports are purely software — a number in a packet header. A USB port is totally unrelated.' },
+      { n: 'One port = one connection', i: 'A server can handle thousands of simultaneous connections on port 80. The OS tracks them by the full 4-tuple: src IP + src port + dst IP + dst port.' },
+    ],
+    sowhat: '<strong>A port is an apartment number.</strong> IP gets the packet to the building. The port gets it to the right door.',
+    trace:  [0],
+  },
+  {
+    key:      'ranges',
+    label:    'Port Ranges',
+    badge:    'Ranges',
+    difficulty: 2,
+    prereqs:  ['what'],
+    lc:       '#2d5c0e',
+    badgeBg:  'rgba(255,255,255,0.12)',
+    badgeFg:  'rgba(255,255,255,0.65)',
+    rank:     { icon: '②', label: 'Range' },
+    examples: ['0–1023', '1024–49151', '49152–65535'],
+    eyebrow:  'Layer 1 — The ranges',
+    title:    'Where do port numbers come from?',
+    ac:       '#2d5c0e',
+    acBg:     '#eaf3de',
+    mech: {
+      why: 'Not all port numbers are equal. IANA divides the 65536 possible values into three zones with different rules about who can use them.',
+      title: 'The three zones',
+      rows: [
+        { box: '0–1023',       filled: true,  arrow: '→', cap: 'Well-known / system ports. Assigned by IANA. Requires root/admin to bind. HTTP=80, HTTPS=443, SSH=22.' },
+        { box: '1024–49151',   filled: false, arrow: '→', cap: 'Registered ports. Any user can bind. Common for dev servers — your 3001 and 5173 live here.' },
+        { box: '49152–65535',  filled: false, arrow: '',  cap: 'Ephemeral (dynamic) ports. OS picks these automatically for outgoing connections.' },
+      ]
+    },
+    chips: [
+      { n: 'Well-known',  i: 'Ports 0–1023. These are locked down — binding requires elevated privileges. HTTP (80), HTTPS (443), FTP (21), SSH (22), DNS (53).' },
+      { n: 'Registered',  i: 'Ports 1024–49151. No special privileges needed. IANA maintains a registry but enforcement is loose. Your apps live here.' },
+      { n: 'Ephemeral',   i: 'Ports 49152–65535. The OS automatically assigns these for the client side of outgoing connections. You never pick these manually.' },
+      { n: 'IANA',        i: 'Internet Assigned Numbers Authority — the body that maintains the official port registry. You can look up any port at iana.org.' },
+      { n: '3001 / 5173', i: 'Both are registered ports. 3001 = your Express server. 5173 = Vite dev server. Both are in the safe user-bindable range.' },
+    ],
+    misconceptions: [
+      { n: 'Any port works the same', i: 'Functionally yes, but ports below 1024 require root. Running a dev server on port 80 on Linux without sudo will fail.' },
+      { n: '3001 is "special"', i: 'It is not. It is just a convention. Express defaults to 3000, some teams use 3001 to avoid collisions. Any unoccupied registered port works.' },
+    ],
+    sowhat: '<strong>Your app ports (3001, 5173) are registered ports.</strong> Safe to use, no special permissions needed, totally normal.',
+    trace:  [0, 1],
+  },
+  {
+    key:      'types',
+    label:    'TCP vs UDP',
+    badge:    'Protocol',
+    difficulty: 3,
+    prereqs:  ['what', 'ranges'],
+    lc:       '#7b2d00',
+    badgeBg:  'rgba(255,255,255,0.12)',
+    badgeFg:  'rgba(255,255,255,0.65)',
+    rank:     { icon: '③', label: 'Type' },
+    examples: ['TCP:80', 'UDP:53', 'TCP:443'],
+    eyebrow:  'Layer 2 — The type',
+    title:    'Does the port type matter?',
+    ac:       '#7b2d00',
+    acBg:     '#f5e8e0',
+    mech: {
+      why: 'A port number alone does not define behavior. The protocol (TCP or UDP) is a separate field in the packet. The same port number can be used by both simultaneously.',
+      title: 'TCP vs UDP — the contract difference',
+      rows: [
+        { box: 'TCP',  filled: true,  arrow: '→', cap: 'Connection-oriented. Guarantees delivery, order, and no duplicates. Used for HTTP, HTTPS, your Express server.' },
+        { box: 'UDP',  filled: false, arrow: '→', cap: 'Connectionless. Fire and forget. Faster, no guarantee. Used for DNS, video streaming, online games.' },
+        { box: 'Both', filled: false, arrow: '',  cap: 'Port 53 (DNS) uses BOTH — UDP for small queries, TCP for large zone transfers. The number is the same.' },
+      ]
+    },
+    chips: [
+      { n: 'TCP handshake', i: 'Before any data, TCP does a 3-way handshake (SYN → SYN-ACK → ACK). This is why TCP connections have setup cost.' },
+      { n: 'UDP datagram',  i: 'UDP just sends a packet. No handshake, no confirmation. If it gets lost, the application has to handle it.' },
+      { n: 'Same port #',   i: 'TCP:80 and UDP:80 are technically different endpoints. A server can listen on both at once. They share the number but not the socket.' },
+      { n: 'Your app',      i: 'Express (3001) and Vite (5173) both use TCP. HTTP is always TCP. You will never run these on UDP.' },
+      { n: 'QUIC / HTTP3',  i: 'HTTP/3 uses UDP underneath (via QUIC protocol). Port 443 on UDP is HTTP/3. Same port number, different protocol layer.' },
+    ],
+    misconceptions: [
+      { n: 'Port type = protocol', i: 'The port number does not determine TCP vs UDP. That is a separate field in the IP packet. Port 80 on TCP and port 80 on UDP are different.' },
+      { n: 'UDP is broken TCP', i: 'UDP is intentionally simpler. For DNS lookups and video calls, the overhead of TCP guarantees would make things slower, not better.' },
+    ],
+    sowhat: '<strong>For your BetOnMe app: always TCP, always doesn\'t matter.</strong> HTTP = TCP. You will never touch UDP unless you build something real-time like a game server.',
+    trace:  [0, 1, 2],
+  },
+  {
+    key:      'yourapp',
+    label:    'Your App\'s Ports',
+    badge:    'Applied',
+    difficulty: 2,
+    prereqs:  ['ranges', 'types'],
+    lc:       '#4a1a6e',
+    badgeBg:  'rgba(255,255,255,0.12)',
+    badgeFg:  'rgba(255,255,255,0.65)',
+    rank:     { icon: '④', label: 'Apply' },
+    examples: ['3001', '5173', 'CORS'],
+    eyebrow:  'Layer 3 — Applied',
+    title:    'Your App\'s Ports Explained',
+    ac:       '#4a1a6e',
+    acBg:     '#ede0f5',
+    mech: {
+      why: 'BetOnMe runs two servers on the same machine. They need different ports so the OS knows which process each request belongs to.',
+      title: 'Why two ports?',
+      rows: [
+        { box: 'Port 5173',  filled: true,  arrow: '→', cap: 'Vite dev server. Serves your React app (HTML/JS/CSS). Your browser loads this URL.' },
+        { box: 'Port 3001',  filled: false, arrow: '→', cap: 'Express server. Serves data — savedata.json, dk-odds, scrape-now. React fetches from here.' },
+        { box: 'CORS',       filled: false, arrow: '',  cap: 'Because 5173 and 3001 are different origins, the browser blocks cross-port requests by default. server.js adds CORS headers to allow it.' },
+      ]
+    },
+    chips: [
+      { n: '5173 (Vite)',   i: 'Vite picks this automatically. It increments if 5173 is taken (5174, 5175...). That is why your CORS regex uses a range.' },
+      { n: '3001 (Express)',i: 'You chose this. Hardcoded in server.js. Frontend calls http://127.0.0.1:3001 to read/write savedata.' },
+      { n: 'localhost',     i: '127.0.0.1 — the loopback address. Traffic never leaves your machine. Both servers are local-only unless you expose them.' },
+      { n: 'CORS error',    i: 'The browser sees port 5173 ≠ port 3001 and treats them as different origins. server.js must return Access-Control-Allow-Origin headers.' },
+      { n: 'PORT env var',  i: 'For deployment (TICKET-020) you\'d set process.env.PORT so the host can assign a port dynamically instead of hardcoding 3001.' },
+    ],
+    misconceptions: [
+      { n: 'Two ports = two servers', i: 'Technically yes, but conceptually they are one app. pnpm dev starts both via concurrently. They just happen to need separate ports.' },
+      { n: 'CORS is a port rule', i: 'CORS is a browser security policy. The server does not enforce it — only browsers do. curl http://localhost:3001 works fine without CORS headers.' },
+    ],
+    sowhat: '<strong>3001 = data, 5173 = UI.</strong> Two ports because two separate processes. CORS exists only because the browser treats different ports as different origins.',
+    trace:  [0, 1, 2, 3],
+  },
+];
+
+// ─── VARIANTS ────────────────────────────────────────────────────────────────
+const VARIANTS = [
+  {
+    key:   'tcp',
+    label: 'TCP',
+    color: '#1a3a5c',
+    desc:  'Connection-oriented — the reliable workhorse',
+    rows: [
+      { layerKey: 'what',    main: 'Port + TCP',    note: 'Most ports you will ever use. HTTP, HTTPS, your Express server.' },
+      { layerKey: 'ranges',  main: '1024–49151',    note: 'Registered range. 3001 and 5173 both here.' },
+      { layerKey: 'types',   main: 'Handshake',     note: 'SYN → SYN-ACK → ACK before any data. Guaranteed delivery.' },
+      { layerKey: 'yourapp', main: 'Always TCP',    note: 'HTTP = TCP. Your entire BetOnMe stack is TCP only.' },
+    ],
+    note: '<strong>TCP is the default.</strong> When someone says open port 3001, they mean TCP:3001. Reliable, ordered, connection-oriented.',
+  },
+  {
+    key:   'udp',
+    label: 'UDP',
+    color: '#7b2d00',
+    desc:  'Connectionless — fast and unreliable by design',
+    rows: [
+      { layerKey: 'what',    main: 'Port + UDP',    note: 'Same port number space. DNS, video, games.' },
+      { layerKey: 'ranges',  main: 'Same ranges',   note: 'Port ranges apply identically to UDP.' },
+      { layerKey: 'types',   main: 'No handshake',  note: 'Fire and forget. No delivery guarantee. No connection state.' },
+      { layerKey: 'yourapp', main: 'Not used',      note: 'Your app never uses UDP. No web framework defaults to UDP.' },
+    ],
+    note: '<strong>UDP is a conscious tradeoff.</strong> Lower latency, no setup cost. You pick it when speed matters more than reliability: DNS, video, games.',
+  },
+  {
+    key:   'quic',
+    label: 'QUIC / HTTP3',
+    color: '#2a4a1a',
+    desc:  'UDP with reliability bolted on — the future of HTTP',
+    rows: [
+      { layerKey: 'what',    main: 'Port 443 (UDP)', note: 'HTTP/3 runs over QUIC which runs over UDP port 443. Same port, different protocol.' },
+      { layerKey: 'ranges',  main: 'Well-known 443', note: 'Port 443 is used for both TCP (HTTPS) and UDP (HTTP/3). Different protocol, same port number.' },
+      { layerKey: 'types',   main: 'UDP + reliability', note: 'QUIC is UDP underneath but adds its own connection management, encryption, and reliability on top.' },
+      { layerKey: 'yourapp', main: 'Not yet',        note: 'HTTP/3 is served by nginx/Caddy on deployment. Not relevant for your local dev setup.' },
+    ],
+    note: '<strong>QUIC shows UDP is not just for games.</strong> HTTP/3 uses UDP for speed but implements reliability itself. Port 443 on TCP = HTTPS. Port 443 on UDP = HTTP/3.',
+  },
+  {
+    key:   'unix',
+    label: 'Unix Sockets',
+    color: '#3a1a4a',
+    desc:  'No port at all — file-based IPC on the same machine',
+    rows: [
+      { layerKey: 'what',    main: 'No port number', note: 'Unix domain sockets use a file path, not an IP:port. /tmp/myapp.sock.' },
+      { layerKey: 'ranges',  main: 'No range',       note: 'Port numbers do not apply. The socket is a file on disk.' },
+      { layerKey: 'types',   main: 'Same-machine only', note: 'Only works between processes on the same machine. Faster than TCP loopback.' },
+      { layerKey: 'yourapp', main: 'Behind the scenes', note: 'LibreOffice uses Unix sockets (why startapp.sh used gnome-terminal). Your app does not use them directly.' },
+    ],
+    note: '<strong>Unix sockets skip the TCP stack entirely.</strong> Fastest way for two processes on the same machine to talk. No port number, no IP — just a file path.',
+  },
+];
+
+// ─── TRACES ──────────────────────────────────────────────────────────────────
+const TRACES = [
+  { txt: 'Packet arrives at your NIC',        tag: 'IP layer' },
+  { txt: 'OS reads port number from header',  tag: 'Transport' },
+  { txt: 'OS routes to the right process',    tag: 'Port match' },
+  { txt: 'Express / Vite receives request',   tag: 'App layer' },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENGINE (unchanged from template)
+// ─────────────────────────────────────────────────────────────────────────────
+let cur = 0;
+let selfTestMode = false;
+let variantOpen = false;
+let variantCur = 0;
+
+function applyMeta() {
+  document.getElementById('strata-subtitle').textContent  = CONCEPT_META.strataSubtitle;
+  document.getElementById('gutter-bar-label').textContent = CONCEPT_META.gutterBarLabel;
+  document.getElementById('variant-key-heading').textContent = CONCEPT_META.variantKeyHeading;
+  document.getElementById('variant-key-body').textContent    = CONCEPT_META.variantKeyBody;
+  document.getElementById('variant-toggle-btn').textContent  = CONCEPT_META.variantBtnLabel;
+  document.getElementById('vp-title').textContent    = CONCEPT_META.variantPanelTitle;
+  document.getElementById('vp-subtitle').textContent = CONCEPT_META.variantPanelSub;
+  document.getElementById('trace-label').textContent = CONCEPT_META.traceLabel;
+}
+
+function buildStack() {
+  const stack = document.getElementById('stack');
+  const dots  = document.getElementById('nav-dots');
+  const trows = document.getElementById('trace-rows');
+  const tabs  = document.getElementById('vp-tabs');
+
+  stack.innerHTML = '';
+  dots.innerHTML  = '';
+  trows.innerHTML = '';
+  tabs.innerHTML  = '';
+
+  const gutter    = document.getElementById('gutter-distro-bar');
+  const lineTop   = document.getElementById('gutter-line-top');
+  const variantIdx = LAYERS.filter(l => l.rank).length;
+  const pxPerLayer = 69;
+  lineTop.style.height = (pxPerLayer * 1) + 'px';
+  gutter.style.height  = (pxPerLayer * LAYERS.length) + 'px';
+
+  LAYERS.forEach((l, i) => {
+    const wrap = document.createElement('div');
+    wrap.id = 'st-' + l.key;
+    wrap.className = 'stratum' + (l.rank ? ' variant-layer' : '');
+    wrap.onclick = () => goTo(i);
+
+    const diffDots = Array.from({length:5}, (_,d) =>
+      `<div class="st-diff-dot${d < (l.difficulty||0) ? ' on' : ''}"></div>`).join('');
+
+    wrap.innerHTML = `
+      <div class="stratum-face" style="background:${l.lc};border-left-color:${l.lc}">
+        <span class="st-num">L${i}</span>
+        <div class="st-text">
+          <div class="st-name">${l.label}</div>
+          <div class="st-examples">${(l.examples||[]).map(e=>`<span class="st-ex-tag">${e}</span>`).join('')}</div>
+        </div>
+        <span class="st-badge" style="background:${l.badgeBg};color:${l.badgeFg}">${l.badge}</span>
+        ${l.rank ? `<div class="st-rank"><span class="st-rank-icon">${l.rank.icon}</span><span class="st-rank-label">${l.rank.label}</span></div>` : ''}
+        <div class="st-difficulty">
+          <div class="st-diff-dots">${diffDots}</div>
+          <div class="st-diff-label">diff</div>
+        </div>
+      </div>
+      <div class="stratum-edge" style="background:${l.lc}"></div>
+      ${i < LAYERS.length - 1 ? '<div class="depth-gap"></div>' : ''}
+    `;
+    stack.appendChild(wrap);
+
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot';
+    dot.onclick = () => goTo(i);
+    dots.appendChild(dot);
+  });
+
+  TRACES.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'trace-row';
+    row.id = 'tr-' + i;
+    row.innerHTML = `<div class="trace-dot"></div><span class="trace-txt">${t.txt}</span><span class="trace-tag">${t.tag}</span>`;
+    trows.appendChild(row);
+  });
+
+  VARIANTS.forEach((v, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'vp-tab' + (i === 0 ? ' on' : '');
+    tab.onclick = () => showVariant(i);
+    tab.innerHTML = `<span class="vp-tab-dot" style="background:${v.color}"></span>${v.label}`;
+    tabs.appendChild(tab);
+  });
+
+  document.getElementById('nav-ctr').textContent = `1 / ${LAYERS.length}`;
+  showVariant(0);
+}
+
+function showVariant(idx) {
+  variantCur = idx;
+  const v = VARIANTS[idx];
+  document.querySelectorAll('.vp-tab').forEach((t,i) => t.classList.toggle('on', i===idx));
+  const body = document.getElementById('vp-body');
+  body.innerHTML = LAYERS.map((l, li) => {
+    const row = v.rows.find(r => r.layerKey === l.key);
+    if (!row) return '';
+    return `
+      <div class="vp-layer-row">
+        <div class="vp-layer-label" style="background:${l.lc}">
+          <div class="vp-layer-name">${l.label}</div>
+          <div class="vp-layer-num">L${li}</div>
+        </div>
+        <div class="vp-layer-val">
+          <div class="vp-val-main">${row.main}</div>
+          <div class="vp-val-note">${row.note}</div>
+        </div>
+      </div>`;
+  }).join('') + (v.note ? `<div class="vp-note">${v.note}</div>` : '');
+}
+
+function toggleVariantPanel() {
+  variantOpen = !variantOpen;
+  document.getElementById('variant-panel').classList.toggle('visible', variantOpen);
+  document.getElementById('layer-panel').style.display = variantOpen ? 'none' : 'flex';
+  document.getElementById('variant-toggle-btn').classList.toggle('on', variantOpen);
+  document.getElementById('variant-toggle-btn').textContent = variantOpen ? '← Back' : CONCEPT_META.variantBtnLabel;
+}
+
+function toggleSelfTest() {
+  selfTestMode = !selfTestMode;
+  const btn = document.getElementById('self-test-btn');
+  btn.classList.toggle('on', selfTestMode);
+  btn.textContent = selfTestMode ? 'Self-test ON' : 'Self-test';
+  const ci = document.getElementById('chip-info');
+  ci.textContent = 'pick a component above ↑';
+  ci.classList.remove('lit','trap-lit','hidden-test');
+}
+
+function highlightPrereqs(keys, on) {
+  document.querySelectorAll('.stratum').forEach(el => el.classList.remove('prereq-lit'));
+  if (on) {
+    keys.forEach(k => {
+      const el = document.getElementById('st-' + k);
+      if (el) el.classList.add('prereq-lit');
+    });
+  }
+}
+
+function renderDetail(l) {
+  document.getElementById('d-header').style.background = l.lc;
+  document.getElementById('d-eyebrow').textContent = l.eyebrow;
+  document.getElementById('d-title').textContent = l.title;
+  document.documentElement.style.setProperty('--ac',    l.ac);
+  document.documentElement.style.setProperty('--ac-bg', l.acBg);
+
+  const diff = l.difficulty || 0;
+  const diffRow = document.getElementById('d-diff-row');
+  if (diff > 0) {
+    const dots = Array.from({length:5}, (_,i) =>
+      `<div class="d-diff-dot${i < diff ? ' on' : ''}"></div>`).join('');
+    diffRow.innerHTML = dots + `<span class="d-diff-label" style="margin-left:5px">${DIFF_LABELS[diff]}</span>`;
+    diffRow.style.display = 'flex';
+  } else { diffRow.innerHTML = ''; }
+
+  const prereqRow = document.getElementById('d-prereq-row');
+  if (l.prereqs && l.prereqs.length) {
+    prereqRow.innerHTML =
+      `<span class="d-prereq-label">needs:</span>` +
+      l.prereqs.map(k => {
+        const pl = LAYERS.find(x => x.key === k);
+        return `<span class="d-prereq-tag" onmouseenter="highlightPrereqs(${JSON.stringify(l.prereqs)},true)" onmouseleave="highlightPrereqs([],false)">${pl ? pl.label : k}</span>`;
+      }).join('');
+  } else { prereqRow.innerHTML = ''; }
+
+  const whyEl = document.getElementById('mech-why');
+  if (l.mech.why) {
+    whyEl.innerHTML = `<strong>Why this layer exists</strong>${l.mech.why}`;
+    whyEl.style.borderLeftColor = l.ac;
+    whyEl.style.display = '';
+  } else { whyEl.style.display = 'none'; }
+
+  document.getElementById('mech-block').innerHTML =
+    `<div class="mech-block">
+      <div class="mech-title">${l.mech.title}</div>
+      <div class="mech-rows">
+        ${l.mech.rows.map(r =>
+          `<div class="mech-row">
+            <div class="mech-box" style="color:${l.ac};${r.filled ? 'background:' + l.acBg : ''}">${r.box}</div>
+            ${r.arrow ? `<span class="mech-arrow">${r.arrow}</span>` : ''}
+            <span class="mech-caption">${r.cap}</span>
+          </div>`
+        ).join('')}
+      </div>
+    </div>`;
+
+  const chipEl = document.getElementById('chips');
+  chipEl.innerHTML = l.chips.map(c =>
+    `<span class="chip" data-i="${c.i.replace(/"/g,'&quot;')}" data-connects='${JSON.stringify(c.connects||null)}'>${c.n}</span>`
+  ).join('');
+
+  const mcEl    = document.getElementById('misconception-chips');
+  const mcLabel = document.getElementById('misconception-label');
+  if (l.misconceptions && l.misconceptions.length) {
+    mcEl.innerHTML = l.misconceptions.map(c =>
+      `<span class="chip trap" data-i="${c.i.replace(/"/g,'&quot;')}" data-trap="1">${c.n}</span>`
+    ).join('');
+    mcLabel.style.display = '';
+  } else { mcEl.innerHTML = ''; mcLabel.style.display = 'none'; }
+
+  const ci = document.getElementById('chip-info');
+  ci.textContent = 'pick a component above ↑';
+  ci.classList.remove('lit','trap-lit','hidden-test');
+
+  [...chipEl.querySelectorAll('.chip'), ...mcEl.querySelectorAll('.chip')].forEach(el => {
+    el.addEventListener('click', ev => {
+      ev.stopPropagation();
+      [...chipEl.querySelectorAll('.chip'), ...mcEl.querySelectorAll('.chip')].forEach(x => x.classList.remove('on'));
+      el.classList.add('on');
+      const isTrap   = el.dataset.trap === '1';
+      const connects = el.dataset.connects ? JSON.parse(el.dataset.connects) : null;
+      if (selfTestMode) {
+        ci.classList.remove('lit','trap-lit');
+        ci.classList.add('hidden-test');
+        ci._revealContent  = el.dataset.i;
+        ci._revealTrap     = isTrap;
+        ci._revealConnects = connects;
+        ci.onclick = () => {
+          ci.classList.remove('hidden-test');
+          ci.classList.add(isTrap ? 'trap-lit' : 'lit');
+          ci.innerHTML = renderChipInfo(el.textContent, el.dataset.i, isTrap, connects, l.ac);
+          ci.onclick = null;
+        };
+      } else {
+        ci.classList.remove('hidden-test');
+        ci.classList.add(isTrap ? 'trap-lit' : 'lit');
+        ci.innerHTML = renderChipInfo(el.textContent, el.dataset.i, isTrap, connects, l.ac);
+        ci.onclick = null;
+      }
+    });
+  });
+
+  document.getElementById('sw-bar').style.background = l.ac;
+  document.getElementById('sw-body').innerHTML = l.sowhat;
+  TRACES.forEach((_, i) => document.getElementById('tr-' + i).classList.toggle('lit', l.trace.includes(i)));
+}
+
+function renderChipInfo(name, info, isTrap, connects, ac) {
+  let html = `<strong>${name}</strong> — ${info}`;
+  if (connects) {
+    const targetLayer = LAYERS.find(x => x.key === connects.layer);
+    if (targetLayer) {
+      const targetIdx = LAYERS.indexOf(targetLayer);
+      html += `<br><span class="chip-connect" onclick="goTo(${targetIdx})">→ see <em>${connects.chip}</em> in ${targetLayer.label}</span>`;
+    }
+  }
+  return html;
+}
+
+function fireSignal(idx) {
+  const el   = document.getElementById('st-' + LAYERS[idx].key);
+  const face = el.querySelector('.stratum-face');
+  const ex   = face.querySelector('.pulse-line');
+  if (ex) ex.remove();
+  const pl = document.createElement('div');
+  pl.className = 'pulse-line';
+  face.appendChild(pl);
+  setTimeout(() => pl.remove(), 700);
+}
+
+function goTo(idx, animate = true) {
+  cur = Math.max(0, Math.min(LAYERS.length - 1, idx));
+  const l = LAYERS[cur];
+  document.querySelectorAll('.stratum').forEach((el, i) => el.classList.toggle('active', i === cur));
+  document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('on', i === cur));
+  document.getElementById('btn-prev').disabled = cur === 0;
+  const nb = document.getElementById('btn-next');
+  nb.textContent = cur === LAYERS.length - 1 ? 'Done ✓' : 'Next →';
+  document.getElementById('nav-ctr').textContent = `${cur + 1} / ${LAYERS.length}`;
+  fireSignal(cur);
+  highlightPrereqs([], false);
+  const stBtn = document.getElementById('self-test-btn');
+  stBtn.classList.remove('on');
+  stBtn.textContent = 'Self-test';
+  selfTestMode = false;
+  const dbi = document.getElementById('dbi');
+  if (animate) {
+    dbi.classList.remove('in');
+    dbi.classList.add('out');
+    setTimeout(() => { renderDetail(l); dbi.classList.remove('out'); dbi.classList.add('in'); }, 160);
+  } else {
+    renderDetail(l);
+  }
+}
+
+function step(d) { goTo(cur + d); }
+
+applyMeta();
+buildStack();
+goTo(0, false);
+</script>

@@ -1,0 +1,689 @@
+<!--
+  NODE.js — What it is, why it exists, and how it fits in your stack
+  Built on VISUAL_NOTE_TEMPLATEV2
+-->
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;700&family=Archivo:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#f2ede4;--black:#111;--white:#fff;
+  --gold:#c8920a;--gold-light:rgba(200,146,10,0.1);--gold-border:rgba(200,146,10,0.45);
+  --danger:#c0392b;--danger-light:rgba(192,57,43,0.08);--danger-border:rgba(192,57,43,0.35);
+}
+body{background:var(--color-background-tertiary,#f2ede4);font-family:'Archivo',sans-serif}
+.wrap{display:grid;grid-template-columns:1fr 300px;min-height:600px;max-width:920px;margin:0 auto;border:2px solid var(--black)}
+.strata-col{background:var(--color-background-secondary,#fafaf6);border-right:2px solid var(--black);display:flex;flex-direction:column;padding:1.2rem 1.4rem 0.8rem 1.4rem;position:relative;}
+.strata-label{font-family:'JetBrains Mono',monospace;font-size:0.52rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--color-text-secondary,#888);margin-bottom:0.9rem;}
+.perspective-wrap{perspective:900px;perspective-origin:50% -20%;flex:1;display:flex;flex-direction:column;justify-content:center;position:relative;}
+.stack-3d{transform:rotateX(8deg);transform-style:preserve-3d;display:flex;flex-direction:column;gap:0;margin-left:2rem;}
+.left-gutter{position:absolute;left:1.4rem;top:0;bottom:0;width:1.5rem;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
+.gutter-crown{font-size:1rem;line-height:1;padding-top:4px;color:var(--gold);flex-shrink:0;}
+.gutter-line-top{width:2px;background:linear-gradient(180deg,var(--gold-border),rgba(200,146,10,0.1));flex-shrink:0;}
+.gutter-distro-bar{width:4px;border-radius:2px;background:linear-gradient(180deg,var(--gold),rgba(200,146,10,0.35));position:relative;flex-shrink:0;}
+.gutter-distro-label{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:0.37rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);writing-mode:vertical-rl;white-space:nowrap;}
+.gutter-line-bot{width:2px;flex:1;background:linear-gradient(180deg,rgba(200,146,10,0.15),transparent);}
+.stratum{position:relative;cursor:pointer;transition:filter 0.18s,transform 0.18s;}
+.stratum:hover{filter:brightness(1.06);transform:scaleX(1.02);}
+.stratum.active{transform:scaleX(1.04);filter:brightness(1.1);}
+.stratum.prereq-lit .stratum-face{outline:2px solid var(--gold) !important;outline-offset:-2px;}
+.stratum.variant-layer .stratum-face{border-left:3px solid rgba(200,146,10,0.6) !important;}
+.stratum-face{height:62px;display:flex;align-items:center;padding:0 0.9rem 0 0.9rem;position:relative;overflow:hidden;border-left:3px solid transparent;}
+.stratum-face::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(93deg,transparent 0px,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px);pointer-events:none;}
+.stratum-edge{height:7px;opacity:0.45;background:rgba(0,0,0,0.22);clip-path:polygon(0 0,100% 0,99% 100%,1% 100%);}
+@keyframes pulse-sweep{0%{top:-4px;opacity:0}20%{opacity:0.7}80%{opacity:0.4}100%{top:calc(100% + 4px);opacity:0}}
+.pulse-line{position:absolute;left:0;right:0;height:2px;background:rgba(255,255,255,0.8);animation:pulse-sweep 0.6s ease-in forwards;pointer-events:none;top:-4px;}
+.st-num{font-family:'JetBrains Mono',monospace;font-size:0.5rem;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.1em;flex-shrink:0;margin-right:0.6rem;}
+.st-text{flex:1;min-width:0;}
+.st-name{font-family:'Archivo Black',sans-serif;font-size:0.78rem;color:#fff;line-height:1.1;}
+.st-examples{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px;}
+.st-ex-tag{font-family:'JetBrains Mono',monospace;font-size:0.4rem;padding:1px 5px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.65);border-radius:2px;white-space:nowrap;}
+.st-badge{font-family:'JetBrains Mono',monospace;font-size:0.48rem;font-weight:700;padding:2px 6px;border-radius:2px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.06em;margin-left:0.5rem;opacity:0.85;}
+.st-rank{margin-left:0.4rem;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;}
+.st-rank-icon{font-size:0.9rem;line-height:1;}
+.st-rank-label{font-family:'JetBrains Mono',monospace;font-size:0.36rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.07em;white-space:nowrap;}
+.st-difficulty{display:flex;flex-direction:column;align-items:center;gap:2px;margin-left:0.4rem;flex-shrink:0;}
+.st-diff-dots{display:flex;gap:2px;}
+.st-diff-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.18);}
+.st-diff-dot.on{background:rgba(255,255,255,0.75);}
+.st-diff-label{font-family:'JetBrains Mono',monospace;font-size:0.3rem;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;}
+.depth-gap{height:4px;background:linear-gradient(180deg,rgba(0,0,0,0.18) 0,rgba(0,0,0,0.04) 100%);}
+.stack-footer{display:flex;flex-direction:column;gap:0.5rem;margin-top:0.8rem;}
+.strata-nav{display:flex;align-items:center;gap:0.5rem;}
+.nav-btn{font-family:'JetBrains Mono',monospace;font-size:0.6rem;padding:4px 12px;border:2px solid var(--black);background:var(--white);cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;transition:background 0.12s,color 0.12s;}
+.nav-btn:hover{background:var(--black);color:var(--white);}
+.nav-btn:disabled{opacity:0.25;pointer-events:none;}
+.nav-dots{display:flex;gap:4px;margin:0 auto;}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--color-border-secondary,#ccc);cursor:pointer;transition:background 0.15s,transform 0.15s;}
+.nav-dot.on{background:var(--black);transform:scale(1.3);}
+.nav-ctr{font-family:'JetBrains Mono',monospace;font-size:0.56rem;color:var(--color-text-secondary,#999);}
+.variant-key-row{display:flex;align-items:center;gap:0.55rem;padding:0.38rem 0.6rem;border:1.5px solid var(--gold-border);background:var(--gold-light);}
+.variant-key-bar{width:4px;height:22px;background:linear-gradient(180deg,var(--gold),rgba(200,146,10,0.35));border-radius:2px;flex-shrink:0;}
+.variant-key-text{font-family:'JetBrains Mono',monospace;font-size:0.48rem;color:var(--color-text-secondary,#666);line-height:1.55;flex:1;}
+.variant-key-text strong{font-family:'Archivo Black',sans-serif;font-size:0.52rem;color:var(--gold);display:block;}
+.variant-toggle-btn{font-family:'JetBrains Mono',monospace;font-size:0.5rem;padding:4px 10px;border:1.5px solid var(--gold-border);background:var(--white);color:var(--gold);cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;transition:all 0.14s;white-space:nowrap;flex-shrink:0;}
+.variant-toggle-btn:hover,.variant-toggle-btn.on{background:var(--gold);color:#fff;border-color:var(--gold);}
+.detail-col{background:var(--color-background-primary,#fff);display:flex;flex-direction:column;overflow:hidden;}
+.layer-panel{display:flex;flex-direction:column;height:100%;}
+.detail-header{padding:0.8rem 1.2rem 0.7rem;border-bottom:2px solid var(--black);transition:background 0.3s;flex-shrink:0;}
+.d-eyebrow{font-family:'JetBrains Mono',monospace;font-size:0.53rem;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:0.2rem;}
+.d-title{font-family:'Archivo Black',sans-serif;font-size:1rem;color:#fff;line-height:1.1;}
+.d-meta-row{display:flex;align-items:center;gap:0.6rem;margin-top:0.35rem;}
+.d-diff-row{display:flex;align-items:center;gap:4px;}
+.d-diff-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.2);}
+.d-diff-dot.on{background:rgba(255,255,255,0.9);}
+.d-diff-label{font-family:'JetBrains Mono',monospace;font-size:0.42rem;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.1em;}
+.d-prereq-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.d-prereq-label{font-family:'JetBrains Mono',monospace;font-size:0.42rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;}
+.d-prereq-tag{font-family:'JetBrains Mono',monospace;font-size:0.4rem;padding:1px 6px;background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);border-radius:2px;cursor:pointer;transition:background 0.12s;}
+.d-prereq-tag:hover{background:rgba(255,255,255,0.3);}
+.detail-body{flex:1;padding:0.85rem 1.2rem;overflow-y:auto;}
+.detail-body-inner{opacity:1;transform:translateY(0);transition:opacity 0.16s,transform 0.16s;}
+.detail-body-inner.out{opacity:0;transform:translateY(8px);}
+.detail-body-inner.in{animation:din 0.2s ease forwards;}
+@keyframes din{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.mech-why{font-family:'Archivo',sans-serif;font-size:0.68rem;color:var(--color-text-secondary,#555);line-height:1.45;border-left:3px solid var(--ac,#333);padding-left:0.6rem;margin-bottom:0.65rem;font-style:italic;transition:border-color 0.3s;}
+.mech-why strong{font-family:'Archivo Black',sans-serif;font-style:normal;color:var(--ac,#333);font-size:0.6rem;display:block;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px;transition:color 0.3s;}
+.mech-block{margin-bottom:0.9rem;}
+.mech-title{font-family:'JetBrains Mono',monospace;font-size:0.51rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--color-text-secondary,#999);margin-bottom:0.4rem;}
+.mech-rows{display:flex;flex-direction:column;gap:3px;}
+.mech-row{display:flex;align-items:center;gap:7px;}
+.mech-box{font-family:'JetBrains Mono',monospace;font-size:0.6rem;font-weight:700;padding:5px 8px;border:1.5px solid currentColor;min-width:76px;text-align:center;letter-spacing:0.03em;flex-shrink:0;}
+.mech-arrow{font-size:0.65rem;flex-shrink:0;opacity:0.5;}
+.mech-caption{font-family:'Archivo',sans-serif;font-size:0.66rem;color:var(--color-text-secondary,#555);line-height:1.4;flex:1;}
+.chips-section-label{font-family:'JetBrains Mono',monospace;font-size:0.51rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--color-text-secondary,#999);margin:0.7rem 0 0.35rem;display:flex;align-items:center;gap:0.5rem;}
+.chips-section-label .self-test-btn{font-family:'JetBrains Mono',monospace;font-size:0.45rem;padding:1px 7px;border:1.5px solid var(--color-border-tertiary,#ddd);background:var(--white);color:var(--color-text-secondary,#888);cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;margin-left:auto;transition:all 0.12s;border-radius:2px;}
+.self-test-btn:hover,.self-test-btn.on{border-color:var(--ac,#333);background:var(--ac,#333);color:#fff;}
+.chips{display:flex;flex-wrap:wrap;gap:4px;}
+.chip{font-family:'JetBrains Mono',monospace;font-size:0.57rem;padding:3px 8px;border:1.5px solid var(--color-border-tertiary,#ddd);background:var(--color-background-primary,#fff);cursor:pointer;transition:all 0.12s;}
+.chip:hover,.chip.on{border-color:var(--ac,#333);background:var(--ac-bg,#f5f5f5);color:var(--ac,#333);}
+.chip.trap{border-color:var(--danger-border);color:var(--danger,#c0392b);}
+.chip.trap:hover,.chip.trap.on{border-color:var(--danger,#c0392b);background:var(--danger-light);color:var(--danger,#c0392b);}
+.misconception-label{font-family:'JetBrains Mono',monospace;font-size:0.51rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--danger,#c0392b);margin:0.55rem 0 0.3rem;opacity:0.75;}
+.chip-info{margin-top:0.45rem;min-height:2.2rem;font-size:0.68rem;color:var(--color-text-secondary,#555);line-height:1.5;border-left:3px solid var(--color-border-secondary,#ddd);padding-left:0.55rem;transition:border-color 0.15s;}
+.chip-info.lit{border-color:var(--ac,#333);}
+.chip-info.trap-lit{border-color:var(--danger,#c0392b) !important;}
+.chip-connect{display:inline-block;margin-top:5px;font-family:'JetBrains Mono',monospace;font-size:0.52rem;color:var(--ac,#333);cursor:pointer;border-bottom:1px dashed currentColor;opacity:0.7;transition:opacity 0.12s;}
+.chip-connect:hover{opacity:1;}
+.chip-info.hidden-test{background:repeating-linear-gradient(45deg,#f5f5f0,#f5f5f0 4px,#ededea 4px,#ededea 8px);color:transparent;user-select:none;cursor:pointer;border-color:var(--color-border-secondary,#ddd) !important;position:relative;}
+.chip-info.hidden-test::after{content:'click to reveal';position:absolute;left:0.55rem;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:0.5rem;color:var(--color-text-secondary,#aaa);text-transform:uppercase;letter-spacing:0.08em;}
+.sowhat{border:2px solid var(--black);display:grid;grid-template-columns:5px 1fr;margin-top:0.9rem;overflow:hidden;}
+.sw-bar{background:var(--ac,#333);transition:background 0.3s;}
+.sw-body{padding:0.55rem 0.7rem;font-size:0.7rem;color:var(--color-text-primary,#222);line-height:1.55;}
+.sw-body strong{font-family:'Archivo Black',sans-serif;color:var(--ac,#333);transition:color 0.3s;}
+.trace-bar{border-top:2px solid var(--black);background:var(--color-background-secondary,#f5f5f0);padding:0.55rem 1.2rem;flex-shrink:0;}
+.trace-label{font-family:'JetBrains Mono',monospace;font-size:0.48rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--color-text-secondary,#aaa);margin-bottom:0.35rem;}
+.trace-rows{display:flex;flex-direction:column;gap:2px;}
+.trace-row{display:flex;align-items:center;gap:6px;opacity:0.3;transition:opacity 0.3s;}
+.trace-row.lit{opacity:1;}
+.trace-dot{width:6px;height:6px;border-radius:50%;background:var(--color-border-secondary,#ccc);flex-shrink:0;transition:background 0.3s;}
+.trace-row.lit .trace-dot{background:var(--ac,#333);}
+.trace-txt{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--color-text-secondary,#666);}
+.trace-tag{font-family:'JetBrains Mono',monospace;font-size:0.47rem;padding:1px 5px;background:var(--color-background-tertiary,#eee);color:var(--color-text-secondary,#aaa);margin-left:auto;}
+.trace-row.lit .trace-tag{background:var(--ac-bg,#eee);color:var(--ac,#555);}
+.variant-panel{display:none;flex-direction:column;height:100%;}
+.variant-panel.visible{display:flex;}
+.vp-header{padding:0.8rem 1.2rem 0.65rem;border-bottom:2px solid var(--black);background:var(--gold);flex-shrink:0;}
+.vp-header-title{font-family:'Archivo Black',sans-serif;font-size:0.95rem;color:#fff;}
+.vp-header-sub{font-family:'JetBrains Mono',monospace;font-size:0.46rem;color:rgba(255,255,255,0.75);margin-top:2px;letter-spacing:0.08em;}
+.vp-tabs{display:flex;border-bottom:2px solid var(--black);flex-shrink:0;overflow-x:auto;}
+.vp-tab{flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:0.5rem;padding:0.45rem 0.2rem 0.4rem;text-align:center;cursor:pointer;border-right:1px solid var(--color-border-secondary,#ddd);text-transform:uppercase;letter-spacing:0.04em;transition:background 0.12s;color:var(--color-text-secondary,#777);white-space:nowrap;}
+.vp-tab:last-child{border-right:none;}
+.vp-tab.on{background:var(--black);color:#fff;}
+.vp-tab-dot{display:block;width:7px;height:7px;border-radius:50%;margin:0 auto 3px;}
+.vp-body{flex:1;overflow-y:auto;padding:0.7rem 0.9rem;}
+.vp-layer-row{display:grid;grid-template-columns:68px 1fr;margin-bottom:3px;border:1px solid var(--color-border-secondary,#e0e0e0);border-radius:2px;overflow:hidden;}
+.vp-layer-label{padding:0.45rem 0.5rem;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--color-border-secondary,#e0e0e0);}
+.vp-layer-name{font-family:'Archivo Black',sans-serif;font-size:0.56rem;color:#fff;line-height:1.1;}
+.vp-layer-num{font-family:'JetBrains Mono',monospace;font-size:0.38rem;color:rgba(255,255,255,0.5);margin-top:1px;}
+.vp-layer-val{padding:0.4rem 0.6rem;display:flex;flex-direction:column;justify-content:center;background:var(--color-background-primary,#fff);}
+.vp-val-main{font-family:'JetBrains Mono',monospace;font-size:0.58rem;font-weight:700;color:var(--color-text-primary,#222);}
+.vp-val-note{font-family:'Archivo',sans-serif;font-size:0.57rem;color:var(--color-text-secondary,#666);margin-top:2px;line-height:1.35;}
+.vp-note{margin-top:0.65rem;padding:0.5rem 0.65rem;border-left:3px solid var(--gold);background:var(--gold-light);font-size:0.64rem;line-height:1.55;color:var(--color-text-primary,#333);}
+.vp-note strong{font-family:'Archivo Black',sans-serif;color:var(--gold);}
+</style>
+
+<div class="wrap">
+  <div class="strata-col">
+    <div class="strata-label" id="strata-subtitle">Cross-section — click any stratum</div>
+    <div class="perspective-wrap">
+      <div class="left-gutter" id="left-gutter">
+        <div class="gutter-crown" id="gutter-crown">🚂</div>
+        <div class="gutter-line-top" id="gutter-line-top"></div>
+        <div class="gutter-distro-bar" id="gutter-distro-bar">
+          <span class="gutter-distro-label" id="gutter-bar-label">runtime</span>
+        </div>
+        <div class="gutter-line-bot"></div>
+      </div>
+      <div class="stack-3d" id="stack"></div>
+    </div>
+    <div class="stack-footer">
+      <div class="strata-nav">
+        <button class="nav-btn" id="btn-prev" onclick="step(-1)">← Prev</button>
+        <div class="nav-dots" id="nav-dots"></div>
+        <button class="nav-btn" id="btn-next" onclick="step(1)">Next →</button>
+        <span class="nav-ctr" id="nav-ctr"></span>
+      </div>
+      <div class="variant-key-row">
+        <div class="variant-key-bar"></div>
+        <div class="variant-key-text">
+          <strong id="variant-key-heading">Express vs Alternatives</strong>
+          <span id="variant-key-body">Node HTTP frameworks — same job, different philosophy</span>
+        </div>
+        <button class="variant-toggle-btn" id="variant-toggle-btn" onclick="toggleVariantPanel()">Compare →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-col">
+    <div class="layer-panel" id="layer-panel">
+      <div class="detail-header" id="d-header">
+        <div class="d-eyebrow" id="d-eyebrow"></div>
+        <div class="d-title" id="d-title"></div>
+        <div class="d-meta-row">
+          <div class="d-diff-row" id="d-diff-row"></div>
+          <div class="d-prereq-row" id="d-prereq-row"></div>
+        </div>
+      </div>
+      <div class="detail-body">
+        <div class="detail-body-inner" id="dbi">
+          <div class="mech-why" id="mech-why"></div>
+          <div id="mech-block"></div>
+          <div class="chips-section-label">
+            Components — click to inspect
+            <button class="self-test-btn" id="self-test-btn" onclick="toggleSelfTest()">Self-test</button>
+          </div>
+          <div class="chips" id="chips"></div>
+          <div class="misconception-label" id="misconception-label" style="display:none">⚠ Common misconceptions</div>
+          <div class="chips" id="misconception-chips"></div>
+          <div class="chip-info" id="chip-info">pick a component above ↑</div>
+          <div class="sowhat" id="sowhat">
+            <div class="sw-bar" id="sw-bar"></div>
+            <div class="sw-body" id="sw-body"></div>
+          </div>
+        </div>
+      </div>
+      <div class="trace-bar">
+        <div class="trace-label" id="trace-label">Trace — React fetches savedata from Express</div>
+        <div class="trace-rows" id="trace-rows"></div>
+      </div>
+    </div>
+
+    <div class="variant-panel" id="variant-panel">
+      <div class="vp-header">
+        <div class="vp-header-title" id="vp-title">Express vs Alternatives</div>
+        <div class="vp-header-sub" id="vp-subtitle">Node HTTP frameworks — same job, different philosophy — same language, different tradeoffs</div>
+      </div>
+      <div class="vp-tabs" id="vp-tabs"></div>
+      <div class="vp-body" id="vp-body"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CONCEPT_META = {
+  strataSubtitle:    'Cross-section — click any stratum',
+  gutterBarLabel:    'http',
+  variantKeyHeading: 'Express vs Alternatives',
+  variantKeyBody:    'Node HTTP frameworks — same job, different philosophy',
+  variantBtnLabel:   'Compare →',
+  variantPanelTitle: 'Express vs Alternatives',
+  variantPanelSub:   'Node HTTP frameworks — same job, different philosophy',
+  traceLabel:        'Trace — React fetches savedata from Express',
+};
+const DIFF_LABELS = { 1:'trivial', 2:'easy', 3:'medium', 4:'hard', 5:'expert' };
+
+const LAYERS = [
+  {
+    key:'problem', label:'The Problem Express Solves', badge:'Context', difficulty:1, prereqs:[],
+    lc:'#2e1a00', badgeBg:'rgba(255,255,255,0.12)', badgeFg:'rgba(255,255,255,0.7)',
+    rank:{ icon:'①', label:'Why' },
+    examples:['http module','raw Node','verbose'],
+    eyebrow:'Layer 0 — The origin', title:'The Problem Express Solves',
+    ac:'#7a3a00', acBg:'#f5ece0',
+    mech:{
+      why:'Node has a built-in http module that can create servers — but it is extremely low-level. Every request is raw bytes. You have to parse URLs, methods, bodies, and headers yourself.',
+      title:'Raw Node http vs Express',
+      rows:[
+        { box:'Raw Node',  filled:false, arrow:'→', cap:'http.createServer((req,res) => { /* parse everything manually */ }). 50+ lines for one endpoint.' },
+        { box:'Problem',   filled:true,  arrow:'→', cap:'Parsing routes, query strings, JSON bodies, setting headers — same boilerplate for every endpoint.' },
+        { box:'Express',   filled:false, arrow:'',  cap:'Wraps the raw http module. app.get("/data", handler) — one line per route. The rest is handled.' },
+      ]
+    },
+    chips:[
+      { n:'http module',  i:'Node built-in module for HTTP. Very powerful but very low-level. You get a raw request object and have to parse everything yourself.' },
+      { n:'boilerplate',  i:'Repetitive code you have to write for every project just to get basic things working. Express eliminates most HTTP boilerplate.' },
+      { n:'framework',    i:'A set of tools and conventions built on top of a lower-level foundation. Express is a framework on top of Node http module.' },
+      { n:'wrapper',      i:'Express does not replace Node http module — it wraps it. Under the hood, Express creates an http.createServer() just like raw Node would.' },
+    ],
+    misconceptions:[
+      { n:'Express is required for Node servers', i:'You can write a Node HTTP server without Express. Express just makes it dramatically less painful. Some teams use Fastify or Hono instead.' },
+      { n:'Express is a backend language',        i:'Express is a JavaScript library — a package you install with npm. It is not a language or a platform. Node is the platform.' },
+    ],
+    sowhat:'<strong>Express is Node http module with training wheels removed.</strong> It handles the repetitive parts — routing, parsing, middleware — so you write logic, not plumbing.',
+    trace:[0],
+  },
+  {
+    key:'routing', label:'Routes', badge:'Core', difficulty:2, prereqs:['problem'],
+    lc:'#1a3a1a', badgeBg:'rgba(255,255,255,0.12)', badgeFg:'rgba(255,255,255,0.65)',
+    rank:{ icon:'②', label:'Routes' },
+    examples:['app.get','app.post','req, res'],
+    eyebrow:'Layer 1 — The core', title:'Routes — How Express Receives Requests',
+    ac:'#1a5c1a', acBg:'#e0f0e0',
+    mech:{
+      why:'Every HTTP request has two key pieces: a method (GET, POST, etc.) and a path (/data, /ping, etc.). Express routes match incoming requests to the right handler function.',
+      title:'Anatomy of a route',
+      rows:[
+        { box:'Method',  filled:true,  arrow:'+', cap:'GET, POST, PUT, DELETE. Tells Express what kind of operation this is.' },
+        { box:'Path',    filled:false, arrow:'→', cap:'The URL path: /data, /dk-odds, /scrape-now. Express matches this string.' },
+        { box:'Handler', filled:false, arrow:'',  cap:'The function that runs when method + path match. Receives (req, res) and sends back a response.' },
+      ]
+    },
+    chips:[
+      { n:'app.get()',    i:'Registers a handler for GET requests — reading data. Your /data, /dk-odds, /ping endpoints all use app.get().' },
+      { n:'app.post()',   i:'Registers a handler for POST requests — sending data. Your /data save, /scrape-now, /odds-history all use app.post().' },
+      { n:'req',         i:'The request object. Contains everything about the incoming request: req.body (POST data), req.query (URL params), req.params (path variables), req.headers.' },
+      { n:'res',         i:'The response object. How you send data back. res.json() sends JSON, res.status(404).json() sends an error, res.send() sends text.' },
+      { n:'route params', i:'Dynamic segments in paths: app.get("/backups/:filename") — the :filename part matches anything and puts it in req.params.filename.' },
+    ],
+    misconceptions:[
+      { n:'GET is for browsers only', i:'GET vs POST is about intent, not who is calling. Your React app uses fetch() to make GET and POST requests to Express — no browser navigation involved.' },
+      { n:'Routes run in parallel',   i:'Express checks routes in order, top to bottom. The first match wins. Order matters — put more specific routes before catch-alls.' },
+    ],
+    sowhat:'<strong>A route = method + path + handler.</strong> GET /data → read. POST /data → write. Express matches incoming requests to the right handler in the order they are registered.',
+    trace:[0,1],
+  },
+  {
+    key:'middleware', label:'Middleware', badge:'Pipeline', difficulty:3, prereqs:['routing'],
+    lc:'#1a1a4a', badgeBg:'rgba(255,255,255,0.12)', badgeFg:'rgba(255,255,255,0.65)',
+    rank:{ icon:'③', label:'Middleware' },
+    examples:['app.use','CORS','json()'],
+    eyebrow:'Layer 2 — The pipeline', title:'Middleware — The Request Pipeline',
+    ac:'#2a2a8a', acBg:'#e8e8f8',
+    mech:{
+      why:'Some logic needs to run on every request — parsing JSON bodies, checking CORS headers, logging. Middleware lets you inject this logic into the pipeline without repeating it in every route.',
+      title:'How middleware works',
+      rows:[
+        { box:'Request',     filled:false, arrow:'→', cap:'Incoming HTTP request enters Express.' },
+        { box:'Middleware',  filled:true,  arrow:'→', cap:'One or more functions run in sequence. Each can modify req/res or call next() to continue.' },
+        { box:'Route handler', filled:false, arrow:'', cap:'Finally reaches your actual app.get/post handler with a fully processed req object.' },
+      ]
+    },
+    chips:[
+      { n:'app.use()',        i:'Registers middleware that runs on ALL requests. app.use(express.json()) parses JSON bodies for every POST request automatically.' },
+      { n:'express.json()',   i:'Built-in middleware that reads the raw request body and parses it as JSON, putting the result in req.body. Without this, req.body is undefined on POST routes.' },
+      { n:'cors()',           i:'The cors npm package as middleware. Adds Access-Control-Allow-Origin headers to every response so browsers allow cross-origin fetches from your React app.' },
+      { n:'next()',           i:'The function a middleware calls to pass control to the next middleware or route. If you forget to call next() (or send a response), the request hangs forever.' },
+      { n:'order matters',   i:'Middleware runs in the order app.use() is called. Put body parsing before routes (so req.body is ready), put error handlers last.' },
+    ],
+    misconceptions:[
+      { n:'Middleware is optional', i:'For your server, express.json() is not optional — without it every POST req.body is undefined and saves fail silently. CORS is also required for your React app.' },
+      { n:'app.use() is only for middleware', i:'app.use() can also mount routers and handle all methods. In your server.js it is used purely for middleware that runs on every request.' },
+    ],
+    sowhat:'<strong>Middleware is a pipeline, not a handler.</strong> express.json() parses bodies, cors() adds headers — both run before your route handler even sees the request.',
+    trace:[0,1,2],
+  },
+  {
+    key:'reqres', label:'Request and Response', badge:'I/O', difficulty:2, prereqs:['routing'],
+    lc:'#3a1a4a', badgeBg:'rgba(255,255,255,0.12)', badgeFg:'rgba(255,255,255,0.65)',
+    rank:{ icon:'④', label:'I/O' },
+    examples:['req.body','res.json','status(404)'],
+    eyebrow:'Layer 3 — The I/O', title:'Request and Response Objects',
+    ac:'#6a2a8a', acBg:'#f0e8f8',
+    mech:{
+      why:'Every route handler gets two objects: req (what the client sent) and res (what you send back). These are the entire interface between your server logic and the outside world.',
+      title:'What req and res give you',
+      rows:[
+        { box:'req.body',   filled:true,  arrow:'→', cap:'The parsed JSON from a POST request. Only exists because express.json() middleware ran first.' },
+        { box:'req.query',  filled:false, arrow:'→', cap:'URL query params: GET /dk-props?sport=MLB puts {sport:"MLB"} in req.query.' },
+        { box:'res.json()', filled:false, arrow:'',  cap:'Sends a JSON response with Content-Type: application/json. Automatically stringifies your object.' },
+      ]
+    },
+    chips:[
+      { n:'req.body',    i:'POST request payload after JSON parsing. When React does fetch("/data", {body: JSON.stringify(data)}), this is where it lands in your handler.' },
+      { n:'req.query',   i:'Query string parameters. GET /dk-props?sport=MLB → req.query.sport === "MLB". Your /dk-props and /dk-f5 endpoints use this.' },
+      { n:'req.params',  i:'Route parameters from path patterns. app.get("/backups/:filename") → req.params.filename gives you whatever was in that slot of the URL.' },
+      { n:'res.json()',  i:'The most common response method. Sends HTTP 200 with your object serialized as JSON. React fetch() reads this with r.json().' },
+      { n:'res.status()', i:'Sets the HTTP status code. res.status(404).json({error:"not found"}) sends a proper error response. Status 200 is the default.' },
+    ],
+    misconceptions:[
+      { n:'req.body is always there', i:'req.body is undefined unless express.json() middleware ran first AND the request had Content-Type: application/json. Missing either = undefined body.' },
+      { n:'res.json() and res.send() are the same', i:'res.json() sets Content-Type to application/json and stringifies. res.send() sends raw text/HTML. Use res.json() for all API responses.' },
+    ],
+    sowhat:'<strong>req is what came in, res is what goes out.</strong> req.body = POST data, req.query = URL params, res.json() = send JSON back. That is 90% of what your server does.',
+    trace:[0,1,2,3],
+  },
+  {
+    key:'yourapp', label:'Express in Your Stack', badge:'Applied', difficulty:1, prereqs:['routing','middleware'],
+    lc:'#1a3a4a', badgeBg:'rgba(255,255,255,0.12)', badgeFg:'rgba(255,255,255,0.65)',
+    rank:{ icon:'⑤', label:'Applied' },
+    examples:['server.js','port 3001','/data'],
+    eyebrow:'Layer 4 — Applied', title:'Express in Your Stack',
+    ac:'#1a5a7a', acBg:'#e0eef8',
+    mech:{
+      why:'In BetOnMe, Express is the entire data layer. React cannot read files directly — it asks Express, Express reads savedata.json, Express responds with JSON.',
+      title:'What Express owns in BetOnMe',
+      rows:[
+        { box:'GET /data',        filled:true,  arrow:'→', cap:'React requests savedata.json. Express reads the file, responds with JSON. Called on every app load.' },
+        { box:'POST /data',       filled:false, arrow:'→', cap:'React saves a pick. Express writes to savedata.json. The write queue serializes concurrent saves.' },
+        { box:'POST /scrape-now', filled:false, arrow:'',  cap:'React hits refresh. Express shells out to dk_scraper.py + results.py. Returns when both finish.' },
+      ]
+    },
+    chips:[
+      { n:'GET /data',       i:'Reads savedata.json from disk and returns it as JSON. Every tab that needs persisted data calls this on mount.' },
+      { n:'POST /data',      i:'Receives the full savedata object from React, validates it, writes it to disk. The write queue in useSaveData.js ensures only one write runs at a time.' },
+      { n:'GET /dk-odds',    i:'Reads dk_odds.json (written by the scraper) and returns it. React merges this with ESPN data in odds.js.' },
+      { n:'POST /scrape-now', i:'Triggered by the Refresh button. Spawns dk_scraper.py then results.py as child processes. Responds when both complete (or fail gracefully).' },
+      { n:'CORS middleware', i:'app.use(cors({origin: /localhost:(5173|517[4-9])/})) — allows your React app to call Express across ports. Without this, every fetch() would be blocked.' },
+      { n:'app.listen(3001)', i:'The line that actually starts the server. Express binds to port 3001 and begins accepting connections. Everything above this line is just setup.' },
+    ],
+    misconceptions:[
+      { n:'Express serves the React app', i:'Express only serves data (JSON). Vite serves the React app (HTML/JS/CSS) on port 5173. They are completely separate processes.' },
+      { n:'server.js is complicated',     i:'Your server.js is actually very simple Express — a few middleware lines, 16 routes, and app.listen(). Most complexity is in what the routes DO, not Express itself.' },
+    ],
+    sowhat:'<strong>Express is the bridge between React and the file system.</strong> React cannot touch files. Express can. Every save, every load, every scrape goes through server.js on port 3001.',
+    trace:[0,1,2,3,4],
+  },
+];
+
+const VARIANTS = [
+  {
+    key:'express', label:'Express (you)', color:'#1a3a1a',
+    rows:[
+      { layerKey:'problem',    main:'Thin wrapper',    note:'Barely more than raw Node http. You bring everything else.' },
+      { layerKey:'routing',    main:'app.get/post()',  note:'Simple, explicit route registration. No magic.' },
+      { layerKey:'middleware', main:'app.use()',        note:'Middleware pipeline. Compose whatever you need.' },
+      { layerKey:'reqres',     main:'req/res',          note:'Standard req/res API. Same shape as raw Node http.' },
+      { layerKey:'yourapp',    main:'server.js',        note:'Your entire data layer. 348 lines, 16 routes.' },
+    ],
+    note:'<strong>Express is the baseline.</strong> Created 2010. Most downloaded Node framework by a huge margin. Not because it is the best — because it gets out of your way.',
+  },
+  {
+    key:'fastify', label:'Fastify', color:'#0d3a4a',
+    rows:[
+      { layerKey:'problem',    main:'Faster wrapper',    note:'Up to 2x faster than Express due to schema-based JSON serialization.' },
+      { layerKey:'routing',    main:'fastify.get()',     note:'Same concept, slightly different API. Built-in TypeScript support.' },
+      { layerKey:'middleware', main:'Plugins',           note:'Middleware called "plugins" with a different lifecycle model. More structured.' },
+      { layerKey:'reqres',     main:'request/reply',     note:'Same idea, different naming. reply.send() instead of res.json().' },
+      { layerKey:'yourapp',    main:'Drop-in mostly',    note:'Could replace Express in server.js with a rewrite. Mostly the same concepts.' },
+    ],
+    note:'<strong>Fastify is Express done better.</strong> Faster, schema-validated, better TypeScript. If starting fresh, many devs pick Fastify. Migration from Express is straightforward.',
+  },
+  {
+    key:'hono', label:'Hono', color:'#4a1a3a',
+    rows:[
+      { layerKey:'problem',    main:'Tiny footprint',  note:'~14kb. Runs on Node, Deno, Bun, Cloudflare Workers, anywhere.' },
+      { layerKey:'routing',    main:'app.get()',        note:'Almost identical API to Express. Easy to learn.' },
+      { layerKey:'middleware', main:'c.next()',         note:'Middleware via Web Standard Request/Response. More portable.' },
+      { layerKey:'reqres',     main:'c.json()',         note:'Context object instead of req/res pair. Cleaner API.' },
+      { layerKey:'yourapp',    main:'Future option',    note:'For TICKET-020 deployment, Hono on Cloudflare Workers would be free and always-on.' },
+    ],
+    note:'<strong>Hono is the future-facing choice.</strong> Works on edge runtimes (Cloudflare Workers, Deno Deploy) which are free and always-on — relevant for your TICKET-020 deployment.',
+  },
+  {
+    key:'raw', label:'Raw Node http', color:'#2a2a2a',
+    rows:[
+      { layerKey:'problem',    main:'No abstraction',  note:'http.createServer() directly. You parse everything yourself.' },
+      { layerKey:'routing',    main:'Manual parsing',  note:'if (req.url === "/data" && req.method === "GET") — every route by hand.' },
+      { layerKey:'middleware', main:'Manual chain',    note:'No middleware system. You build your own function chain.' },
+      { layerKey:'reqres',     main:'Raw streams',     note:'req is a readable stream. You collect chunks, parse JSON manually.' },
+      { layerKey:'yourapp',    main:'Not practical',   note:'Your server.js would be 3x longer and harder to read. Express wins here.' },
+    ],
+    note:'<strong>Raw Node is educational, not practical.</strong> Understanding it helps you know what Express is doing underneath. But for real projects, just use Express.',
+  },
+];
+
+const TRACES = [
+  { txt:'React calls fetch("http://127.0.0.1:3001/data")', tag:'React' },
+  { txt:'CORS middleware checks origin header',            tag:'middleware' },
+  { txt:'express.json() parses body (if POST)',            tag:'middleware' },
+  { txt:'app.get("/data") handler runs',                   tag:'route' },
+  { txt:'res.json(savedata) sent back to React',           tag:'response' },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENGINE
+// ─────────────────────────────────────────────────────────────────────────────
+let cur = 0, selfTestMode = false, variantOpen = false, variantCur = 0;
+
+function applyMeta() {
+  document.getElementById('strata-subtitle').textContent     = CONCEPT_META.strataSubtitle;
+  document.getElementById('gutter-bar-label').textContent    = CONCEPT_META.gutterBarLabel;
+  document.getElementById('variant-key-heading').textContent = CONCEPT_META.variantKeyHeading;
+  document.getElementById('variant-key-body').textContent    = CONCEPT_META.variantKeyBody;
+  document.getElementById('variant-toggle-btn').textContent  = CONCEPT_META.variantBtnLabel;
+  document.getElementById('vp-title').textContent            = CONCEPT_META.variantPanelTitle;
+  document.getElementById('vp-subtitle').textContent         = CONCEPT_META.variantPanelSub;
+  document.getElementById('trace-label').textContent         = CONCEPT_META.traceLabel;
+}
+
+function buildStack() {
+  const stack = document.getElementById('stack');
+  const dots  = document.getElementById('nav-dots');
+  const trows = document.getElementById('trace-rows');
+  const tabs  = document.getElementById('vp-tabs');
+  stack.innerHTML = dots.innerHTML = trows.innerHTML = tabs.innerHTML = '';
+
+  const lineTop = document.getElementById('gutter-line-top');
+  const gutter  = document.getElementById('gutter-distro-bar');
+  lineTop.style.height = '69px';
+  gutter.style.height  = (69 * LAYERS.length) + 'px';
+
+  LAYERS.forEach((l, i) => {
+    const wrap = document.createElement('div');
+    wrap.id = 'st-' + l.key;
+    wrap.className = 'stratum' + (l.rank ? ' variant-layer' : '');
+    wrap.onclick = () => goTo(i);
+    const diffDots = Array.from({length:5}, (_,d) =>
+      `<div class="st-diff-dot${d < (l.difficulty||0) ? ' on' : ''}"></div>`).join('');
+    wrap.innerHTML = `
+      <div class="stratum-face" style="background:${l.lc};border-left-color:${l.lc}">
+        <span class="st-num">L${i}</span>
+        <div class="st-text">
+          <div class="st-name">${l.label}</div>
+          <div class="st-examples">${(l.examples||[]).map(e=>`<span class="st-ex-tag">${e}</span>`).join('')}</div>
+        </div>
+        <span class="st-badge" style="background:${l.badgeBg};color:${l.badgeFg}">${l.badge}</span>
+        ${l.rank ? `<div class="st-rank"><span class="st-rank-icon">${l.rank.icon}</span><span class="st-rank-label">${l.rank.label}</span></div>` : ''}
+        <div class="st-difficulty"><div class="st-diff-dots">${diffDots}</div><div class="st-diff-label">diff</div></div>
+      </div>
+      <div class="stratum-edge" style="background:${l.lc}"></div>
+      ${i < LAYERS.length - 1 ? '<div class="depth-gap"></div>' : ''}`;
+    stack.appendChild(wrap);
+
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot';
+    dot.onclick = () => goTo(i);
+    dots.appendChild(dot);
+  });
+
+  TRACES.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'trace-row'; row.id = 'tr-' + i;
+    row.innerHTML = `<div class="trace-dot"></div><span class="trace-txt">${t.txt}</span><span class="trace-tag">${t.tag}</span>`;
+    trows.appendChild(row);
+  });
+
+  VARIANTS.forEach((v, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'vp-tab' + (i === 0 ? ' on' : '');
+    tab.onclick = () => showVariant(i);
+    tab.innerHTML = `<span class="vp-tab-dot" style="background:${v.color}"></span>${v.label}`;
+    tabs.appendChild(tab);
+  });
+
+  document.getElementById('nav-ctr').textContent = `1 / ${LAYERS.length}`;
+  showVariant(0);
+}
+
+function showVariant(idx) {
+  variantCur = idx;
+  const v = VARIANTS[idx];
+  document.querySelectorAll('.vp-tab').forEach((t,i) => t.classList.toggle('on', i===idx));
+  const body = document.getElementById('vp-body');
+  body.innerHTML = LAYERS.map((l, li) => {
+    const row = v.rows.find(r => r.layerKey === l.key);
+    if (!row) return '';
+    return `<div class="vp-layer-row">
+      <div class="vp-layer-label" style="background:${l.lc}">
+        <div class="vp-layer-name">${l.label}</div>
+        <div class="vp-layer-num">L${li}</div>
+      </div>
+      <div class="vp-layer-val">
+        <div class="vp-val-main">${row.main}</div>
+        <div class="vp-val-note">${row.note}</div>
+      </div>
+    </div>`;
+  }).join('') + (v.note ? `<div class="vp-note">${v.note}</div>` : '');
+}
+
+function toggleVariantPanel() {
+  variantOpen = !variantOpen;
+  document.getElementById('variant-panel').classList.toggle('visible', variantOpen);
+  document.getElementById('layer-panel').style.display = variantOpen ? 'none' : 'flex';
+  document.getElementById('variant-toggle-btn').classList.toggle('on', variantOpen);
+  document.getElementById('variant-toggle-btn').textContent = variantOpen ? '← Back' : CONCEPT_META.variantBtnLabel;
+}
+
+function toggleSelfTest() {
+  selfTestMode = !selfTestMode;
+  const btn = document.getElementById('self-test-btn');
+  btn.classList.toggle('on', selfTestMode);
+  btn.textContent = selfTestMode ? 'Self-test ON' : 'Self-test';
+  const ci = document.getElementById('chip-info');
+  ci.textContent = 'pick a component above ↑';
+  ci.classList.remove('lit','trap-lit','hidden-test');
+}
+
+function highlightPrereqs(keys, on) {
+  document.querySelectorAll('.stratum').forEach(el => el.classList.remove('prereq-lit'));
+  if (on) keys.forEach(k => { const el = document.getElementById('st-' + k); if (el) el.classList.add('prereq-lit'); });
+}
+
+function renderDetail(l) {
+  document.getElementById('d-header').style.background = l.lc;
+  document.getElementById('d-eyebrow').textContent = l.eyebrow;
+  document.getElementById('d-title').textContent = l.title;
+  document.documentElement.style.setProperty('--ac',    l.ac);
+  document.documentElement.style.setProperty('--ac-bg', l.acBg);
+
+  const diff = l.difficulty || 0;
+  const diffRow = document.getElementById('d-diff-row');
+  if (diff > 0) {
+    diffRow.innerHTML = Array.from({length:5}, (_,i) => `<div class="d-diff-dot${i < diff ? ' on' : ''}"></div>`).join('') +
+      `<span class="d-diff-label" style="margin-left:5px">${DIFF_LABELS[diff]}</span>`;
+    diffRow.style.display = 'flex';
+  } else { diffRow.innerHTML = ''; }
+
+  const prereqRow = document.getElementById('d-prereq-row');
+  prereqRow.innerHTML = l.prereqs && l.prereqs.length
+    ? `<span class="d-prereq-label">needs:</span>` + l.prereqs.map(k => {
+        const pl = LAYERS.find(x => x.key === k);
+        return `<span class="d-prereq-tag" onmouseenter="highlightPrereqs(${JSON.stringify(l.prereqs)},true)" onmouseleave="highlightPrereqs([],false)">${pl ? pl.label : k}</span>`;
+      }).join('') : '';
+
+  const whyEl = document.getElementById('mech-why');
+  if (l.mech.why) {
+    whyEl.innerHTML = `<strong>Why this layer exists</strong>${l.mech.why}`;
+    whyEl.style.borderLeftColor = l.ac;
+    whyEl.style.display = '';
+  } else { whyEl.style.display = 'none'; }
+
+  document.getElementById('mech-block').innerHTML = `<div class="mech-block">
+    <div class="mech-title">${l.mech.title}</div>
+    <div class="mech-rows">${l.mech.rows.map(r =>
+      `<div class="mech-row">
+        <div class="mech-box" style="color:${l.ac};${r.filled ? 'background:' + l.acBg : ''}">${r.box}</div>
+        ${r.arrow ? `<span class="mech-arrow">${r.arrow}</span>` : ''}
+        <span class="mech-caption">${r.cap}</span>
+      </div>`).join('')}
+    </div></div>`;
+
+  const chipEl = document.getElementById('chips');
+  chipEl.innerHTML = l.chips.map(c =>
+    `<span class="chip" data-i="${c.i.replace(/"/g,'&quot;')}" data-connects='${JSON.stringify(c.connects||null)}'>${c.n}</span>`).join('');
+
+  const mcEl = document.getElementById('misconception-chips');
+  const mcLabel = document.getElementById('misconception-label');
+  if (l.misconceptions && l.misconceptions.length) {
+    mcEl.innerHTML = l.misconceptions.map(c =>
+      `<span class="chip trap" data-i="${c.i.replace(/"/g,'&quot;')}" data-trap="1">${c.n}</span>`).join('');
+    mcLabel.style.display = '';
+  } else { mcEl.innerHTML = ''; mcLabel.style.display = 'none'; }
+
+  const ci = document.getElementById('chip-info');
+  ci.textContent = 'pick a component above ↑';
+  ci.classList.remove('lit','trap-lit','hidden-test');
+
+  [...chipEl.querySelectorAll('.chip'), ...mcEl.querySelectorAll('.chip')].forEach(el => {
+    el.addEventListener('click', ev => {
+      ev.stopPropagation();
+      [...chipEl.querySelectorAll('.chip'), ...mcEl.querySelectorAll('.chip')].forEach(x => x.classList.remove('on'));
+      el.classList.add('on');
+      const isTrap = el.dataset.trap === '1';
+      const connects = el.dataset.connects ? JSON.parse(el.dataset.connects) : null;
+      if (selfTestMode) {
+        ci.classList.remove('lit','trap-lit'); ci.classList.add('hidden-test');
+        ci.onclick = () => {
+          ci.classList.remove('hidden-test');
+          ci.classList.add(isTrap ? 'trap-lit' : 'lit');
+          ci.innerHTML = renderChipInfo(el.textContent, el.dataset.i, isTrap, connects, l.ac);
+          ci.onclick = null;
+        };
+      } else {
+        ci.classList.remove('hidden-test');
+        ci.classList.add(isTrap ? 'trap-lit' : 'lit');
+        ci.innerHTML = renderChipInfo(el.textContent, el.dataset.i, isTrap, connects, l.ac);
+        ci.onclick = null;
+      }
+    });
+  });
+
+  document.getElementById('sw-bar').style.background = l.ac;
+  document.getElementById('sw-body').innerHTML = l.sowhat;
+  TRACES.forEach((_, i) => document.getElementById('tr-' + i).classList.toggle('lit', l.trace.includes(i)));
+}
+
+function renderChipInfo(name, info, isTrap, connects, ac) {
+  let html = `<strong>${name}</strong> — ${info}`;
+  if (connects) {
+    const tl = LAYERS.find(x => x.key === connects.layer);
+    if (tl) html += `<br><span class="chip-connect" onclick="goTo(${LAYERS.indexOf(tl)})">→ see <em>${connects.chip}</em> in ${tl.label}</span>`;
+  }
+  return html;
+}
+
+function fireSignal(idx) {
+  const el = document.getElementById('st-' + LAYERS[idx].key);
+  const face = el.querySelector('.stratum-face');
+  const ex = face.querySelector('.pulse-line'); if (ex) ex.remove();
+  const pl = document.createElement('div'); pl.className = 'pulse-line';
+  face.appendChild(pl); setTimeout(() => pl.remove(), 700);
+}
+
+function goTo(idx, animate = true) {
+  cur = Math.max(0, Math.min(LAYERS.length - 1, idx));
+  const l = LAYERS[cur];
+  document.querySelectorAll('.stratum').forEach((el, i) => el.classList.toggle('active', i === cur));
+  document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('on', i === cur));
+  document.getElementById('btn-prev').disabled = cur === 0;
+  const nb = document.getElementById('btn-next');
+  nb.textContent = cur === LAYERS.length - 1 ? 'Done ✓' : 'Next →';
+  document.getElementById('nav-ctr').textContent = `${cur + 1} / ${LAYERS.length}`;
+  fireSignal(cur);
+  highlightPrereqs([], false);
+  const stBtn = document.getElementById('self-test-btn');
+  stBtn.classList.remove('on'); stBtn.textContent = 'Self-test'; selfTestMode = false;
+  const dbi = document.getElementById('dbi');
+  if (animate) {
+    dbi.classList.remove('in'); dbi.classList.add('out');
+    setTimeout(() => { renderDetail(l); dbi.classList.remove('out'); dbi.classList.add('in'); }, 160);
+  } else { renderDetail(l); }
+}
+
+function step(d) { goTo(cur + d); }
+
+applyMeta();
+buildStack();
+goTo(0, false);
+</script>

@@ -48,17 +48,18 @@ LEAGUES = {
     'NFL': {'leagueId': '88808', 'subcategoryId': '1000'},
 }
 
+# F5 subcategory IDs — found via browser DevTools on DK game page
+F5_SUBCATEGORIES = {
+    'MLB': '15628',  # 1st 5 Innings: ML, Run Line, Total, Team Totals
+}
+
 # Props subcategory IDs — found via browser DevTools on DK props page
 PROP_SUBCATEGORIES = {
     'MLB': {
-        '15221': 'Pitcher Strikeouts O/U',   # e.g. Robbie Ray 6.5 o+121 / u-155
-        '17413': 'Pitcher Outs O/U',          # e.g. Robbie Ray 15.5 o+112 / u-148
-        # Add more subcategoryIds from DevTools:
-        # 'XXXXX': 'Batter Hits O/U',
-        # 'XXXXX': 'Batter Total Bases O/U',
-        # 'XXXXX': 'Batter Home Runs',
-        # 'XXXXX': 'Batter RBIs O/U',
-        # 'XXXXX': 'Batter Stolen Bases',
+        '15221': 'Pitcher Strikeouts O/U',
+        '17413': 'Pitcher Outs O/U',
+        '17319': 'Batter Home Runs (Milestone)',
+        '17320': 'Batter Hits (Milestone)',
     },
     'NBA': {},
     'NFL': {},
@@ -146,14 +147,45 @@ def normalize(data, sport):
             sels = selections.get(m['id'], [])
             print(f'  [DEBUG]   market "{m["name"]}" -> {len(sels)} selections, first odds: {sels[0]["displayOdds"]["american"] if sels else "NONE"}')
 
+    # Statuses DK uses for games that have started — pre-game markets are pulled
+    # when a game goes live, so we'd get 0 markets and show "Lines not yet posted".
+    # Instead, skip these gracefully so the frontend can show a live/final badge.
+    IN_PROGRESS_STATUSES = {'IN_PROGRESS', 'LIVE', 'HALFTIME', 'INTERMISSION'}
+
     games = []
     for eid, event in events.items():
-        if event.get('status') == 'COMPLETED':
+        event_status = event.get('status', '')
+
+        if event_status == 'COMPLETED':
             continue
 
         home = next((p for p in event['participants'] if p['venueRole'] == 'Home'), None)
         away = next((p for p in event['participants'] if p['venueRole'] == 'Away'), None)
         if not home or not away:
+            continue
+
+        # Game is live — DK pulls pre-game markets, so skip market building
+        # but still include the game with its live score so the UI can show it
+        if event_status in IN_PROGRESS_STATUSES:
+            games.append({
+                'id': f'dk_{eid}',
+                'sport_key': sport.lower(),
+                'sport_title': sport,
+                'commence_time': event.get('startEventDate', ''),
+                'home_team': home['name'],
+                'away_team': away['name'],
+                'status': 'IN_PROGRESS',
+                'bookmakers': [],
+                '_dk': {
+                    'eventId': eid,
+                    'liveState': event.get('liveGameState'),
+                    'score': event.get('eventScore'),
+                    'homePitcher': home.get('metadata', {}).get('startingPitcherPlayerName'),
+                    'awayPitcher': away.get('metadata', {}).get('startingPitcherPlayerName'),
+                    'homeColor': home.get('metadata', {}).get('teamColor'),
+                    'awayColor': away.get('metadata', {}).get('teamColor'),
+                }
+            })
             continue
 
         # Build bookmaker markets in the-odds-api format
@@ -229,6 +261,64 @@ def normalize(data, sport):
 
     return games
 
+def normalize_f5(data):
+    """Parse F5 subcategory response into a dict keyed by eventId."""
+    markets_by_id = {m['id']: m for m in data.get('markets', [])}
+    sels_by_market = {}
+    for s in data.get('selections', []):
+        sels_by_market.setdefault(s['marketId'], []).append(s)
+
+    f5_by_event = {}
+    for market_id, market in markets_by_id.items():
+        eid = market.get('eventId')
+        if not eid:
+            continue
+        mname = market.get('name', '')
+        sels = sels_by_market.get(market_id, [])
+        entry = f5_by_event.setdefault(eid, {'h2h': None, 'runline': None, 'total': None})
+
+        # F5 Moneyline
+        if market.get('marketType', {}).get('name') == '1st 5 Innings':
+            home = next((s for s in sels if s.get('outcomeType') == 'Home'), None)
+            away = next((s for s in sels if s.get('outcomeType') == 'Away'), None)
+            if home and away:
+                entry['h2h'] = {
+                    'homeOdds': parse_odds(home['displayOdds']['american']),
+                    'awayOdds': parse_odds(away['displayOdds']['american']),
+                    'homeName': (home.get('participants') or [{}])[0].get('name', ''),
+                    'awayName': (away.get('participants') or [{}])[0].get('name', ''),
+                }
+
+        # F5 Run Line — pick the MainPointLine selections
+        elif 'Run Line' in mname and '5 Innings' in mname:
+            main_sels = [s for s in sels if 'MainPointLine' in s.get('tags', [])]
+            home = next((s for s in main_sels if s.get('outcomeType') == 'Home'), None)
+            away = next((s for s in main_sels if s.get('outcomeType') == 'Away'), None)
+            if home and away:
+                entry['runline'] = {
+                    'homeOdds': parse_odds(home['displayOdds']['american']),
+                    'homePoint': home.get('points'),
+                    'awayOdds': parse_odds(away['displayOdds']['american']),
+                    'awayPoint': away.get('points'),
+                    'homeName': (home.get('participants') or [{}])[0].get('name', ''),
+                    'awayName': (away.get('participants') or [{}])[0].get('name', ''),
+                }
+
+        # F5 Total — pick the MainPointLine Over/Under
+        elif 'Total Runs' in mname and '5 Innings' in mname and 'Team' not in mname:
+            main_sels = [s for s in sels if 'MainPointLine' in s.get('tags', [])]
+            over = next((s for s in main_sels if s.get('outcomeType') == 'Over'), None)
+            under = next((s for s in main_sels if s.get('outcomeType') == 'Under'), None)
+            if over and under:
+                entry['total'] = {
+                    'point': over.get('points'),
+                    'overOdds': parse_odds(over['displayOdds']['american']),
+                    'underOdds': parse_odds(under['displayOdds']['american']),
+                }
+
+    return f5_by_event
+
+
 def scrape():
     print(f'\n[dk_scraper] {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     result = {
@@ -251,6 +341,22 @@ def scrape():
         if not data:
             continue
         games = normalize(data, sport)
+
+        # Fetch F5 markets if available for this sport
+        f5_subcat = F5_SUBCATEGORIES.get(sport)
+        if f5_subcat:
+            print(f'  Fetching {sport} F5 markets (subcategory {f5_subcat})...')
+            f5_data = fetch_league(sport, cfg['leagueId'], f5_subcat)
+            if f5_data:
+                f5_by_event = normalize_f5(f5_data)
+                # Attach f5 data to each game using DK eventId
+                for game in games:
+                    eid = game.get('_dk', {}).get('eventId')
+                    if eid and eid in f5_by_event:
+                        game['_dk']['f5'] = f5_by_event[eid]
+                        print(f'    F5 attached to {game["away_team"]} @ {game["home_team"]}')
+            time.sleep(0.3)
+
         props = fetch_props(sport, cfg['leagueId'])
         result['sports'][sport] = {
             'games': games, 'count': len(games),
@@ -384,7 +490,7 @@ def fetch_props(sport, league_id):
 
 SERVER = 'http://127.0.0.1:3001'
 
-def log_odds_history(data):
+def log_odds_history(data, force=False):
     today = datetime.now().strftime('%Y-%m-%d')
     logged = 0
     for sport, sd in data.get('sports', {}).items():
@@ -419,19 +525,22 @@ def log_odds_history(data):
             try:
                 r = requests.post(
                     f'{SERVER}/odds-history',
-                    json={'dateKey': today, 'gameKey': game_key, 'snapshot': snapshot},
+                    json={'dateKey': today, 'gameKey': game_key, 'snapshot': snapshot, 'force': force},
                     timeout=5
                 )
-                if r.ok and r.json().get('changed'):
+                resp = r.json()
+                if resp.get('changed'):
                     logged += 1
-            except:
-                pass
-    if logged:
-        print(f'[dk_scraper] Logged {logged} odds movements to server')
+                elif force:
+                    print(f'[dk_scraper] force POST returned changed=false for {game_key}: {resp}')
+            except Exception as e:
+                print(f'[dk_scraper] POST failed for {game_key}: {e}')
+    print(f'[dk_scraper] Logged {logged} snapshots to server (force={force})')
 
 if __name__ == '__main__':
     test_mode = '--test' in sys.argv
     watch_mode = '--watch' in sys.argv
+    force_mode = '--force' in sys.argv
 
     if watch_mode:
         print(f'[dk_scraper] Watch mode — every {WATCH_INTERVAL_HOURS}h')
@@ -442,7 +551,7 @@ if __name__ == '__main__':
                     with open(OUTPUT_PATH, 'w') as f:
                         json.dump(data, f, indent=2)
                     print(f'[dk_scraper] Saved to {OUTPUT_PATH}')
-                    log_odds_history(data)
+                    log_odds_history(data, force=force_mode)
                 else:
                     print(json.dumps(data, indent=2))
             except Exception as e:
@@ -459,4 +568,4 @@ if __name__ == '__main__':
             print(f'[dk_scraper] Saved → {OUTPUT_PATH}')
             for sport, d in data['sports'].items():
                 print(f'  {sport}: {d["count"]} games')
-            log_odds_history(data)
+            log_odds_history(data, force=force_mode)

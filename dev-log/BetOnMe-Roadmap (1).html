@@ -1,0 +1,1023 @@
+<!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║         CONCEPT GEOLOGICAL STACK — TEMPLATE v2                  ║
+  ║                                                                  ║
+  ║  NEW IN v2:                                                      ║
+  ║  • prereqs[]        — highlight dependency layers on hover      ║
+  ║  • misconceptions[] — second chip set with "trap" styling       ║
+  ║  • difficulty: 1–5  — shown as dots on stratum face             ║
+  ║  • connects[]       — cross-layer chip links                    ║
+  ║  • selfTest mode    — hide chip info until revealed             ║
+  ║  • mech.why / mech.how split — motivation vs mechanism          ║
+  ║                                                                  ║
+  ║  HOW TO USE:                                                     ║
+  ║  1. Set CONCEPT_META at the top                                  ║
+  ║  2. Fill in LAYERS[] — one object per level                     ║
+  ║  3. Fill in VARIANTS[]                                          ║
+  ║  4. Fill in TRACES[]                                            ║
+  ║  5. Update UI labels (search "TEMPLATE_LABEL")                  ║
+  ╚══════════════════════════════════════════════════════════════════╝
+
+  LAYER OBJECT SHAPE (v2):
+  {
+    key:      'unique_id',
+    label:    'Display Name',
+    badge:    'Short Tag',
+    lc:       '#hexcolor',
+    badgeBg:  'rgba(...)',
+    badgeFg:  'rgba(...)',
+    difficulty: 3,                  // NEW: 1–5 dots shown on stratum
+    prereqs:  ['key1', 'key2'],     // NEW: keys of layers that must be understood first
+    rank:     { icon: '♔', label: 'King' },
+    examples: ['tag1','tag2'],
+    eyebrow:  'Layer N — Role',
+    title:    'Full title',
+    ac:       '#hexcolor',
+    acBg:     '#hexcolor',
+    mech: {
+      why:   'One sentence — why does this layer exist at all?',   // NEW
+      title: 'Section heading (the how)',
+      rows: [
+        { box: 'Label', filled: true, arrow: '→', cap: 'Explanation.' }
+      ]
+    },
+    chips: [
+      { n: 'Component', i: 'Explanation.',
+        connects: { layer: 'target_key', chip: 'Target Chip Name' }  // NEW (optional)
+      }
+    ],
+    misconceptions: [               // NEW: traps / gotchas chip set
+      { n: 'Trap name', i: 'Why this is wrong / what people get confused about.' }
+    ],
+    sowhat:  '<strong>Bold point.</strong> Supporting sentence.',
+    trace:   [0, 1, 2]
+  }
+-->
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;700&family=Archivo:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#f2ede4;--black:#111;--white:#fff;
+  --gold:#c8920a;--gold-light:rgba(200,146,10,0.1);--gold-border:rgba(200,146,10,0.45);
+  --danger:#c0392b;--danger-light:rgba(192,57,43,0.08);--danger-border:rgba(192,57,43,0.35);
+}
+body{background:var(--color-background-tertiary,#f2ede4);font-family:'Archivo',sans-serif}
+.wrap{display:grid;grid-template-columns:1fr 300px;min-height:600px;max-width:920px;margin:0 auto;border:2px solid var(--black)}
+
+/* LEFT */
+.strata-col{
+  background:var(--color-background-secondary,#fafaf6);
+  border-right:2px solid var(--black);
+  display:flex;flex-direction:column;
+  padding:1.2rem 1.4rem 0.8rem 1.4rem;
+  position:relative;
+}
+.strata-label{
+  font-family:'JetBrains Mono',monospace;font-size:0.52rem;
+  letter-spacing:0.16em;text-transform:uppercase;
+  color:var(--color-text-secondary,#888);margin-bottom:0.9rem;
+}
+.perspective-wrap{
+  perspective:900px;perspective-origin:50% -20%;
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  position:relative;
+}
+.stack-3d{
+  transform:rotateX(8deg);transform-style:preserve-3d;
+  display:flex;flex-direction:column;gap:0;
+  margin-left:2rem;
+}
+
+/* LEFT GUTTER */
+.left-gutter{
+  position:absolute;left:1.4rem;top:0;bottom:0;
+  width:1.5rem;display:flex;flex-direction:column;align-items:center;
+  pointer-events:none;
+}
+.gutter-crown{font-size:1rem;line-height:1;padding-top:4px;color:var(--gold);flex-shrink:0;}
+.gutter-line-top{width:2px;background:linear-gradient(180deg,var(--gold-border),rgba(200,146,10,0.1));flex-shrink:0;}
+.gutter-distro-bar{
+  width:4px;border-radius:2px;
+  background:linear-gradient(180deg,var(--gold),rgba(200,146,10,0.35));
+  position:relative;flex-shrink:0;
+}
+.gutter-distro-label{
+  position:absolute;left:9px;top:50%;transform:translateY(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:0.37rem;
+  text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);
+  writing-mode:vertical-rl;white-space:nowrap;
+}
+.gutter-line-bot{width:2px;flex:1;background:linear-gradient(180deg,rgba(200,146,10,0.15),transparent);}
+
+/* STRATA */
+.stratum{position:relative;cursor:pointer;transition:filter 0.18s,transform 0.18s;}
+.stratum:hover{filter:brightness(1.06);transform:scaleX(1.02);}
+.stratum.active{transform:scaleX(1.04);filter:brightness(1.1);}
+.stratum.prereq-lit .stratum-face{outline:2px solid var(--gold) !important;outline-offset:-2px;}
+.stratum.variant-layer .stratum-face{border-left:3px solid rgba(200,146,10,0.6) !important;}
+.stratum-face{
+  height:62px;display:flex;align-items:center;
+  padding:0 0.9rem 0 0.9rem;position:relative;overflow:hidden;
+  border-left:3px solid transparent;
+}
+.stratum-face::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(93deg,transparent 0px,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px);
+  pointer-events:none;
+}
+.stratum-edge{height:7px;opacity:0.45;background:rgba(0,0,0,0.22);clip-path:polygon(0 0,100% 0,99% 100%,1% 100%);}
+@keyframes pulse-sweep{0%{top:-4px;opacity:0}20%{opacity:0.7}80%{opacity:0.4}100%{top:calc(100% + 4px);opacity:0}}
+.pulse-line{position:absolute;left:0;right:0;height:2px;background:rgba(255,255,255,0.8);animation:pulse-sweep 0.6s ease-in forwards;pointer-events:none;top:-4px;}
+.st-num{font-family:'JetBrains Mono',monospace;font-size:0.5rem;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.1em;flex-shrink:0;margin-right:0.6rem;}
+.st-text{flex:1;min-width:0;}
+.st-name{font-family:'Archivo Black',sans-serif;font-size:0.78rem;color:#fff;line-height:1.1;}
+.st-examples{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px;}
+.st-ex-tag{font-family:'JetBrains Mono',monospace;font-size:0.4rem;padding:1px 5px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.65);border-radius:2px;white-space:nowrap;}
+.st-badge{font-family:'JetBrains Mono',monospace;font-size:0.48rem;font-weight:700;padding:2px 6px;border-radius:2px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.06em;margin-left:0.5rem;opacity:0.85;}
+.st-rank{margin-left:0.4rem;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;}
+.st-rank-icon{font-size:0.9rem;line-height:1;}
+.st-rank-label{font-family:'JetBrains Mono',monospace;font-size:0.36rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.07em;white-space:nowrap;}
+
+/* NEW: difficulty dots on stratum */
+.st-difficulty{display:flex;flex-direction:column;align-items:center;gap:2px;margin-left:0.4rem;flex-shrink:0;}
+.st-diff-dots{display:flex;gap:2px;}
+.st-diff-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.18);}
+.st-diff-dot.on{background:rgba(255,255,255,0.75);}
+.st-diff-label{font-family:'JetBrains Mono',monospace;font-size:0.3rem;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;}
+
+.depth-gap{height:4px;background:linear-gradient(180deg,rgba(0,0,0,0.18) 0,rgba(0,0,0,0.04) 100%);}
+
+/* FOOTER */
+.stack-footer{display:flex;flex-direction:column;gap:0.5rem;margin-top:0.8rem;}
+.strata-nav{display:flex;align-items:center;gap:0.5rem;}
+.nav-btn{font-family:'JetBrains Mono',monospace;font-size:0.6rem;padding:4px 12px;border:2px solid var(--black);background:var(--white);cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;transition:background 0.12s,color 0.12s;}
+.nav-btn:hover{background:var(--black);color:var(--white);}
+.nav-btn:disabled{opacity:0.25;pointer-events:none;}
+.nav-dots{display:flex;gap:4px;margin:0 auto;}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--color-border-secondary,#ccc);cursor:pointer;transition:background 0.15s,transform 0.15s;}
+.nav-dot.on{background:var(--black);transform:scale(1.3);}
+.nav-ctr{font-family:'JetBrains Mono',monospace;font-size:0.56rem;color:var(--color-text-secondary,#999);}
+
+.variant-key-row{
+  display:flex;align-items:center;gap:0.55rem;
+  padding:0.38rem 0.6rem;
+  border:1.5px solid var(--gold-border);
+  background:var(--gold-light);
+}
+.variant-key-bar{width:4px;height:22px;background:linear-gradient(180deg,var(--gold),rgba(200,146,10,0.35));border-radius:2px;flex-shrink:0;}
+.variant-key-text{font-family:'JetBrains Mono',monospace;font-size:0.48rem;color:var(--color-text-secondary,#666);line-height:1.55;flex:1;}
+.variant-key-text strong{font-family:'Archivo Black',sans-serif;font-size:0.52rem;color:var(--gold);display:block;}
+.variant-toggle-btn{
+  font-family:'JetBrains Mono',monospace;font-size:0.5rem;
+  padding:4px 10px;border:1.5px solid var(--gold-border);
+  background:var(--white);color:var(--gold);
+  cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;
+  transition:all 0.14s;white-space:nowrap;flex-shrink:0;
+}
+.variant-toggle-btn:hover,.variant-toggle-btn.on{background:var(--gold);color:#fff;border-color:var(--gold);}
+
+/* RIGHT */
+.detail-col{background:var(--color-background-primary,#fff);display:flex;flex-direction:column;overflow:hidden;}
+.layer-panel{display:flex;flex-direction:column;height:100%;}
+.detail-header{padding:0.8rem 1.2rem 0.7rem;border-bottom:2px solid var(--black);transition:background 0.3s;flex-shrink:0;}
+.d-eyebrow{font-family:'JetBrains Mono',monospace;font-size:0.53rem;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:0.2rem;}
+.d-title{font-family:'Archivo Black',sans-serif;font-size:1rem;color:#fff;line-height:1.1;}
+
+/* NEW: difficulty bar in header */
+.d-meta-row{display:flex;align-items:center;gap:0.6rem;margin-top:0.35rem;}
+.d-diff-row{display:flex;align-items:center;gap:4px;}
+.d-diff-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.2);}
+.d-diff-dot.on{background:rgba(255,255,255,0.9);}
+.d-diff-label{font-family:'JetBrains Mono',monospace;font-size:0.42rem;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.1em;}
+.d-prereq-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.d-prereq-label{font-family:'JetBrains Mono',monospace;font-size:0.42rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;}
+.d-prereq-tag{font-family:'JetBrains Mono',monospace;font-size:0.4rem;padding:1px 6px;background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);border-radius:2px;cursor:pointer;transition:background 0.12s;}
+.d-prereq-tag:hover{background:rgba(255,255,255,0.3);}
+
+.detail-body{flex:1;padding:0.85rem 1.2rem;overflow-y:auto;}
+.detail-body-inner{opacity:1;transform:translateY(0);transition:opacity 0.16s,transform 0.16s;}
+.detail-body-inner.out{opacity:0;transform:translateY(8px);}
+.detail-body-inner.in{animation:din 0.2s ease forwards;}
+@keyframes din{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
+/* NEW: mech why strip */
+.mech-why{
+  font-family:'Archivo',sans-serif;font-size:0.68rem;
+  color:var(--color-text-secondary,#555);line-height:1.45;
+  border-left:3px solid var(--ac,#333);padding-left:0.6rem;
+  margin-bottom:0.65rem;font-style:italic;
+  transition:border-color 0.3s;
+}
+.mech-why strong{font-family:'Archivo Black',sans-serif;font-style:normal;color:var(--ac,#333);font-size:0.6rem;display:block;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px;transition:color 0.3s;}
+
+.mech-block{margin-bottom:0.9rem;}
+.mech-title{font-family:'JetBrains Mono',monospace;font-size:0.51rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--color-text-secondary,#999);margin-bottom:0.4rem;}
+.mech-rows{display:flex;flex-direction:column;gap:3px;}
+.mech-row{display:flex;align-items:center;gap:7px;}
+.mech-box{font-family:'JetBrains Mono',monospace;font-size:0.6rem;font-weight:700;padding:5px 8px;border:1.5px solid currentColor;min-width:76px;text-align:center;letter-spacing:0.03em;flex-shrink:0;}
+.mech-arrow{font-size:0.65rem;flex-shrink:0;opacity:0.5;}
+.mech-caption{font-family:'Archivo',sans-serif;font-size:0.66rem;color:var(--color-text-secondary,#555);line-height:1.4;flex:1;}
+
+/* chips — components */
+.chips-section-label{
+  font-family:'JetBrains Mono',monospace;font-size:0.51rem;letter-spacing:0.13em;
+  text-transform:uppercase;color:var(--color-text-secondary,#999);
+  margin:0.7rem 0 0.35rem;display:flex;align-items:center;gap:0.5rem;
+}
+.chips-section-label .self-test-btn{
+  font-family:'JetBrains Mono',monospace;font-size:0.45rem;padding:1px 7px;
+  border:1.5px solid var(--color-border-tertiary,#ddd);background:var(--white);
+  color:var(--color-text-secondary,#888);cursor:pointer;text-transform:uppercase;
+  letter-spacing:0.06em;margin-left:auto;transition:all 0.12s;border-radius:2px;
+}
+.self-test-btn:hover,.self-test-btn.on{border-color:var(--ac,#333);background:var(--ac,#333);color:#fff;}
+.chips{display:flex;flex-wrap:wrap;gap:4px;}
+.chip{
+  font-family:'JetBrains Mono',monospace;font-size:0.57rem;padding:3px 8px;
+  border:1.5px solid var(--color-border-tertiary,#ddd);
+  background:var(--color-background-primary,#fff);cursor:pointer;transition:all 0.12s;
+}
+.chip:hover,.chip.on{border-color:var(--ac,#333);background:var(--ac-bg,#f5f5f5);color:var(--ac,#333);}
+
+/* NEW: misconception chips */
+.chip.trap{border-color:var(--danger-border);color:var(--danger,#c0392b);}
+.chip.trap:hover,.chip.trap.on{border-color:var(--danger,#c0392b);background:var(--danger-light);color:var(--danger,#c0392b);}
+.misconception-label{
+  font-family:'JetBrains Mono',monospace;font-size:0.51rem;letter-spacing:0.13em;
+  text-transform:uppercase;color:var(--danger,#c0392b);
+  margin:0.55rem 0 0.3rem;opacity:0.75;
+}
+
+.chip-info{
+  margin-top:0.45rem;min-height:2.2rem;font-size:0.68rem;
+  color:var(--color-text-secondary,#555);line-height:1.5;
+  border-left:3px solid var(--color-border-secondary,#ddd);padding-left:0.55rem;
+  transition:border-color 0.15s;
+}
+.chip-info.lit{border-color:var(--ac,#333);}
+.chip-info.trap-lit{border-color:var(--danger,#c0392b) !important;}
+
+/* NEW: chip info connect link */
+.chip-connect{
+  display:inline-block;margin-top:5px;
+  font-family:'JetBrains Mono',monospace;font-size:0.52rem;
+  color:var(--ac,#333);cursor:pointer;border-bottom:1px dashed currentColor;
+  opacity:0.7;transition:opacity 0.12s;
+}
+.chip-connect:hover{opacity:1;}
+
+/* NEW: self-test hidden state */
+.chip-info.hidden-test{
+  background:repeating-linear-gradient(45deg,#f5f5f0,#f5f5f0 4px,#ededea 4px,#ededea 8px);
+  color:transparent;user-select:none;cursor:pointer;border-color:var(--color-border-secondary,#ddd) !important;
+  position:relative;
+}
+.chip-info.hidden-test::after{
+  content:'click to reveal';
+  position:absolute;left:0.55rem;top:50%;transform:translateY(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:0.5rem;
+  color:var(--color-text-secondary,#aaa);text-transform:uppercase;letter-spacing:0.08em;
+}
+
+.sowhat{border:2px solid var(--black);display:grid;grid-template-columns:5px 1fr;margin-top:0.9rem;overflow:hidden;}
+.sw-bar{background:var(--ac,#333);transition:background 0.3s;}
+.sw-body{padding:0.55rem 0.7rem;font-size:0.7rem;color:var(--color-text-primary,#222);line-height:1.55;}
+.sw-body strong{font-family:'Archivo Black',sans-serif;color:var(--ac,#333);transition:color 0.3s;}
+.trace-bar{border-top:2px solid var(--black);background:var(--color-background-secondary,#f5f5f0);padding:0.55rem 1.2rem;flex-shrink:0;}
+.trace-label{font-family:'JetBrains Mono',monospace;font-size:0.48rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--color-text-secondary,#aaa);margin-bottom:0.35rem;}
+.trace-rows{display:flex;flex-direction:column;gap:2px;}
+.trace-row{display:flex;align-items:center;gap:6px;opacity:0.3;transition:opacity 0.3s;}
+.trace-row.lit{opacity:1;}
+.trace-dot{width:6px;height:6px;border-radius:50%;background:var(--color-border-secondary,#ccc);flex-shrink:0;transition:background 0.3s;}
+.trace-row.lit .trace-dot{background:var(--ac,#333);}
+.trace-txt{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--color-text-secondary,#666);}
+.trace-tag{font-family:'JetBrains Mono',monospace;font-size:0.47rem;padding:1px 5px;background:var(--color-background-tertiary,#eee);color:var(--color-text-secondary,#aaa);margin-left:auto;}
+.trace-row.lit .trace-tag{background:var(--ac-bg,#eee);color:var(--ac,#555);}
+
+/* VARIANT COMPARE PANEL */
+.variant-panel{display:none;flex-direction:column;height:100%;}
+.variant-panel.visible{display:flex;}
+.vp-header{padding:0.8rem 1.2rem 0.65rem;border-bottom:2px solid var(--black);background:var(--gold);flex-shrink:0;}
+.vp-header-title{font-family:'Archivo Black',sans-serif;font-size:0.95rem;color:#fff;}
+.vp-header-sub{font-family:'JetBrains Mono',monospace;font-size:0.46rem;color:rgba(255,255,255,0.75);margin-top:2px;letter-spacing:0.08em;}
+.vp-tabs{display:flex;border-bottom:2px solid var(--black);flex-shrink:0;overflow-x:auto;}
+.vp-tab{
+  flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:0.5rem;
+  padding:0.45rem 0.2rem 0.4rem;text-align:center;cursor:pointer;
+  border-right:1px solid var(--color-border-secondary,#ddd);
+  text-transform:uppercase;letter-spacing:0.04em;
+  transition:background 0.12s;color:var(--color-text-secondary,#777);
+  white-space:nowrap;
+}
+.vp-tab:last-child{border-right:none;}
+.vp-tab.on{background:var(--black);color:#fff;}
+.vp-tab-dot{display:block;width:7px;height:7px;border-radius:50%;margin:0 auto 3px;}
+.vp-body{flex:1;overflow-y:auto;padding:0.7rem 0.9rem;}
+.vp-layer-row{display:grid;grid-template-columns:68px 1fr;margin-bottom:3px;border:1px solid var(--color-border-secondary,#e0e0e0);border-radius:2px;overflow:hidden;}
+.vp-layer-label{padding:0.45rem 0.5rem;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--color-border-secondary,#e0e0e0);}
+.vp-layer-name{font-family:'Archivo Black',sans-serif;font-size:0.56rem;color:#fff;line-height:1.1;}
+.vp-layer-num{font-family:'JetBrains Mono',monospace;font-size:0.38rem;color:rgba(255,255,255,0.5);margin-top:1px;}
+.vp-layer-val{padding:0.4rem 0.6rem;display:flex;flex-direction:column;justify-content:center;background:var(--color-background-primary,#fff);}
+.vp-val-main{font-family:'JetBrains Mono',monospace;font-size:0.58rem;font-weight:700;color:var(--color-text-primary,#222);}
+.vp-val-note{font-family:'Archivo',sans-serif;font-size:0.57rem;color:var(--color-text-secondary,#666);margin-top:2px;line-height:1.35;}
+.vp-note{margin-top:0.65rem;padding:0.5rem 0.65rem;border-left:3px solid var(--gold);background:var(--gold-light);font-size:0.64rem;line-height:1.55;color:var(--color-text-primary,#333);}
+.vp-note strong{font-family:'Archivo Black',sans-serif;color:var(--gold);}
+</style>
+
+<div class="wrap">
+  <!-- LEFT -->
+  <div class="strata-col">
+    <div class="strata-label" id="strata-subtitle">Cross-section — click any stratum</div>
+    <div class="perspective-wrap">
+      <div class="left-gutter" id="left-gutter">
+        <div class="gutter-crown" id="gutter-crown">♔</div>
+        <div class="gutter-line-top" id="gutter-line-top"></div>
+        <div class="gutter-distro-bar" id="gutter-distro-bar">
+          <span class="gutter-distro-label" id="gutter-bar-label">variant</span>
+        </div>
+        <div class="gutter-line-bot"></div>
+      </div>
+      <div class="stack-3d" id="stack"></div>
+    </div>
+    <div class="stack-footer">
+      <div class="strata-nav">
+        <button class="nav-btn" id="btn-prev" onclick="step(-1)">← Prev</button>
+        <div class="nav-dots" id="nav-dots"></div>
+        <button class="nav-btn" id="btn-next" onclick="step(1)">Next →</button>
+        <span class="nav-ctr" id="nav-ctr"></span>
+      </div>
+      <div class="variant-key-row">
+        <div class="variant-key-bar"></div>
+        <div class="variant-key-text">
+          <strong id="variant-key-heading">Variant</strong>
+          <span id="variant-key-body">bundles layers L1–L5 · foundation not included</span>
+        </div>
+        <button class="variant-toggle-btn" id="variant-toggle-btn" onclick="toggleVariantPanel()">Compare variants →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="detail-col">
+    <div class="layer-panel" id="layer-panel">
+      <div class="detail-header" id="d-header">
+        <div class="d-eyebrow" id="d-eyebrow"></div>
+        <div class="d-title" id="d-title"></div>
+        <!-- NEW: difficulty + prereqs in header -->
+        <div class="d-meta-row">
+          <div class="d-diff-row" id="d-diff-row"></div>
+          <div class="d-prereq-row" id="d-prereq-row"></div>
+        </div>
+      </div>
+      <div class="detail-body">
+        <div class="detail-body-inner" id="dbi">
+          <!-- NEW: mech why strip -->
+          <div class="mech-why" id="mech-why"></div>
+          <div id="mech-block"></div>
+          <div class="chips-section-label">
+            Components — click to inspect
+            <!-- NEW: self-test toggle -->
+            <button class="self-test-btn" id="self-test-btn" onclick="toggleSelfTest()">Self-test</button>
+          </div>
+          <div class="chips" id="chips"></div>
+          <!-- NEW: misconceptions section -->
+          <div class="misconception-label" id="misconception-label" style="display:none">⚠ Common misconceptions</div>
+          <div class="chips" id="misconception-chips"></div>
+          <div class="chip-info" id="chip-info">pick a component above ↑</div>
+          <div class="sowhat" id="sowhat">
+            <div class="sw-bar" id="sw-bar"></div>
+            <div class="sw-body" id="sw-body"></div>
+          </div>
+        </div>
+      </div>
+      <div class="trace-bar">
+        <div class="trace-label" id="trace-label">Signal trace — example flow through layers</div>
+        <div class="trace-rows" id="trace-rows"></div>
+      </div>
+    </div>
+
+    <div class="variant-panel" id="variant-panel">
+      <div class="vp-header">
+        <div class="vp-header-title" id="vp-title">Variant comparison</div>
+        <div class="vp-header-sub" id="vp-subtitle">Same foundation · different implementations</div>
+      </div>
+      <div class="vp-tabs" id="vp-tabs"></div>
+      <div class="vp-body" id="vp-body"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// CONCEPT META
+// ─────────────────────────────────────────────────────────────────────────────
+const CONCEPT_META = {
+  strataSubtitle:    'BetOnMe Stack — click any layer',
+  gutterBarLabel:    'stage',
+  variantKeyHeading: 'Evolution Stage',
+  variantKeyBody:    'Each stage builds on the last — same stack, leveling up',
+  variantBtnLabel:   'See evolution stages →',
+  variantPanelTitle: 'BetOnMe Evolution Path',
+  variantPanelSub:   'Stage 1 → Stage 4 · local tool to live Android app',
+  traceLabel:        'A pick — from game data to saved result',
+  chipsTitle:        'Concepts — click to inspect',
+};
+
+const LAYERS = [
+  {
+    key:      'data',
+    label:    'Data Sources',
+    badge:    'APIs',
+    difficulty: 3,
+    prereqs:  [],
+    lc:       '#1a3a4a',
+    badgeBg:  'rgba(255,255,255,0.12)',
+    badgeFg:  'rgba(255,255,255,0.7)',
+    rank:     { icon: '♔', label: 'Foundation' },
+    examples: ['ESPN', 'DraftKings', 'the-odds-api'],
+    eyebrow:  'Layer 0 — Where the data comes from',
+    title:    'Live Sports Data & Odds',
+    ac:       '#1a3a4a',
+    acBg:     '#E0EBF0',
+    mech: {
+      why: 'Without live data there is no app — every pick, line, and score starts here.',
+      title: 'Three sources, three jobs',
+      rows: [
+        { box: 'ESPN (free)',        filled: true,  arrow: '→', cap: 'Games, scores, live status, probable pitchers. Unofficial API — no key needed. 8h localStorage cache.' },
+        { box: 'DK Scraper (free)', filled: true,  arrow: '→', cap: 'Reverse-engineered DraftKings. Moneylines, spreads, totals, pitcher props. Runs every 30min via systemd.' },
+        { box: 'the-odds-api',      filled: false, arrow: '→', cap: '500 credits/month. Fallback for batter props only. Resets April 1st.' },
+      ]
+    },
+    chips: [
+      { n: 'ESPN Scoreboard',   i: 'site.api.espn.com — free, no auth. Returns games, live scores, probable pitchers. Fetched once on load, merged with DK odds.' },
+      { n: 'dk_scraper.py',     i: 'Python script hitting sportsbook-nash.draftkings.com internal API. subcategoryId controls the market — 4519=MLB lines, 4511=NBA lines, 15221=pitcher Ks O/U, 17413=Outs O/U.' },
+      { n: 'the-odds-api',      i: '500 free credits/month. Now only used as batter props fallback after migrating game lines to the DK scraper.' },
+      { n: 'odds_history.json', i: 'Logs DK line snapshots every 30min. Powers the Live tab movement chart. Auto-purges data older than 2 days.' },
+    ],
+    misconceptions: [
+      { n: 'ESPN is official',        i: 'Unofficial internal API — no SLA, no docs. Could break without notice. Stage 3+ would want a licensed feed (Sportradar) for reliability.' },
+      { n: 'DK scraper is permanent', i: 'Reverse-engineered from browser traffic. DK could add bot detection or change endpoints. Works great now but needs a fallback plan for Stage 3.' },
+    ],
+    sowhat: '<strong>You have real-time data for free.</strong> ESPN + DK scraper covers 95% of what you need right now. The fragility is acceptable at Stage 1 — addressing it is a Stage 3 concern.',
+    trace:  [0],
+  },
+  {
+    key:      'server',
+    label:    'Backend Server',
+    badge:    'Express · Node',
+    difficulty: 2,
+    prereqs:  ['data'],
+    lc:       '#2d4a1a',
+    badgeBg:  'rgba(255,255,255,0.12)',
+    badgeFg:  'rgba(255,255,255,0.65)',
+    rank:     { icon: '♛', label: 'Engine' },
+    examples: ['server.js', 'savedata.json', 'port 3001'],
+    eyebrow:  'Layer 1 — Persistence & API',
+    title:    'Express Server (server.js)',
+    ac:       '#2d4a1a',
+    acBg:     '#E8F0E0',
+    mech: {
+      why: 'The browser can\'t write files — you need a server to persist picks, coins, and history across sessions.',
+      title: 'What server.js does today',
+      rows: [
+        { box: 'GET /data',          filled: true,  arrow: '→', cap: 'Loads savedata.json and returns it to React on startup.' },
+        { box: 'POST /data',         filled: true,  arrow: '→', cap: 'Writes savedata.json — write queue prevents race conditions.' },
+        { box: 'GET /dk-odds',       filled: false, arrow: '→', cap: 'Serves dk_odds.json — game lines + props from scraper.' },
+        { box: 'POST /odds-history', filled: false, arrow: '→', cap: 'Logs line movement snapshots for the Live tab chart.' },
+      ]
+    },
+    chips: [
+      { n: 'savedata.json',      i: 'Single JSON file — picks, coins, predictions, parlays, dog picks, prop picks. ~1 entry/day, ~200KB/year. Grows slowly, no performance concern.' },
+      { n: 'Write queue',        i: 'Prevents race conditions. Two saves firing simultaneously queue instead of stomping each other. Critical bug caught early.' },
+      { n: 'Timestamped backups', i: 'savedata-backups/ keeps 7 days of daily snapshots via node-cron. Your real safety net beyond Syncthing.' },
+      { n: 'Syncthing',          i: 'P2P file sync — savedata.json auto-syncs to phone and other devices. No cloud account needed. Stage 2 replaces this with a real hosted DB.' },
+      { n: '/scrape-now',        i: 'POST endpoint that triggers dk_scraper.py on demand — wired to the ↺ Refresh button in the app header.' },
+    ],
+    misconceptions: [
+      { n: 'This is production-ready', i: 'server.js has no auth, no HTTPS, no rate limiting. It\'s a personal local server — fine for Stage 1, needs hardening before Stage 2.' },
+      { n: 'Syncthing = cloud backup', i: 'Syncthing syncs between devices but isn\'t a backup. Delete on one device = delete everywhere. The timestamped backups folder is your real protection.' },
+    ],
+    sowhat: '<strong>server.js is the glue.</strong> It turns a stateless React app into something that remembers everything. Stage 2 moves this to a VPS. Stage 3 upgrades savedata.json to a real database.',
+    trace:  [1, 3, 4],
+  },
+  {
+    key:      'frontend',
+    label:    'React Frontend',
+    badge:    'Vite · React 19',
+    difficulty: 3,
+    prereqs:  ['server'],
+    lc:       '#4a1a3a',
+    badgeBg:  'rgba(255,255,255,0.12)',
+    badgeFg:  'rgba(255,255,255,0.65)',
+    rank:     { icon: '♜', label: 'UI Layer' },
+    examples: ['App.jsx', '9 tabs', 'hooks/', 'utils/'],
+    eyebrow:  'Layer 2 — Everything you see and touch',
+    title:    'React Frontend (src/)',
+    ac:       '#4a1a3a',
+    acBg:     '#F0E0EC',
+    mech: {
+      why: 'React re-renders automatically when data changes — no manual DOM updates. Vite gives instant hot-reload in dev.',
+      title: 'How the app is structured',
+      rows: [
+        { box: 'App.jsx',        filled: true,  arrow: '↓', cap: 'Root — loads savedata, fetches ESPN + DK, passes everything as props. Was 3,051 lines, now 309 after tab extraction.' },
+        { box: '9 Tab components', filled: false, arrow: '↓', cap: 'Games, Lock, Dogs, Parlays, Props, Wins, Past Lays, Media, Live — each standalone.' },
+        { box: 'useSaveData.js', filled: false, arrow: '↓', cap: 'Shared hook — all read/write goes through here. Prevents scattered API calls across tabs.' },
+      ]
+    },
+    chips: [
+      { n: 'GamesTab',     i: 'ESPN + DK odds merged. Today/Tomorrow/Later sections. Live scores, final scores, chronological sort. ✓ FINAL collapsed section.' },
+      { n: 'LockTab',      i: 'Pick your daily lock. Today + tomorrow games only (no 100-game dump). Locks pick with stake + odds.' },
+      { n: 'LiveTab',      i: 'DK odds movement chart. Dual-axis SVG — American odds (left), implied probability % (right). Last 2 days of lock + dog.' },
+      { n: 'PropsTab',     i: 'Pitcher Ks O/U + Outs O/U from DK (free). Sneak peek always visible. Falls back to the-odds-api for batter props.' },
+      { n: 'useSaveData.js', i: 'loadState(), saveState(), loadDogState(), loadPropPick()... All async — every caller must await. Early bug: some callers were sync and data was lost.' },
+      { n: 'odds.js',      i: 'fetchGamesFromEspn(), mergeWithDkOdds(), getProbablePitcher(). ESPN fetched once, 8h localStorage cache. DK odds merged by team name fuzzy match.' },
+    ],
+    misconceptions: [
+      { n: 'useState is synchronous', i: 'useState setters are async — you can\'t read the updated value on the next line. Use functional updates or useEffect. Caused several early bugs.' },
+      { n: 'LocalStorage = persistence', i: 'localStorage is device-specific and gets cleared. Picks, coins, history all live in savedata.json via the server — not localStorage.' },
+    ],
+    sowhat: '<strong>The frontend is complete and clean.</strong> Stage 2 just points it at a hosted URL instead of localhost. Stage 3 wraps it in a Capacitor APK for Android.',
+    trace:  [1, 2, 3],
+  },
+  {
+    key:      'infra',
+    label:    'Infrastructure',
+    badge:    'systemd · Python',
+    difficulty: 3,
+    prereqs:  ['data', 'server'],
+    lc:       '#3a2a0a',
+    badgeBg:  'rgba(255,255,255,0.12)',
+    badgeFg:  'rgba(255,255,255,0.65)',
+    rank:     { icon: '♝', label: 'Platform' },
+    examples: ['dk-scraper.service', 'startapp.sh', 'Syncthing', 'pnpm'],
+    eyebrow:  'Layer 3 — What keeps it running',
+    title:    'Local Infrastructure',
+    ac:       '#3a2a0a',
+    acBg:     '#F0EAD8',
+    mech: {
+      why: 'The app needs to keep fetching odds even when you\'re not actively using it — that\'s what the background processes handle.',
+      title: 'Three moving pieces',
+      rows: [
+        { box: 'dk-scraper.service', filled: true,  arrow: '→', cap: 'systemd user service — runs dk_scraper.py --watch every 30min. Starts on login, restarts on failure.' },
+        { box: 'startapp.sh',        filled: false, arrow: '→', cap: 'Launches node server.js + pnpm dev via concurrently. One command to start everything.' },
+        { box: 'Syncthing',          filled: false, arrow: '→', cap: 'Watches betonme/ folder. savedata.json syncs to phone instantly — no cloud needed at Stage 1.' },
+      ]
+    },
+    chips: [
+      { n: 'systemd user service', i: 'systemctl --user enable dk-scraper → starts on login. journalctl --user -u dk-scraper -f to watch logs. No sudo needed. Stage 2 moves this to a VPS cron.' },
+      { n: 'concurrently',         i: 'Runs node server.js + vite together with labeled [server] [vite] output. Defined in package.json "dev" script.' },
+      { n: 'Syncthing',            i: 'P2P file sync — phone and desktop share savedata.json. Free, open source, no account. Replaced by hosted DB at Stage 2.' },
+      { n: 'pnpm',                 i: 'Content-addressable package store — faster than npm, saves disk space. All BetOnMe projects use pnpm.' },
+    ],
+    misconceptions: [
+      { n: 'systemd is only for servers',   i: 'systemd --user runs services in your own login session — no root needed. Perfect for personal tools.' },
+      { n: 'startapp.sh starts the scraper', i: 'startapp.sh starts React + Express. The DK scraper is a separate systemd process. They\'re independent — scraper runs even when the browser is closed.' },
+    ],
+    sowhat: '<strong>Three things need to be running:</strong> systemd scraper (auto), node server.js, and pnpm dev. If odds feel stale, check journalctl --user -u dk-scraper -f first.',
+    trace:  [0, 1],
+  },
+  {
+    key:      'evolution',
+    label:    'Evolution Stages',
+    badge:    'The Path',
+    difficulty: 4,
+    prereqs:  ['data', 'server', 'frontend', 'infra'],
+    lc:       '#4a0a5a',
+    badgeBg:  'rgba(255,255,255,0.12)',
+    badgeFg:  'rgba(255,255,255,0.65)',
+    rank:     { icon: '★', label: 'Endgame' },
+    examples: ['Stage 1', 'Stage 2', 'Stage 3', 'Stage 4'],
+    eyebrow:  'Layer 4 — Local tool → live Android app',
+    title:    'The Evolution Path',
+    ac:       '#4a0a5a',
+    acBg:     '#EDE0F5',
+    mech: {
+      why: 'BetOnMe currently requires a Linux machine running 3 processes. Real Sports runs from your pocket with no desktop. Four evolution stages close that gap.',
+      title: 'What changes at each stage',
+      rows: [
+        { box: 'Stage 2 · Hosted',  filled: false, arrow: '→', cap: 'Move server.js to a VPS or Pi. Add HTTPS via Caddy. Access from phone browser — no APK yet.' },
+        { box: 'Stage 3 · Android', filled: false, arrow: '→', cap: 'Wrap Vite app in Capacitor APK. Sideload or Play Store. Push notifications via Firebase.' },
+        { box: 'Stage 4 · Live App',filled: false, arrow: '→', cap: 'Auto result resolution, user accounts, licensed data feed, social features. Real Sports territory.' },
+      ]
+    },
+    chips: [
+      { n: '✅ Stage 1 — Local Beast',    i: 'WHERE YOU ARE. React + Express + DK scraper on your desktop. ESPN + DK data free. Syncthing for multi-device. Fully working personal tool.' },
+      { n: '🔜 Stage 2 — Hosted',         i: 'NEXT STEP. Move server.js to a $5/mo DigitalOcean droplet or Raspberry Pi. Caddy for HTTPS. Phone hits your-domain.com instead of localhost:3001. savedata.json stays as-is or migrates to SQLite.' },
+      { n: '🔜 Stage 3 — Android APK',    i: 'Capacitor wraps the Vite build into an Android APK. pnpm build → npx cap add android → npx cap open android → build APK. Firebase Cloud Messaging adds push notifications.' },
+      { n: '🔜 Stage 4 — Full Live App',  i: 'Auto result resolution (cron polls ESPN finals nightly). User accounts (even just email+password via Supabase). Optional: licensed Sportradar data feed. This is Real Sports territory.' },
+      { n: 'Capacitor',                   i: 'Ionic\'s tool that wraps any web app into a native Android/iOS APK. Works with Vite out of the box. More stable than Tauri mobile for Android right now.' },
+      { n: 'Caddy + HTTPS',               i: 'Caddy auto-provisions SSL certs via Let\'s Encrypt. Capacitor requires HTTPS — self-signed certs won\'t work. Simplest path to a secure hosted server.' },
+      { n: 'Supabase',                    i: 'PostgreSQL with a generous free tier, auth built in, realtime subscriptions. Replaces savedata.json for Stage 4. Has an Android SDK.' },
+      { n: 'FCM Push Notifications',      i: 'Firebase Cloud Messaging — free tier. Server sends a push when your lock game starts, line moves significantly, or results are in.' },
+      { n: 'Auto Result Resolution',      i: 'A nightly cron job polls ESPN final scores, matches against saved picks, and marks W/L automatically. Currently you do this manually.' },
+    ],
+    misconceptions: [
+      { n: 'Tauri = Android',         i: 'Tauri mobile is pre-stable and has known issues with Android. Capacitor is the proven path for wrapping Vite apps. Tauri is great for desktop (which you already have).' },
+      { n: 'Need Play Store for Stage 3', i: 'You can sideload the APK directly to your phone (enable Unknown Sources). Play Store is optional and adds weeks of review time. Start with sideloading.' },
+      { n: 'Stage 4 needs a rewrite',  i: 'The React frontend barely changes across all stages — it just points at a different URL. The evolution is almost entirely backend and infrastructure.' },
+    ],
+    sowhat: '<strong>The frontend is already Stage 4-ready.</strong> Every stage upgrade is a backend/infra change. You\'re one VPS and one Capacitor build away from having this on your phone.',
+    trace:  [0, 1, 2, 3, 4],
+  },
+];
+
+const VLAYERS = [
+  { key: 'data',      label: 'Data',   lc: LAYERS[0].lc },
+  { key: 'server',    label: 'Server', lc: LAYERS[1].lc },
+  { key: 'frontend',  label: 'UI',     lc: LAYERS[2].lc },
+  { key: 'infra',     label: 'Infra',  lc: LAYERS[3].lc },
+  { key: 'evolution', label: 'Goal',   lc: LAYERS[4].lc },
+];
+
+const VARIANTS = [
+  {
+    name: '⚡ Stage 1 — Local Beast', color: '#888888',
+    note: '<strong>WHERE YOU ARE.</strong> Fully working personal tool. Runs on your Linux desktop. ESPN + DK scraper for free data. Syncthing multi-device sync. No hosting cost.',
+    layers: {
+      data:      { val: 'ESPN + DK Scraper',        note: 'Free, reverse-engineered. Fragile but works. 30min refresh via systemd.' },
+      server:    { val: 'Express + savedata.json',  note: 'Local only. No auth needed. Syncthing syncs to phone.' },
+      frontend:  { val: 'React 19 + Vite (localhost)', note: '9 tabs, fully built. Accessed at localhost:5173 from desktop browser.' },
+      infra:     { val: 'systemd + Syncthing',      note: 'Scraper auto-runs. startapp.sh starts everything.' },
+      evolution: { val: '✅ Complete',               note: 'You are here. Everything works. Next: move it off your desktop.' },
+    }
+  },
+  {
+    name: '🔥 Stage 2 — Hosted', color: '#4c9be8',
+    note: '<strong>NEXT STEP.</strong> server.js moves to a VPS or Pi. HTTPS via Caddy. Access BetOnMe from your phone browser at your own domain — no APK yet.',
+    layers: {
+      data:      { val: 'ESPN + DK Scraper (on VPS)',   note: 'Same scraper, now runs on the hosted machine. Cron instead of systemd.' },
+      server:    { val: 'Express + HTTPS (Caddy)',      note: 'server.js on $5/mo DigitalOcean or home Pi. Caddy auto-SSL. savedata.json or SQLite.' },
+      frontend:  { val: 'React build → served by Caddy', note: 'pnpm build → static files served. Phone hits your-domain.com.' },
+      infra:     { val: 'VPS cron + Caddy reverse proxy', note: 'Caddy proxies /api → Express. Cron runs scraper. No Syncthing needed.' },
+      evolution: { val: '🔜 ~1-2 days work',            note: 'Biggest unlock: phone browser access. No APK needed yet.' },
+    }
+  },
+  {
+    name: '🚀 Stage 3 — Android APK', color: '#00cc66',
+    note: '<strong>ON YOUR PHONE.</strong> Capacitor wraps the Vite build into a native Android APK. Sideload it or put it on Play Store. Push notifications via Firebase.',
+    layers: {
+      data:      { val: 'ESPN + DK Scraper (hosted)', note: 'Same as Stage 2. Scraper runs on server, phone just reads results.' },
+      server:    { val: 'Express + auth (basic)',     note: 'Add simple password auth so the hosted API isn\'t open to the internet.' },
+      frontend:  { val: 'Capacitor APK (Android)',   note: 'pnpm build → cap sync → build APK in Android Studio. Sideload to phone first.' },
+      infra:     { val: 'Firebase (push notifications)', note: 'FCM sends push when game starts, line moves, or result drops.' },
+      evolution: { val: '🔜 ~3-5 days work',         note: 'Capacitor setup + Android Studio + FCM. The big jump.' },
+    }
+  },
+  {
+    name: '👑 Stage 4 — Live App', color: '#ff9944',
+    note: '<strong>FULL PRODUCT.</strong> Auto result resolution. User accounts. Licensed data option. This is what Real Sports looks like under the hood.',
+    layers: {
+      data:      { val: 'Sportradar or licensed feed', note: 'Optional upgrade from DK scraper. Guaranteed uptime, official data. Costs money but removes fragility.' },
+      server:    { val: 'Supabase / PostgreSQL + auth', note: 'savedata.json → real database. Row-level security. User accounts via Supabase auth.' },
+      frontend:  { val: 'Capacitor APK + social features', note: 'Share picks, see friends\' records, leaderboard. React stays the same — just new components.' },
+      infra:     { val: 'Auto result resolution (cron)', note: 'Nightly job polls ESPN finals, marks picks W/L automatically. No more manual resolution.' },
+      evolution: { val: '🔜 Weeks of work — optional',  note: 'Most of Stage 4 is nice-to-have. Stage 3 already gives you everything Real Sports gives you personally.' },
+    }
+  },
+];
+
+const TRACES = [
+  { txt: 'ESPN scoreboard fetched on app load — games + probable pitchers merged',   tag: 'DATA'  },
+  { txt: 'server.js serves dk_odds.json — DK lines attached to ESPN game cards',    tag: 'SRV'   },
+  { txt: 'User opens Lock tab → picks a game → openModal() fires',                  tag: 'UI'    },
+  { txt: 'Confirm pick → saveState() → POST /data → savedata.json written to disk', tag: 'SAVE'  },
+  { txt: 'Pick stored with date key → visible in Past Lays, Wins, streak tracker',  tag: 'DONE'  },
+];
+
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENGINE
+// ─────────────────────────────────────────────────────────────────────────────
+let cur = 0, variantMode = false, curVariant = 0, selfTestMode = false;
+
+const DIFF_LABELS = ['', 'Intro', 'Easy', 'Medium', 'Hard', 'Expert'];
+
+function applyMeta() {
+  document.getElementById('strata-subtitle').textContent     = CONCEPT_META.strataSubtitle;
+  document.getElementById('gutter-bar-label').textContent    = CONCEPT_META.gutterBarLabel;
+  document.getElementById('variant-key-heading').textContent = CONCEPT_META.variantKeyHeading;
+  document.getElementById('variant-key-body').textContent    = CONCEPT_META.variantKeyBody;
+  document.getElementById('variant-toggle-btn').textContent  = CONCEPT_META.variantBtnLabel;
+  document.getElementById('vp-title').textContent            = CONCEPT_META.variantPanelTitle;
+  document.getElementById('vp-subtitle').textContent         = CONCEPT_META.variantPanelSub;
+  document.getElementById('trace-label').textContent         = CONCEPT_META.traceLabel;
+}
+
+function buildStack() {
+  const s = document.getElementById('stack');
+  s.innerHTML = '';
+  LAYERS.forEach((l, i) => {
+    if (i > 0) { const g = document.createElement('div'); g.className = 'depth-gap'; s.appendChild(g); }
+    const el = document.createElement('div');
+    el.className = 'stratum' + (i > 0 ? ' variant-layer' : '');
+    el.id = 'st-' + l.key;
+    el.onclick = () => goTo(i);
+
+    // difficulty dots
+    const diff = l.difficulty || 0;
+    const diffDots = Array.from({length:5}, (_,di) =>
+      `<span class="st-diff-dot${di < diff ? ' on' : ''}"></span>`).join('');
+
+    el.innerHTML = `<div class="stratum-face" style="background:${l.lc}">
+      <span class="st-num">L${i}</span>
+      <div class="st-text">
+        <div class="st-name">${l.label}</div>
+        <div class="st-examples">${l.examples.map(e => `<span class="st-ex-tag">${e}</span>`).join('')}</div>
+      </div>
+      <span class="st-badge" style="background:${l.badgeBg};color:${l.badgeFg}">${l.badge}</span>
+      <div class="st-difficulty">
+        <div class="st-diff-dots">${diffDots}</div>
+        <div class="st-diff-label">${DIFF_LABELS[diff]||''}</div>
+      </div>
+      <div class="st-rank">
+        <div class="st-rank-icon">${l.rank.icon}</div>
+        <div class="st-rank-label">${l.rank.label}</div>
+      </div>
+    </div>
+    <div class="stratum-edge" style="background:color-mix(in srgb,${l.lc} 80%,#000)"></div>`;
+    s.appendChild(el);
+  });
+
+  const dots = document.getElementById('nav-dots');
+  dots.innerHTML = '';
+  LAYERS.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'nav-dot';
+    d.onclick = () => goTo(i);
+    dots.appendChild(d);
+  });
+
+  const tr = document.getElementById('trace-rows');
+  tr.innerHTML = '';
+  TRACES.forEach((t, i) => {
+    const r = document.createElement('div');
+    r.className = 'trace-row';
+    r.id = 'tr-' + i;
+    r.innerHTML = `<div class="trace-dot"></div><span class="trace-txt">${t.txt}</span><span class="trace-tag">${t.tag}</span>`;
+    tr.appendChild(r);
+  });
+
+  requestAnimationFrame(() => {
+    const firstKey = LAYERS[1] ? LAYERS[1].key : LAYERS[0].key;
+    const first  = document.getElementById('st-' + firstKey);
+    const last   = document.getElementById('st-' + LAYERS[LAYERS.length - 1].key);
+    const gutter = document.getElementById('left-gutter');
+    const lineTop = document.getElementById('gutter-line-top');
+    const bar    = document.getElementById('gutter-distro-bar');
+    if (!first || !last || !gutter) return;
+    const gr = gutter.getBoundingClientRect();
+    const fr = first.getBoundingClientRect();
+    const lr = last.getBoundingClientRect();
+    lineTop.style.height = Math.max(0, fr.top - gr.top - 4) + 'px';
+    bar.style.height = (lr.bottom - fr.top) + 'px';
+    document.getElementById('gutter-crown').textContent = LAYERS[0].rank.icon;
+  });
+}
+
+function buildVariantTabs() {
+  const tabs = document.getElementById('vp-tabs');
+  tabs.innerHTML = '';
+  VARIANTS.forEach((v, i) => {
+    const t = document.createElement('div');
+    t.className = 'vp-tab' + (i === curVariant ? ' on' : '');
+    t.innerHTML = `<span class="vp-tab-dot" style="background:${v.color}"></span>${v.name}`;
+    t.onclick = () => selectVariant(i);
+    tabs.appendChild(t);
+  });
+}
+
+function renderVariant(idx) {
+  const v = VARIANTS[idx];
+  document.getElementById('vp-body').innerHTML =
+    VLAYERS.map(l => `<div class="vp-layer-row">
+      <div class="vp-layer-label" style="background:${l.lc}">
+        <div class="vp-layer-name">${l.label}</div>
+        <div class="vp-layer-num">${l.key}</div>
+      </div>
+      <div class="vp-layer-val">
+        <div class="vp-val-main">${v.layers[l.key] ? v.layers[l.key].val : '—'}</div>
+        <div class="vp-val-note">${v.layers[l.key] ? v.layers[l.key].note : ''}</div>
+      </div>
+    </div>`).join('') + `<div class="vp-note">${v.note}</div>`;
+}
+
+function selectVariant(idx) {
+  curVariant = idx;
+  document.querySelectorAll('.vp-tab').forEach((t, i) => t.classList.toggle('on', i === idx));
+  renderVariant(idx);
+}
+
+function toggleVariantPanel() {
+  variantMode = !variantMode;
+  document.getElementById('layer-panel').style.display = variantMode ? 'none' : 'flex';
+  document.getElementById('variant-panel').classList.toggle('visible', variantMode);
+  const btn = document.getElementById('variant-toggle-btn');
+  btn.classList.toggle('on', variantMode);
+  btn.textContent = variantMode ? '← Back' : CONCEPT_META.variantBtnLabel;
+  if (variantMode) { buildVariantTabs(); renderVariant(curVariant); }
+}
+
+function toggleSelfTest() {
+  selfTestMode = !selfTestMode;
+  const btn = document.getElementById('self-test-btn');
+  btn.classList.toggle('on', selfTestMode);
+  btn.textContent = selfTestMode ? 'Reveal all' : 'Self-test';
+  // re-render the chip info area based on current state
+  const ci = document.getElementById('chip-info');
+  if (!selfTestMode) {
+    ci.classList.remove('hidden-test');
+    ci.textContent = 'pick a component above ↑';
+    ci.classList.remove('lit','trap-lit');
+  } else {
+    ci.textContent = 'pick a component above ↑';
+    ci.classList.remove('lit','trap-lit');
+  }
+}
+
+// highlight prereq strata
+function highlightPrereqs(prereqs, on) {
+  LAYERS.forEach(l => {
+    const el = document.getElementById('st-' + l.key);
+    if (el) el.classList.remove('prereq-lit');
+  });
+  if (on && prereqs && prereqs.length) {
+    prereqs.forEach(key => {
+      const el = document.getElementById('st-' + key);
+      if (el) el.classList.add('prereq-lit');
+    });
+  }
+}
+
+function renderDetail(l) {
+  document.getElementById('d-header').style.background = l.lc;
+  document.getElementById('d-eyebrow').textContent = l.eyebrow;
+  document.getElementById('d-title').textContent = l.title;
+  document.documentElement.style.setProperty('--ac',    l.ac);
+  document.documentElement.style.setProperty('--ac-bg', l.acBg);
+
+  // NEW: difficulty dots in header
+  const diff = l.difficulty || 0;
+  const diffRow = document.getElementById('d-diff-row');
+  if (diff > 0) {
+    const dots = Array.from({length:5}, (_,i) =>
+      `<div class="d-diff-dot${i < diff ? ' on' : ''}"></div>`).join('');
+    diffRow.innerHTML = dots + `<span class="d-diff-label" style="margin-left:5px">${DIFF_LABELS[diff]}</span>`;
+    diffRow.style.display = 'flex';
+  } else {
+    diffRow.innerHTML = '';
+  }
+
+  // NEW: prereq tags in header
+  const prereqRow = document.getElementById('d-prereq-row');
+  if (l.prereqs && l.prereqs.length) {
+    const prereqLayer = LAYERS.find(x => x.key === l.prereqs[0]);
+    prereqRow.innerHTML =
+      `<span class="d-prereq-label">needs:</span>` +
+      l.prereqs.map(k => {
+        const pl = LAYERS.find(x => x.key === k);
+        return `<span class="d-prereq-tag" onmouseenter="highlightPrereqs(${JSON.stringify(l.prereqs)},true)" onmouseleave="highlightPrereqs([],false)">${pl ? pl.label : k}</span>`;
+      }).join('');
+  } else {
+    prereqRow.innerHTML = '';
+  }
+
+  // NEW: mech why strip
+  const whyEl = document.getElementById('mech-why');
+  if (l.mech.why) {
+    whyEl.innerHTML = `<strong>Why this layer exists</strong>${l.mech.why}`;
+    whyEl.style.borderLeftColor = l.ac;
+    whyEl.style.display = '';
+  } else {
+    whyEl.style.display = 'none';
+  }
+
+  // mech block
+  document.getElementById('mech-block').innerHTML =
+    `<div class="mech-block">
+      <div class="mech-title">${l.mech.title}</div>
+      <div class="mech-rows">
+        ${l.mech.rows.map(r =>
+          `<div class="mech-row">
+            <div class="mech-box" style="color:${l.ac};${r.filled ? 'background:' + l.acBg : ''}">${r.box}</div>
+            ${r.arrow ? `<span class="mech-arrow">${r.arrow}</span>` : ''}
+            <span class="mech-caption">${r.cap}</span>
+          </div>`
+        ).join('')}
+      </div>
+    </div>`;
+
+  // chips
+  const chipEl = document.getElementById('chips');
+  chipEl.innerHTML = l.chips.map(c =>
+    `<span class="chip" data-i="${c.i.replace(/"/g,'&quot;')}" data-connects='${JSON.stringify(c.connects||null)}'>${c.n}</span>`
+  ).join('');
+
+  // NEW: misconception chips
+  const mcEl = document.getElementById('misconception-chips');
+  const mcLabel = document.getElementById('misconception-label');
+  if (l.misconceptions && l.misconceptions.length) {
+    mcEl.innerHTML = l.misconceptions.map(c =>
+      `<span class="chip trap" data-i="${c.i.replace(/"/g,'&quot;')}" data-trap="1">${c.n}</span>`
+    ).join('');
+    mcLabel.style.display = '';
+  } else {
+    mcEl.innerHTML = '';
+    mcLabel.style.display = 'none';
+  }
+
+  const ci = document.getElementById('chip-info');
+  ci.textContent = 'pick a component above ↑';
+  ci.classList.remove('lit','trap-lit','hidden-test');
+
+  // chip click handler (components + misconceptions)
+  [...chipEl.querySelectorAll('.chip'), ...mcEl.querySelectorAll('.chip')].forEach(el => {
+    el.addEventListener('click', ev => {
+      ev.stopPropagation();
+      [...chipEl.querySelectorAll('.chip'), ...mcEl.querySelectorAll('.chip')].forEach(x => x.classList.remove('on'));
+      el.classList.add('on');
+      const isTrap = el.dataset.trap === '1';
+      const connects = el.dataset.connects ? JSON.parse(el.dataset.connects) : null;
+
+      if (selfTestMode) {
+        // show question, hide answer
+        ci.classList.remove('lit','trap-lit');
+        ci.classList.add('hidden-test');
+        ci._revealContent = el.dataset.i;
+        ci._revealTrap = isTrap;
+        ci._revealConnects = connects;
+        ci.onclick = () => {
+          ci.classList.remove('hidden-test');
+          ci.classList.add(isTrap ? 'trap-lit' : 'lit');
+          ci.innerHTML = renderChipInfo(el.textContent, el.dataset.i, isTrap, connects, l.ac);
+          ci.onclick = null;
+        };
+      } else {
+        ci.classList.remove('hidden-test');
+        ci.classList.add(isTrap ? 'trap-lit' : 'lit');
+        ci.innerHTML = renderChipInfo(el.textContent, el.dataset.i, isTrap, connects, l.ac);
+        ci.onclick = null;
+      }
+    });
+  });
+
+  document.getElementById('sw-bar').style.background = l.ac;
+  document.getElementById('sw-body').innerHTML = l.sowhat;
+  TRACES.forEach((_, i) => document.getElementById('tr-' + i).classList.toggle('lit', l.trace.includes(i)));
+}
+
+function renderChipInfo(name, info, isTrap, connects, ac) {
+  let html = `<strong>${name}</strong> — ${info}`;
+  if (connects) {
+    const targetLayer = LAYERS.find(x => x.key === connects.layer);
+    if (targetLayer) {
+      const targetIdx = LAYERS.indexOf(targetLayer);
+      html += `<br><span class="chip-connect" onclick="goTo(${targetIdx})">→ see <em>${connects.chip}</em> in ${targetLayer.label}</span>`;
+    }
+  }
+  return html;
+}
+
+function fireSignal(idx) {
+  const el = document.getElementById('st-' + LAYERS[idx].key);
+  const face = el.querySelector('.stratum-face');
+  const ex = face.querySelector('.pulse-line');
+  if (ex) ex.remove();
+  const pl = document.createElement('div');
+  pl.className = 'pulse-line';
+  face.appendChild(pl);
+  setTimeout(() => pl.remove(), 700);
+}
+
+function goTo(idx, animate = true) {
+  cur = Math.max(0, Math.min(LAYERS.length - 1, idx));
+  const l = LAYERS[cur];
+  document.querySelectorAll('.stratum').forEach((el, i) => el.classList.toggle('active', i === cur));
+  document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('on', i === cur));
+  document.getElementById('btn-prev').disabled = cur === 0;
+  const nb = document.getElementById('btn-next');
+  nb.textContent = cur === LAYERS.length - 1 ? 'Done ✓' : 'Next →';
+  document.getElementById('nav-ctr').textContent = `${cur + 1} / ${LAYERS.length}`;
+  fireSignal(cur);
+  highlightPrereqs([], false);
+  const stBtn = document.getElementById('self-test-btn');
+  stBtn.classList.remove('on');
+  stBtn.textContent = 'Self-test';
+  selfTestMode = false;
+  const dbi = document.getElementById('dbi');
+  if (animate) {
+    dbi.classList.remove('in');
+    dbi.classList.add('out');
+    setTimeout(() => { renderDetail(l); dbi.classList.remove('out'); dbi.classList.add('in'); }, 160);
+  } else {
+    renderDetail(l);
+  }
+}
+
+function step(d) { goTo(cur + d); }
+
+applyMeta();
+buildStack();
+goTo(1, false);
+</script>

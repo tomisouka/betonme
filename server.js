@@ -110,17 +110,111 @@ app.get('/dk-props', (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 
-// ── POST /scrape-now ──────────────────────────────────────────────────────────
-// Triggers dk_scraper.py on demand
-app.post('/scrape-now', (req, res) => {
-  const scriptPath = path.join(DATA_DIR, 'dk_scraper.py')
-  exec(`python3 ${scriptPath}`, { timeout: 30000 }, (err, stdout, stderr) => {
-    if (err) {
-      log('ERROR', `scrape-now failed: ${stderr}`)
-      return res.status(500).json({ ok: false, error: stderr })
+// ── GET /dk-f5 ───────────────────────────────────────────────────────────────
+// Returns F5 markets (ML, run line, total) for all games, keyed by DK eventId
+app.get('/dk-f5', (req, res) => {
+  const dkPath = path.join(DATA_DIR, 'dk_odds.json')
+  if (!fs.existsSync(dkPath)) return res.status(404).json({ error: 'No data — run dk_scraper.py first' })
+  try {
+    const data = JSON.parse(fs.readFileSync(dkPath, 'utf8'))
+    const sport = req.query.sport  // optional ?sport=MLB
+    const result = {}
+    for (const [s, sd] of Object.entries(data.sports || {})) {
+      if (sport && s !== sport) continue
+      for (const game of sd.games || []) {
+        const f5 = game._dk?.f5
+        if (!f5) continue
+        result[game.id] = {
+          home: game.home_team,
+          away: game.away_team,
+          commence_time: game.commence_time,
+          f5,
+        }
+      }
     }
-    log('INFO', 'scrape-now completed')
-    res.json({ ok: true, output: stdout })
+    res.json({ fetchedAt: data.fetchedAt, games: result })
+  } catch (e) { res.status(500).json({ error: e.message }) }
+})
+
+// ── POST /scrape-now ──────────────────────────────────────────────────────────
+// 1) Runs dk_scraper.py to fetch fresh odds
+// 2) Runs results.py to mark any resolved picks W/L in savedata.json
+app.post('/scrape-now', (req, res) => {
+  const scraperPath = path.join(__dirname, 'dk_scraper.py')
+  const resultsPath = path.join(__dirname, 'results.py')
+
+  exec(`python3 ${scraperPath}`, { timeout: 60000 }, (scrapeErr, scrapeOut, scrapeStderr) => {
+    if (scrapeErr) {
+      log('ERROR', `scrape-now (scraper) failed: ${scrapeStderr}`)
+      return res.status(500).json({ ok: false, error: scrapeStderr })
+    }
+    log('INFO', 'scrape-now: odds updated')
+
+    // Force-snapshot every game from dk_odds.json into odds history.
+    // This runs server-side so it's not blocked by the scraper's --force flag issue.
+    let snapshotCount = 0
+    try {
+      const dkPath = path.join(DATA_DIR, 'dk_odds.json')
+      if (fs.existsSync(dkPath)) {
+        const dk = JSON.parse(fs.readFileSync(dkPath, 'utf8'))
+        const today = new Date().toISOString().slice(0, 10)
+        const history = loadOddsHistory()
+        for (const [sport, sd] of Object.entries(dk.sports || {})) {
+          for (const game of (sd.games || [])) {
+            const bm = (game.bookmakers || [{}])[0]
+            const mkts = {}
+            for (const m of (bm.markets || [])) mkts[m.key] = m
+            const ml = mkts['h2h']?.outcomes || []
+            const sp = mkts['spreads']?.outcomes || []
+            const to = mkts['totals']?.outcomes || []
+            const home = game.home_team, away = game.away_team
+            const gameDate = (game.commence_time || '').slice(0, 10)
+            const gameKey = `${away.split(' ').pop()}@${home.split(' ').pop()}_${gameDate}`
+            const snapshot = {
+              home, away, sport,
+              commence_time: game.commence_time || '',
+              ml: {
+                home: (ml.find(o => o.name === home) || {}).price ?? null,
+                away: (ml.find(o => o.name === away) || {}).price ?? null,
+              },
+              spread: {
+                point:    (sp.find(o => o.name === home) || {}).point    ?? null,
+                homeOdds: (sp.find(o => o.name === home) || {}).price    ?? null,
+                awayOdds: (sp.find(o => o.name === away) || {}).price    ?? null,
+              },
+              total: {
+                point:     (to.find(o => o.name === 'Over')  || {}).point ?? null,
+                overOdds:  (to.find(o => o.name === 'Over')  || {}).price ?? null,
+                underOdds: (to.find(o => o.name === 'Under') || {}).price ?? null,
+              },
+              ts: Date.now(),
+            }
+            if (!history[today]) history[today] = {}
+            if (!history[today][gameKey]) history[today][gameKey] = []
+            history[today][gameKey].push(snapshot)
+            snapshotCount++
+          }
+        }
+        saveOddsHistory(history)
+        log('INFO', `scrape-now: force-snapshotted ${snapshotCount} games`)
+      }
+    } catch (e) {
+      log('WARN', `scrape-now: force-snapshot failed: ${e.message}`)
+    }
+
+    if (!fs.existsSync(resultsPath)) {
+      log('WARN', 'results.py not found — skipping W/L check')
+      return res.json({ ok: true, output: scrapeOut, snapshotCount })
+    }
+
+    exec(`python3 ${resultsPath}`, { timeout: 30000 }, (resErr, resOut, resStderr) => {
+      if (resErr) {
+        log('WARN', `results.py failed (non-fatal): ${resStderr}`)
+        return res.json({ ok: true, output: scrapeOut, resultsWarning: resStderr, snapshotCount })
+      }
+      log('INFO', 'scrape-now: W/L results checked')
+      res.json({ ok: true, output: scrapeOut + '\n' + resOut, snapshotCount })
+    })
   })
 })
 
@@ -143,23 +237,23 @@ app.get('/odds-history', (req, res) => {
 
 app.post('/odds-history', (req, res) => {
   try {
-    const { dateKey, gameKey, snapshot } = req.body
+    const { dateKey, gameKey, snapshot, force } = req.body
     if (!dateKey || !gameKey || !snapshot) return res.status(400).json({ error: 'Missing fields' })
     const history = loadOddsHistory()
     if (!history[dateKey]) history[dateKey] = {}
     if (!history[dateKey][gameKey]) history[dateKey][gameKey] = []
-    // Don't duplicate if odds haven't changed
+    // Skip duplicate if odds haven't changed — UNLESS force=true (manual refresh)
     const last = history[dateKey][gameKey].slice(-1)[0]
-    const changed = !last ||
+    const oddsChanged = !last ||
       last.ml?.home !== snapshot.ml?.home ||
       last.ml?.away !== snapshot.ml?.away ||
       last.spread?.point !== snapshot.spread?.point ||
       last.total?.point !== snapshot.total?.point
-    if (changed) {
+    if (oddsChanged || force) {
       history[dateKey][gameKey].push({ ...snapshot, ts: Date.now() })
       saveOddsHistory(history)
     }
-    res.json({ ok: true, changed })
+    res.json({ ok: true, changed: oddsChanged || !!force })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
@@ -238,7 +332,7 @@ app.post('/import', (req, res) => {
     if (!req.body || typeof req.body !== 'object') {
       return res.status(400).json({ error: 'Body must be a JSON object' })
     }
-    const knownKeys = ['app', 'dog', 'propPick', 'predictions', 'lay', 'ouPick', 'f5', '_version']
+    const knownKeys = ['app', 'dog', 'propPick', 'predictions', 'lay', 'ouPick', 'f5', 'prefs', '_version']
     if (!Object.keys(req.body).some(k => knownKeys.includes(k))) {
       return res.status(400).json({ error: 'Does not look like a BetOnMe save file' })
     }

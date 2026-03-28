@@ -40,21 +40,25 @@ echo "✓ System dependencies OK"
 echo "Installing JS dependencies..."
 pnpm install --frozen-lockfile
 
-# 5. Build frontend
-echo "Building Vite frontend..."
-pnpm build
-
-# 6. Build Tauri .deb + AppImage
+# 5. Build Tauri .deb + AppImage
+# (beforeBuildCommand in tauri.conf.json handles: pnpm build + esbuild server.bundle.cjs)
 echo "Building Tauri bundle (this takes ~3-5 min first time)..."
 cargo tauri build --bundles deb appimage
 
-# 7. Show output
+# 6. Show output
 echo ""
 echo "✅ Build complete! Output:"
 find src-tauri/target/release/bundle -name "*.deb" -o -name "*.AppImage" 2>/dev/null | while read f; do
   echo "   $f ($(du -h "$f" | cut -f1))"
 done
 
-echo ""
-echo "Install .deb:      sudo dpkg -i src-tauri/target/release/bundle/deb/*.deb"
-echo "Run AppImage:      chmod +x *.AppImage && ./*.AppImage"
+# 7. Install .deb
+DEB=$(find src-tauri/target/release/bundle/deb -name "*.deb" | head -1)
+if [ -n "$DEB" ]; then
+  echo ""
+  echo "Installing $DEB..."
+  sudo dpkg -i "$DEB"
+  echo "✓ Installed — launch with: betonme"
+else
+  echo "⚠ No .deb found to install"
+fi

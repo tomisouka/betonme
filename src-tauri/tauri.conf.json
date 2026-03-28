@@ -7,7 +7,7 @@
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5174",
     "beforeDevCommand": "pnpm vite",
-    "beforeBuildCommand": "pnpm build"
+    "beforeBuildCommand": "pnpm build && npx esbuild server.js --bundle --platform=node --outfile=server.bundle.cjs --format=cjs"
   },
   "app": {
     "windows": [
@@ -29,10 +29,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "deb",
-      "appimage"
-    ],
+    "targets": ["deb", "appimage"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -41,9 +38,7 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../server.js": "server.js",
-      "../node_modules/express": "node_modules/express",
-      "../node_modules/cors": "node_modules/cors"
+      "../server.bundle.cjs": "server.js"
     },
     "linux": {
       "deb": {

@@ -1,18 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { getTodayKey, ensureAmerican, formatOdds, calcProfit, getGameDateLabel, fetchMlbProbablePitchers, getProbablePitcher } from '../utils/odds.js'
-import { loadDogState, saveDogStateServer, fetchEspnDate } from '../hooks/useSaveData.js'
+import { getTodayKey, ensureAmerican, formatOdds, calcProfit, getGameDateLabel, fetchEspnDate } from '../utils/odds.js'
+import { loadDogState, saveDogStateServer } from '../hooks/useSaveData.js'
 import SportFilter, { filterBySport } from '../components/SportFilter.jsx'
 
 export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
   const [dogState, setDogState] = useState({})
   const [dogModal, setDogModal] = useState(null)
   const [sportTab, setSportTab] = useState('ALL')
-  const [mlbPitchers, setMlbPitchers] = useState({})
-
-  useEffect(() => {
-    const hasMlb = allGames.some(g => g.sportLabel === 'MLB')
-    if (hasMlb) fetchMlbProbablePitchers().then(map => setMlbPitchers(map))
-  }, [allGames])
 
   async function saveDogState(s) {
     setDogState({ ...s })
@@ -110,11 +104,21 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
   }
 
   const underdogs = []
+  const noOddsGames = []
+
   filterBySport(allGames, sportTab).forEach(game => {
     const bm = game.bookmakers?.[0]
     const ml = bm?.markets?.find(m => m.key === 'h2h')
     const sp = bm?.markets?.find(m => m.key === 'spreads')
-    if (!ml) return
+
+    if (!ml) {
+      // No odds yet — track for display
+      if (game.sportLabel === 'MLB') {
+        noOddsGames.push(game)
+      }
+      return
+    }
+
     ml.outcomes.forEach(outcome => {
       const odds = ensureAmerican(outcome.price)
       if (odds >= 150) {
@@ -132,11 +136,19 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
           home: game.home_team,
           away: game.away_team,
           gameId: game.id,
+          // Use pitchers already embedded from ESPN normalizeEspnEvent
+          awayPitcher: game.pitchers?.away || null,
+          homePitcher: game.pitchers?.home || null,
         })
       }
     })
   })
-  underdogs.sort((a, b) => b.mlOdds - a.mlOdds)
+
+  underdogs.sort((a, b) => {
+    const timeDiff = new Date(a.gameTime) - new Date(b.gameTime)
+    if (timeDiff !== 0) return timeDiff
+    return b.mlOdds - a.mlOdds
+  })
 
   const getTier = (odds) => {
     if (odds >= 300) return { label: 'MASSIVE DOG', color: '#ff4444', bg: '#2a0a0a', border: '#ff444466' }
@@ -252,9 +264,24 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
 
       <SportFilter games={allGames} value={sportTab} onChange={setSportTab} label="underdog" />
 
-      {todayLock && !lockIsTheDog && (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {underdogs.map((dog, i) => {
+      {todayLock && !lockIsTheDog && (() => {
+        const localDateStr = (iso) => {
+          const d = new Date(iso)
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+        }
+        const now = new Date()
+        const todayStr    = localDateStr(now.toISOString())
+        const tomorrowStr = localDateStr(new Date(now.getTime() + 86400000).toISOString())
+
+        const todayDogs    = underdogs.filter(d => localDateStr(d.gameTime) === todayStr)
+        const tomorrowDogs = underdogs.filter(d => localDateStr(d.gameTime) === tomorrowStr)
+        const laterDogs    = underdogs.filter(d => localDateStr(d.gameTime) > tomorrowStr)
+
+        // Running global index for #N label
+        let globalIdx = 0
+
+        const renderDogCard = (dog) => {
+          const i = globalIdx++
           const tier = getTier(dog.mlOdds)
           const isHome = dog.home === dog.team
           const isPicked = todayPick?.team === dog.team && todayPick?.home === dog.home
@@ -294,8 +321,8 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
                 }}>#{i + 1} {tier.label}</div>
               </div>
               {dog.sport === 'MLB' && (() => {
-                const awayP = getProbablePitcher(dog.away, mlbPitchers)
-                const homeP = getProbablePitcher(dog.home, mlbPitchers)
+                const awayP = dog.awayPitcher
+                const homeP = dog.homePitcher
                 return (
                   <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.72rem', marginBottom: '0.75rem' }}>
                     <span>⚾ <span style={{ color: '#4c9be8' }}>{dog.away.split(' ').pop()}:</span> <span style={{ color: awayP ? '#aaa' : '#444' }}>{awayP || 'TBA'}</span></span>
@@ -336,8 +363,79 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
               </div>
             </div>
           )
-        })}
-      </div>
+        }
+
+        const SectionHeader = ({ emoji, label, color, count }) => (
+          <div style={{ fontSize: '0.65rem', color, fontWeight: 'bold', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {emoji} {label} <span style={{ color: '#444', fontWeight: 'normal' }}>· {count} dog{count !== 1 ? 's' : ''}</span>
+          </div>
+        )
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {todayDogs.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <SectionHeader emoji="📅" label="TODAY" color="#00ff88" count={todayDogs.length} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {todayDogs.map(renderDogCard)}
+                </div>
+              </div>
+            )}
+            {tomorrowDogs.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <SectionHeader emoji="🌅" label="TOMORROW" color="#4c9be8" count={tomorrowDogs.length} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {tomorrowDogs.map(renderDogCard)}
+                </div>
+              </div>
+            )}
+            {laterDogs.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <SectionHeader emoji="📆" label="LATER" color="#444" count={laterDogs.length} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {laterDogs.map(renderDogCard)}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+
+      {/* No-odds games — show these even without odds so they're visible */}
+      {noOddsGames.length > 0 && (
+        <div style={{ marginTop: '1.5rem' }}>
+          <div style={{ fontSize: '0.62rem', color: '#333', fontWeight: 'bold', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
+            ⏳ ODDS NOT YET AVAILABLE · {noOddsGames.length} game{noOddsGames.length !== 1 ? 's' : ''}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {noOddsGames
+              .sort((a, b) => new Date(a.commence_time) - new Date(b.commence_time))
+              .map(game => (
+                <div key={game.id} style={{
+                  background: '#0e0e0e', border: '1px solid #1a1a1a',
+                  borderRadius: '10px', padding: '0.85rem 1rem',
+                  opacity: 0.6,
+                }}>
+                  <div style={{ fontSize: '0.65rem', color: '#333', marginBottom: '0.35rem' }}>
+                    {game.sportLabel} · {getGameDateLabel(game.commence_time)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem', marginBottom: game.pitchers ? '0.3rem' : 0 }}>
+                    <span style={{ color: '#555' }}>{game.away_team}</span>
+                    <span style={{ color: '#2a2a2a', fontSize: '0.7rem' }}>@</span>
+                    <span style={{ color: '#555' }}>{game.home_team}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: '#2a2a2a', fontStyle: 'italic' }}>no odds yet</span>
+                  </div>
+                  {game.pitchers && (
+                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.65rem', color: '#2a2a2a' }}>
+                      <span>⚾ {game.away_team.split(' ').pop()}: {game.pitchers.away || 'TBA'}</span>
+                      <span>⚾ {game.home_team.split(' ').pop()}: {game.pitchers.home || 'TBA'}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
+        </div>
       )}
     </div>
   )
