@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { loadLayHistory, saveLayHistory, loadPredictions, savePredictions, loadState, loadDogState, loadOuPick, loadPropPick, fetchEspnDate } from '../hooks/useSaveData.js'
-import { formatOdds } from '../utils/odds.js'
+import { loadLayHistory, saveLayHistory, loadPredictions, savePredictions, loadState, saveState, loadDogState, saveDogStateServer, loadOuPick, saveOuPick, loadPropPick, fetchEspnDate } from '../hooks/useSaveData.js'
+import { formatOdds, calcProfit } from '../utils/odds.js'
 
 function fmtDateLabel(key) {
   if (!key) return ''
@@ -20,6 +20,59 @@ function getTodayKey() {
 
 const W_COLOR = '#00ff88'
 const L_COLOR = '#ff4444'
+
+// ── Score / stat fetching ──────────────────────────────────────────────────────
+const _scoreCache = {}
+
+async function fetchGameScore(sport, gameId) {
+  const cacheKey = `${sport}_${gameId}`
+  if (_scoreCache[cacheKey]) return _scoreCache[cacheKey]
+  const endpoints = { MLB: 'baseball/mlb', NFL: 'football/nfl', NBA: 'basketball/nba' }
+  const ep = endpoints[sport]
+  if (!ep || !gameId) return null
+  try {
+    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${ep}/summary?event=${gameId}`)
+    const data = await res.json()
+    const competitors = data.header?.competitions?.[0]?.competitors || []
+    const score = {}
+    competitors.forEach(c => {
+      const name = c.team?.displayName || c.team?.shortDisplayName || ''
+      score[name] = c.score
+    })
+    // For props: extract player stats from boxscore
+    const playerStats = {}
+    const athletes = data.boxscore?.players || []
+    athletes.forEach(teamGroup => {
+      ;(teamGroup.statistics || []).forEach(statGroup => {
+        ;(statGroup.athletes || []).forEach(a => {
+          const name = a.athlete?.displayName
+          if (!name) return
+          const stats = {}
+          ;(statGroup.labels || []).forEach((label, i) => {
+            stats[label] = a.stats?.[i]
+          })
+          playerStats[name] = stats
+        })
+      })
+    })
+    const result = { score, playerStats, competitors }
+    _scoreCache[cacheKey] = result
+    return result
+  } catch { return null }
+}
+
+const PROP_STAT_MAP = {
+  player_strikeouts:   { label: 'K', espnKeys: ['SO', 'K'] },
+  pitcher_strikeouts:  { label: 'K', espnKeys: ['SO', 'K'] },
+  player_points:       { label: 'PTS', espnKeys: ['PTS', 'P'] },
+  player_rebounds:     { label: 'REB', espnKeys: ['REB', 'R'] },
+  player_assists:      { label: 'AST', espnKeys: ['AST', 'A'] },
+  player_hits:         { label: 'H', espnKeys: ['H'] },
+  player_home_runs:    { label: 'HR', espnKeys: ['HR'] },
+  player_rbis:         { label: 'RBI', espnKeys: ['RBI'] },
+}
+
+
 
 function resultDot(result) {
   if (result === 'W') return <span style={{ color: W_COLOR }}>✅</span>
@@ -66,7 +119,7 @@ function Section({ emoji, title, accent, children, badge, defaultOpen = false })
   )
 }
 
-function LegRow({ label, labelColor, team, sub, result, odds }) {
+function LegRow({ label, labelColor, team, sub, result, odds, scoreInfo }) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -75,10 +128,15 @@ function LegRow({ label, labelColor, team, sub, result, odds }) {
       border: `1px solid ${result === 'W' ? '#00ff8833' : result === 'L' ? '#ff444433' : '#2a2a2a'}`,
       marginBottom: '0.4rem',
     }}>
-      <div>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '0.6rem', color: labelColor || '#555', fontWeight: 'bold', marginBottom: '0.15rem', letterSpacing: '0.04em' }}>{label}</div>
         <div style={{ fontWeight: 'bold', fontSize: '0.88rem' }}>{team || '—'}</div>
         {sub && <div style={{ color: '#444', fontSize: '0.7rem', marginTop: '0.1rem' }}>{sub}</div>}
+        {scoreInfo && (
+          <div style={{ fontSize: '0.68rem', color: result === 'W' ? '#00ff8899' : result === 'L' ? '#ff444499' : '#555', marginTop: '0.2rem', fontStyle: 'italic' }}>
+            {scoreInfo}
+          </div>
+        )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
         {odds != null && (
@@ -90,10 +148,60 @@ function LegRow({ label, labelColor, team, sub, result, odds }) {
   )
 }
 
+function calcTotalOdds(legs) {
+  // Parlay math: convert each American odds to decimal, multiply, convert back
+  const oddsArr = legs.map(l => l.odds).filter(o => o != null && !isNaN(o))
+  if (oddsArr.length === 0) return null
+  const decimal = oddsArr.reduce((acc, o) => {
+    const d = o < 0 ? (100 / Math.abs(o) + 1) : (o / 100 + 1)
+    return acc * d
+  }, 1)
+  // Convert decimal back to American
+  const american = decimal >= 2
+    ? Math.round((decimal - 1) * 100)
+    : Math.round(-100 / (decimal - 1))
+  return american
+}
+
+function TotalOddsRow({ legs, label = 'TOTAL ODDS' }) {
+  const total = calcTotalOdds(legs.filter(l => l.odds != null))
+  if (total == null) return null
+  const fmt = total > 0 ? `+${total}` : `${total}`
+  const payout = total > 0
+    ? (1 + total / 100).toFixed(2)
+    : (1 + 100 / Math.abs(total)).toFixed(2)
+  const payoutFmt = parseFloat(payout).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return (
+    <div style={{
+      background: '#0d0d0d', border: '1px solid #222', borderRadius: '8px',
+      marginTop: '0.35rem', overflow: 'hidden',
+    }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '0.5rem 0.75rem',
+      }}>
+        <span style={{ fontSize: '0.62rem', color: '#444', letterSpacing: '0.07em', fontWeight: 'bold' }}>{label}</span>
+        <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: total > 0 ? '#ff9944' : '#4c9be8' }}>{fmt}</span>
+      </div>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '0.35rem 0.75rem 0.45rem',
+        borderTop: '1px solid #181818',
+      }}>
+        <span style={{ fontSize: '0.6rem', color: '#333', letterSpacing: '0.05em' }}>🪙1 wins</span>
+        <span style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#666' }}>
+          → <span style={{ color: total > 0 ? '#ff994499' : '#4c9be899' }}>🪙{payoutFmt}</span>
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export default function PastLayTab() {
   const [allData, setAllData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedKey, setSelectedKey] = useState(null)
+  const [gameScores, setGameScores] = useState({}) // gameId -> { score, playerStats }
 
   useEffect(() => {
     async function load() {
@@ -101,6 +209,118 @@ export default function PastLayTab() {
       const [appState, dogState, layHist, predHist, ouHist, propHist] = await Promise.all([
         loadState(), loadDogState(), loadLayHistory(), loadPredictions(), loadOuPick(), loadPropPick(),
       ])
+
+      // Resolve any unresolved LOCK picks
+      let lockChanged = false
+      const today = getTodayKey()
+      for (const [date, pick] of Object.entries(appState.picks || {})) {
+        if (pick.result !== null || !pick.sport || date >= today) continue
+        try {
+          const events = await fetchEspnDate(pick.sport, date.replace(/-/g, ''))
+          const homeLower = (pick.home || '').toLowerCase()
+          const homeLast = homeLower.split(' ').pop()
+          const event = events.find(e =>
+            (e.competitions?.[0]?.competitors || []).some(c => {
+              const dn = c.team.displayName.toLowerCase()
+              return homeLower.includes(dn) || dn.includes(homeLower) ||
+                     (homeLast.length > 3 && dn.includes(homeLast))
+            })
+          )
+          if (!event) continue
+          const comp = event.competitions?.[0]
+          if (!comp?.status?.type?.completed) continue
+          const competitors = comp.competitors || []
+          const pickTeamL = (pick.team || '').toLowerCase()
+          const pickLast = pickTeamL.split(' ').pop()
+          let result
+          if (pick.market === 'spreads' && pick.point != null) {
+            const pickedComp = competitors.find(c => {
+              const dn = c.team.displayName.toLowerCase()
+              return dn.includes(pickTeamL) || pickTeamL.includes(dn) ||
+                     (pickLast.length > 3 && dn.includes(pickLast))
+            })
+            const otherComp = competitors.find(c => c !== pickedComp)
+            if (!pickedComp || !otherComp) continue
+            const adj = parseFloat(pickedComp.score) + pick.point
+            result = adj > parseFloat(otherComp.score) ? 'W' : 'L'
+          } else {
+            const winner = competitors.find(c => c.winner)
+            if (!winner) continue
+            const wnL = winner.team.displayName.toLowerCase()
+            const won = wnL.includes(pickTeamL) || pickTeamL.includes(wnL) ||
+                        (pickLast.length > 3 && wnL.includes(pickLast))
+            result = won ? 'W' : 'L'
+          }
+          appState.picks[date].result = result
+          appState.streak = [...(appState.streak || []), result]
+          appState.streakDates = [...(appState.streakDates || []), date]
+          if (result === 'W' && pick.profit != null) appState.coins = +((appState.coins || 0) + pick.profit + (pick.stake || 1)).toFixed(2)
+          lockChanged = true
+        } catch(e) {}
+      }
+      if (lockChanged) await saveState(appState)
+
+      // Resolve any unresolved DOG picks
+      let dogChanged = false
+      for (const [date, pick] of Object.entries(dogState.picks || {})) {
+        if (pick.result !== null || !pick.sport || date >= today) continue
+        try {
+          const events = await fetchEspnDate(pick.sport, date.replace(/-/g, ''))
+          const homeLower = (pick.home || '').toLowerCase()
+          const homeLast = homeLower.split(' ').pop()
+          const event = events.find(e =>
+            (e.competitions?.[0]?.competitors || []).some(c => {
+              const dn = c.team.displayName.toLowerCase()
+              return homeLower.includes(dn) || dn.includes(homeLower) ||
+                     (homeLast.length > 3 && dn.includes(homeLast))
+            })
+          )
+          if (!event) continue
+          const comp = event.competitions?.[0]
+          if (!comp?.status?.type?.completed) continue
+          const winner = comp.competitors?.find(c => c.winner)
+          if (!winner) continue
+          const wnL = winner.team.displayName.toLowerCase()
+          const pickL = (pick.team || '').toLowerCase()
+          const pickLast = pickL.split(' ').pop()
+          const won = wnL.includes(pickL) || pickL.includes(wnL) ||
+                      (pickLast.length > 3 && wnL.includes(pickLast))
+          dogState.picks[date].result = won ? 'W' : 'L'
+          dogChanged = true
+        } catch(e) {}
+      }
+      if (dogChanged) await saveDogStateServer(dogState)
+
+      // Resolve any unresolved O/U picks
+      let ouChanged = false
+      for (const [date, entry] of Object.entries(ouHist)) {
+        if (!entry || entry.result != null) continue
+        const lockPick = appState.picks?.[date]
+        if (!lockPick?.home || !lockPick?.sport) continue
+        try {
+          const events = await fetchEspnDate(lockPick.sport, date.replace(/-/g, ''))
+          const homeLower = (lockPick.home || '').toLowerCase()
+          const homeLast = homeLower.split(' ').pop()
+          const event = events.find(e =>
+            (e.competitions?.[0]?.competitors || []).some(c => {
+              const dn = c.team.displayName.toLowerCase()
+              return homeLower.includes(dn) || dn.includes(homeLower) ||
+                     (homeLast.length > 3 && dn.includes(homeLast))
+            })
+          )
+          if (!event) continue
+          const comp = event.competitions?.[0]
+          if (!comp?.status?.type?.completed) continue
+          const scores = comp.competitors?.map(c => parseFloat(c.score)).filter(s => !isNaN(s))
+          if (scores.length < 2) continue
+          const total = scores.reduce((a, b) => a + b, 0)
+          if (total > entry.point) ouHist[date].result = entry.name === 'Over' ? 'W' : 'L'
+          else if (total < entry.point) ouHist[date].result = entry.name === 'Under' ? 'W' : 'L'
+          else ouHist[date].result = 'L' // push = loss
+          ouChanged = true
+        } catch(e) {}
+      }
+      if (ouChanged) await saveOuPick(ouHist)
 
       // Resolve any unresolved lay legs
       let layChanged = false
@@ -113,11 +333,14 @@ export default function PastLayTab() {
           if (leg.result !== null || !leg.team || !leg.sport) continue
           try {
             const events = await fetchEspnDate(leg.sport, date.replace(/-/g, ''))
+            const homeLower = leg.home?.toLowerCase() || ''
+            const homeLast  = homeLower.split(' ').pop()
             const event = events.find(e =>
-              (e.competitions?.[0]?.competitors || []).some(c =>
-                leg.home?.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-                c.team.displayName.toLowerCase().includes(leg.home?.toLowerCase())
-              )
+              (e.competitions?.[0]?.competitors || []).some(c => {
+                const dn = c.team.displayName.toLowerCase()
+                return homeLower.includes(dn) || dn.includes(homeLower) ||
+                       (homeLast.length > 3 && dn.includes(homeLast))
+              })
             )
             if (!event) continue
             const comp = event.competitions?.[0]
@@ -127,11 +350,14 @@ export default function PastLayTab() {
             let won
             if (leg.market === 'spreads' && leg.point != null) {
               const competitors = comp.competitors || []
-              const pickedComp = competitors.find(c =>
-                c.team.displayName.toLowerCase().includes(leg.team.toLowerCase()) ||
-                leg.team.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-                c.team.shortDisplayName?.toLowerCase().includes(leg.team.toLowerCase().split(' ').pop())
-              )
+              const legTeamL = leg.team.toLowerCase()
+              const legLastWord = legTeamL.split(' ').pop()
+              const pickedComp = competitors.find(c => {
+                const dn = c.team.displayName.toLowerCase()
+                const sn = c.team.shortDisplayName?.toLowerCase() || ''
+                return dn.includes(legTeamL) || legTeamL.includes(dn) ||
+                       (legLastWord.length > 3 && (dn.includes(legLastWord) || sn.includes(legLastWord)))
+              })
               if (!pickedComp) continue
               const oppComp = competitors.find(c => c.id !== pickedComp.id)
               const pickedScore = parseFloat(pickedComp.score)
@@ -141,8 +367,11 @@ export default function PastLayTab() {
             } else {
               const winner = comp.competitors?.find(c => c.winner)
               if (!winner) continue
-              const winnerName = winner.team.displayName
-              won = winnerName.toLowerCase().includes(leg.team.toLowerCase()) || leg.team.toLowerCase().includes(winnerName.toLowerCase())
+              const winnerName = winner.team.displayName.toLowerCase()
+              const legTeam = leg.team.toLowerCase()
+              const legLast = legTeam.split(' ').pop()
+              won = winnerName.includes(legTeam) || legTeam.includes(winnerName) ||
+                    (legLast.length > 3 && winnerName.includes(legLast))
             }
             layHist[date].legs[i].result = won ? 'W' : 'L'
             layChanged = true
@@ -163,17 +392,21 @@ export default function PastLayTab() {
       let predChanged = false
       for (const [date, entry] of Object.entries(predHist)) {
         if (!entry?.legs) continue
-        if (entry.legs.every(l => l.result !== null) && entry.overallResult) continue
+        const legsWithTeam = entry.legs.filter(l => l.team)
+        if (legsWithTeam.every(l => l.result !== null) && entry.overallResult) continue
         for (let i = 0; i < entry.legs.length; i++) {
           const leg = entry.legs[i]
           if (leg.result !== null || !leg.team || !leg.sport) continue
           try {
             const events = await fetchEspnDate(leg.sport, date.replace(/-/g, ''))
+            const homeLower = leg.home?.toLowerCase() || ''
+            const homeLast  = homeLower.split(' ').pop()
             const event = events.find(e =>
-              (e.competitions?.[0]?.competitors || []).some(c =>
-                leg.home?.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-                c.team.displayName.toLowerCase().includes(leg.home?.toLowerCase())
-              )
+              (e.competitions?.[0]?.competitors || []).some(c => {
+                const dn = c.team.displayName.toLowerCase()
+                return homeLower.includes(dn) || dn.includes(homeLower) ||
+                       (homeLast.length > 3 && dn.includes(homeLast))
+              })
             )
             if (!event) continue
             const comp = event.competitions?.[0]
@@ -183,11 +416,14 @@ export default function PastLayTab() {
             let won
             if (leg.market === 'spreads' && leg.point != null) {
               const competitors = comp.competitors || []
-              const pickedComp = competitors.find(c =>
-                c.team.displayName.toLowerCase().includes(leg.team.toLowerCase()) ||
-                leg.team.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-                c.team.shortDisplayName?.toLowerCase().includes(leg.team.toLowerCase().split(' ').pop())
-              )
+              const legTeamL = leg.team.toLowerCase()
+              const legLastWord = legTeamL.split(' ').pop()
+              const pickedComp = competitors.find(c => {
+                const dn = c.team.displayName.toLowerCase()
+                const sn = c.team.shortDisplayName?.toLowerCase() || ''
+                return dn.includes(legTeamL) || legTeamL.includes(dn) ||
+                       (legLastWord.length > 3 && (dn.includes(legLastWord) || sn.includes(legLastWord)))
+              })
               if (!pickedComp) continue
               const oppComp = competitors.find(c => c.id !== pickedComp.id)
               const pickedScore = parseFloat(pickedComp.score)
@@ -197,15 +433,19 @@ export default function PastLayTab() {
             } else {
               const winner = comp.competitors?.find(c => c.winner)
               if (!winner) continue
-              const winnerName = winner.team.displayName
-              won = winnerName.toLowerCase().includes(leg.team.toLowerCase()) || leg.team.toLowerCase().includes(winnerName.toLowerCase())
+              const winnerName = winner.team.displayName.toLowerCase()
+              const legTeam = leg.team.toLowerCase()
+              const legLast = legTeam.split(' ').pop()
+              won = winnerName.includes(legTeam) || legTeam.includes(winnerName) ||
+                    (legLast.length > 3 && winnerName.includes(legLast))
             }
             predHist[date].legs[i].result = won ? 'W' : 'L'
             predChanged = true
           } catch(e) {}
         }
-        const resolved = predHist[date].legs.filter(l => l.result !== null)
-        if (resolved.length === predHist[date].legs.length && resolved.length > 0 && !predHist[date].overallResult) {
+        // Only count legs that have a team pick (skip team=null legs)
+        const resolved = legsWithTeam.filter(l => l.result !== null)
+        if (resolved.length === legsWithTeam.length && legsWithTeam.length > 0 && !predHist[date].overallResult) {
           const hits = resolved.filter(l => l.result === 'W').length
           predHist[date].overallResult = hits / resolved.length >= 0.7 ? 'W' : 'L'
           predHist[date].hitCount = hits
@@ -216,7 +456,6 @@ export default function PastLayTab() {
       if (predChanged) await savePredictions(predHist)
 
       setAllData({ appState, dogState, layHist, predHist, ouHist, propHist })
-      const today = getTodayKey()
       const allDays = new Set([
         ...Object.keys(appState.picks || {}),
         ...Object.keys(dogState.picks || {}),
@@ -231,6 +470,36 @@ export default function PastLayTab() {
     }
     load()
   }, [])
+
+  // Fetch game scores whenever the selected day changes
+  useEffect(() => {
+    if (!selectedKey || !allData) return
+    const { appState, dogState, layHist, predHist, propHist } = allData
+    const toFetch = [] // { sport, gameId }
+
+    const collect = (pick) => {
+      if (pick?.gameId && pick?.sport) toFetch.push({ sport: pick.sport, gameId: pick.gameId })
+    }
+    collect(appState.picks?.[selectedKey])
+    collect(dogState.picks?.[selectedKey])
+    ;(layHist[selectedKey]?.legs || []).forEach(collect)
+    ;(predHist[selectedKey]?.legs || []).forEach(collect)
+    const propDay = propHist[selectedKey] || {}
+    Object.values(propDay).forEach(v => { if (v?.gameId) collect(v) })
+
+    const unique = [...new Map(toFetch.map(x => [x.gameId, x])).values()]
+    if (unique.length === 0) return
+
+    Promise.all(unique.map(({ sport, gameId }) =>
+      fetchGameScore(sport, gameId).then(data => ({ gameId, data }))
+    )).then(results => {
+      setGameScores(prev => {
+        const next = { ...prev }
+        results.forEach(({ gameId, data }) => { if (data) next[gameId] = data })
+        return next
+      })
+    })
+  }, [selectedKey, allData])
 
   if (loading) return <p style={{ color: '#555', fontSize: '0.85rem' }}>Loading history...</p>
 
@@ -331,88 +600,183 @@ export default function PastLayTab() {
       </div>
 
       {/* 1. Lock */}
-      {lock && (
-        <Section emoji="🔒" title="Lock of the Day" accent="#00ff88" badge={resultBadge(lock.result, null, null)}>
-          <LegRow
-            label={`${lock.sport} · ${lock.market === 'h2h' ? 'MONEYLINE' : `SPREAD ${lock.point > 0 ? '+' : ''}${lock.point}`}`}
-            labelColor="#00ff88" team={lock.team}
-            sub={`${lock.away} vs ${lock.home}`}
-            result={lock.result} odds={lock.odds}
-          />
-          {lock.stake != null && (
-            <div style={{ fontSize: '0.72rem', color: '#333', marginTop: '0.15rem' }}>
-              Stake 🪙{lock.stake}
-              {lock.result === 'W' && lock.profit != null && <span style={{ color: W_COLOR, marginLeft: '0.5rem' }}>+🪙{lock.profit.toFixed(2)}</span>}
-            </div>
-          )}
-        </Section>
-      )}
+      {lock && (() => {
+        const gs = gameScores[lock.gameId]
+        let scoreInfo = null
+        if (gs?.score) {
+          const entries = Object.entries(gs.score)
+          if (entries.length >= 2) {
+            const home = entries.find(([n]) => n.toLowerCase().includes((lock.home || '').toLowerCase().split(' ').pop())) || entries[0]
+            const away = entries.find(([n]) => n !== home?.[0]) || entries[1]
+            scoreInfo = `Final: ${away?.[0]?.split(' ').pop() || '?'} ${away?.[1]} – ${home?.[0]?.split(' ').pop() || '?'} ${home?.[1]}`
+          }
+        }
+        return (
+          <Section emoji="🔒" title="Lock of the Day" accent="#00ff88" badge={resultBadge(lock.result, null, null)}>
+            <LegRow
+              label={`${lock.sport} · ${lock.market === 'h2h' ? 'MONEYLINE' : `SPREAD ${lock.point > 0 ? '+' : ''}${lock.point}`}`}
+              labelColor="#00ff88" team={lock.team}
+              sub={`${lock.away} vs ${lock.home}`}
+              result={lock.result} odds={lock.odds} scoreInfo={scoreInfo}
+            />
+            {lock.odds != null && <TotalOddsRow legs={[lock]} label="SLIP ODDS" />}
+            {lock.stake != null && (
+              <div style={{ fontSize: '0.72rem', color: '#333', marginTop: '0.15rem' }}>
+                Stake 🪙{lock.stake}
+                {lock.result === 'W' && lock.profit != null && <span style={{ color: W_COLOR, marginLeft: '0.5rem' }}>+🪙{lock.profit.toFixed(2)}</span>}
+              </div>
+            )}
+          </Section>
+        )
+      })()}
 
       {/* 2. Dog */}
-      {dog && (
-        <Section emoji="🐕" title="Dog of the Day" accent="#ff9944" badge={resultBadge(dog.result, null, null)}>
-          <LegRow
-            label={`${dog.sport} · UNDERDOG ML`} labelColor="#ff9944"
-            team={dog.team} sub={`${dog.away} vs ${dog.home}`}
-            result={dog.result} odds={dog.odds}
-          />
-        </Section>
-      )}
+      {dog && (() => {
+        const gs = gameScores[dog.gameId]
+        let scoreInfo = null
+        if (gs?.score) {
+          const entries = Object.entries(gs.score)
+          if (entries.length >= 2) {
+            const home = entries.find(([n]) => n.toLowerCase().includes((dog.home || '').toLowerCase().split(' ').pop())) || entries[0]
+            const away = entries.find(([n]) => n !== home?.[0]) || entries[1]
+            scoreInfo = `Final: ${away?.[0]?.split(' ').pop() || '?'} ${away?.[1]} – ${home?.[0]?.split(' ').pop() || '?'} ${home?.[1]}`
+          }
+        }
+        return (
+          <Section emoji="🐕" title="Dog of the Day" accent="#ff9944" badge={resultBadge(dog.result, null, null)}>
+            <LegRow
+              label={`${dog.sport} · UNDERDOG ML`} labelColor="#ff9944"
+              team={dog.team} sub={`${dog.away} vs ${dog.home}`}
+              result={dog.result} odds={dog.odds} scoreInfo={scoreInfo}
+            />
+            {dog.odds != null && <TotalOddsRow legs={[dog]} label="SLIP ODDS" />}
+          </Section>
+        )
+      })()}
 
       {/* 3. Double Lock */}
-      {ou && lock && (
-        <Section emoji="🔒🔒" title="Double Lock — O/U" accent="#00ff88"
-          badge={ou.result ? resultBadge(ou.result, null, null) : null}>
-          <LegRow label="LEG 1 · LOCK" labelColor="#00ff88" team={lock.team}
-            sub={lock.market === 'h2h' ? 'Moneyline' : `Spread ${lock.point > 0 ? '+' : ''}${lock.point}`}
-            result={lock.result} odds={lock.odds} />
-          <LegRow label="LEG 2 · O/U" labelColor="#8888ff"
-            team={`${ou.name} ${ou.point}`}
-            sub={`${lock.away} vs ${lock.home} — Total`}
-            result={ou.result ?? null} odds={ou.odds} />
-        </Section>
-      )}
+      {ou && lock && (() => {
+        const gs = gameScores[lock.gameId]
+        let scoreInfo = null
+        if (gs?.score) {
+          const entries = Object.entries(gs.score)
+          if (entries.length >= 2) {
+            const home = entries.find(([n]) => n.toLowerCase().includes((lock.home || '').toLowerCase().split(' ').pop())) || entries[0]
+            const away = entries.find(([n]) => n !== home?.[0]) || entries[1]
+            const total = entries.reduce((s, [, v]) => s + (parseFloat(v) || 0), 0)
+            scoreInfo = `Final: ${away?.[0]?.split(' ').pop()} ${away?.[1]} – ${home?.[0]?.split(' ').pop()} ${home?.[1]} · Total ${total}`
+          }
+        }
+        return (
+          <Section emoji="🔒🔒" title="Double Lock — O/U" accent="#00ff88"
+            badge={ou.result ? resultBadge(ou.result, null, null) : null}>
+            <LegRow label="LEG 1 · LOCK" labelColor="#00ff88" team={lock.team}
+              sub={lock.market === 'h2h' ? 'Moneyline' : `Spread ${lock.point > 0 ? '+' : ''}${lock.point}`}
+              result={lock.result} odds={lock.odds} scoreInfo={scoreInfo} />
+            <LegRow label="LEG 2 · O/U" labelColor="#8888ff"
+              team={`${ou.name} ${ou.point}`}
+              sub={`${lock.away} vs ${lock.home} — Total`}
+              result={ou.result ?? null} odds={ou.odds}
+              scoreInfo={scoreInfo ? `Total: ${Object.values(gs?.score || {}).reduce((s, v) => s + (parseFloat(v) || 0), 0)} · line ${ou.point}` : null} />
+            <TotalOddsRow legs={[lock, ou].filter(l => l?.odds != null)} label="PARLAY TOTAL" />
+          </Section>
+        )
+      })()}
 
       {/* 4. Predictions */}
-      {pred?.legs?.length > 0 && (
-        <Section emoji="🔮" title="Predictions" accent="#8888ff"
-          badge={pred.overallResult ? resultBadge(pred.overallResult, pred.hitCount, pred.totalCount) : null}>
-          {pred.legs.map((leg, i) => (
-            <LegRow key={leg.gameId || i}
-              label={leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${i + 1}`}
-              labelColor={leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff'}
-              team={leg.team || '—'} sub={`${leg.away} vs ${leg.home} · ${leg.sport}`}
-              result={leg.result} />
-          ))}
-        </Section>
-      )}
+      {pred?.legs?.length > 0 && (() => {
+        const renderedLegs = pred.legs.filter(l => l.team)
+        return (
+          <Section emoji="🔮" title="Predictions" accent="#8888ff"
+            badge={pred.overallResult ? resultBadge(pred.overallResult, pred.hitCount, pred.totalCount) : null}>
+            {renderedLegs.reduce((acc, leg, i) => {
+              if (!leg.isLock && !leg.isDog) acc.n++
+              const n = acc.n
+              const gs = gameScores[leg.gameId]
+              let scoreInfo = null
+              if (gs?.score) {
+                const entries = Object.entries(gs.score)
+                if (entries.length >= 2) {
+                  const home = entries.find(([nm]) => nm.toLowerCase().includes((leg.home || '').toLowerCase().split(' ').pop())) || entries[0]
+                  const away = entries.find(([nm]) => nm !== home?.[0]) || entries[1]
+                  scoreInfo = `Final: ${away?.[0]?.split(' ').pop()} ${away?.[1]} – ${home?.[0]?.split(' ').pop()} ${home?.[1]}`
+                }
+              }
+              acc.els.push(
+                <LegRow key={leg.gameId || i}
+                  label={leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${n}`}
+                  labelColor={leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff'}
+                  team={leg.team} sub={`${leg.away} vs ${leg.home} · ${leg.sport}`}
+                  result={leg.result} odds={leg.odds ?? null} scoreInfo={scoreInfo} />
+              )
+              return acc
+            }, { n: 0, els: [] }).els}
+            <TotalOddsRow legs={renderedLegs} label="PARLAY TOTAL" />
+          </Section>
+        )
+      })()}
 
       {/* 5. Lay of the Day */}
-      {lay?.legs?.length > 0 && (
-        <Section emoji="🎯" title="Lay of the Day" accent="#8888ff"
-          badge={lay.overallResult ? resultBadge(lay.overallResult, lay.hitCount, lay.totalCount) : null}>
-          {lay.legs.map((leg, i) => (
-            <LegRow key={leg.gameId || i}
-              label={leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${i + 1}`}
-              labelColor={leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff'}
-              team={leg.team || '—'} sub={`${leg.away} vs ${leg.home} · ${leg.sport}`}
-              result={leg.result} />
-          ))}
-
-        </Section>
-      )}
+      {lay?.legs?.length > 0 && (() => {
+        const layLegs = lay.legs
+        return (
+          <Section emoji="🎯" title="Lay of the Day" accent="#8888ff"
+            badge={lay.overallResult ? resultBadge(lay.overallResult, lay.hitCount, lay.totalCount) : null}>
+            {layLegs.reduce((acc, leg, i) => {
+              if (!leg.isLock && !leg.isDog) acc.n++
+              const n = acc.n
+              const gs = gameScores[leg.gameId]
+              let scoreInfo = null
+              if (gs?.score) {
+                const entries = Object.entries(gs.score)
+                if (entries.length >= 2) {
+                  const home = entries.find(([nm]) => nm.toLowerCase().includes((leg.home || '').toLowerCase().split(' ').pop())) || entries[0]
+                  const away = entries.find(([nm]) => nm !== home?.[0]) || entries[1]
+                  scoreInfo = `Final: ${away?.[0]?.split(' ').pop()} ${away?.[1]} – ${home?.[0]?.split(' ').pop()} ${home?.[1]}`
+                }
+              }
+              acc.els.push(
+                <LegRow key={leg.gameId || i}
+                  label={leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${n}`}
+                  labelColor={leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff'}
+                  team={leg.team || '—'} sub={`${leg.away} vs ${leg.home} · ${leg.sport}`}
+                  result={leg.result} odds={leg.odds ?? null} scoreInfo={scoreInfo} />
+              )
+              return acc
+            }, { n: 0, els: [] }).els}
+            <TotalOddsRow legs={layLegs} label="PARLAY TOTAL" />
+          </Section>
+        )
+      })()}
 
       {/* 6. Prop */}
       {propEntries.length > 0 && (
         <Section emoji="🎲" title="Prop Pick" accent="#ffdd44">
-          {propEntries.map(([teamKey, pick], i) => (
-            <LegRow key={i}
-              label={`${pick.sport} · ${(pick.label || 'PROP').toUpperCase()} · ${(pick.side || '').toUpperCase()}`}
-              labelColor="#ffdd44"
-              team={`${pick.player} ${pick.side === 'over' ? '⬆' : '⬇'} ${pick.line}`}
-              sub={`${pick.team || teamKey}`}
-              result={pick.result} odds={pick.odds} />
-          ))}
+          {propEntries.map(([teamKey, pick], i) => {
+            const gs = gameScores[pick.gameId]
+            let scoreInfo = null
+            if (gs?.playerStats && pick.player) {
+              const pStats = gs.playerStats[pick.player]
+              if (pStats) {
+                const statDef = PROP_STAT_MAP[pick.marketKey] || { label: pick.marketKey, espnKeys: [] }
+                const statVal = statDef.espnKeys.map(k => pStats[k]).find(v => v != null)
+                if (statVal != null) {
+                  const actual = parseFloat(statVal)
+                  const line = parseFloat(pick.line)
+                  const hit = pick.side === 'over' ? actual > line : actual < line
+                  scoreInfo = `${pick.player}: ${statVal} ${statDef.label} · line ${pick.line} · ${hit ? 'HIT' : 'MISS'}`
+                }
+              }
+            }
+            return (
+              <LegRow key={i}
+                label={`${pick.sport} · ${(pick.label || 'PROP').toUpperCase()} · ${(pick.side || '').toUpperCase()}`}
+                labelColor="#ffdd44"
+                team={`${pick.player} ${pick.side === 'over' ? '⬆' : '⬇'} ${pick.line}`}
+                sub={`${pick.team || teamKey}`}
+                result={pick.result} odds={pick.odds} scoreInfo={scoreInfo} />
+            )
+          })}
         </Section>
       )}
 

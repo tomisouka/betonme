@@ -21,22 +21,13 @@ function oddsToDecimal(american) {
   return (100 / Math.abs(american)) + 1
 }
 
-function scoreWin(win) {
-  let score = 0
-  if (win.type === 'lock') {
-    const dec = oddsToDecimal(win.odds)
-    score += dec * 10
-    if (win.profit) score += win.profit * 0.5
-  }
-  if (win.type === 'dog') {
-    const dec = oddsToDecimal(win.odds)
-    score += dec * 15
-  }
-  if (win.type === 'parlay') {
-    score += win.legs * 12
-    score += (win.hitCount / win.totalCount) * 10
-  }
-  return score
+// Sort purely by payout multiplier — highest odds win at the top
+function sortKey(win) {
+  // Use payout (decimal multiplier) as the primary sort key
+  if (win.payout != null) return win.payout
+  // Fallback for entries with no payout: use odds if available
+  if (win.odds != null) return oddsToDecimal(win.odds)
+  return 1
 }
 
 const GOLD   = '#f5c518'
@@ -351,7 +342,7 @@ export default function WinsTab() {
         })
       }
 
-      collected.sort((a, b) => scoreWin(b) - scoreWin(a))
+      collected.sort((a, b) => sortKey(b) - sortKey(a))
       setWins(collected)
       setLoading(false)
     }

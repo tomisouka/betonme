@@ -182,7 +182,7 @@ export default function PropSection({ marketKey, label, props, pickedTeams, onPi
                       <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{prop.player}</span>
                       {isPicked && <span style={{ fontSize: '0.62rem', color: '#8888ff', background: '#8888ff22', borderRadius: '3px', padding: '0.1rem 0.35rem', fontWeight: 'bold' }}>✓ PICKED</span>}
                     </div>
-                    <div style={{ fontSize: '0.68rem', color: teamColor(prop.team), fontWeight: 'bold' }}>{prop.team}</div>
+                    <div style={{ fontSize: '0.68rem', color: teamColor(prop.team), fontWeight: 'bold' }}>{prop.team || `${prop.away || ''} @ ${prop.home || ''}`}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff' }}>

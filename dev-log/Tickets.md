@@ -7,6 +7,40 @@ Status: 🔴 Broken · 🟡 Incomplete · 🟢 Works but needs improvement · �
 
 ## 🚨 URGENT — Priority #1
 
+### TICKET-FLOW001 · Pick flow order enforcement
+**Status:** ✅ Fixed  
+**What was wrong:** HateWatch and Favs tabs were reported to have `goLock()` / `saveState()` calls that could overwrite the Lock of the Day. On inspection both tabs were already read-only with no pick buttons. Sequential gating added in App.jsx.  
+**Fix applied:**
+- Confirmed FavsTab and HateWatchTab are READ ONLY — no saveState/goLock calls exist
+- Added `gate` metadata to each tab in TABS array in App.jsx
+- `isTabLocked()` helper checks prerequisites at render time
+- Locked tabs render dimmed (opacity 0.45) and are unclickable with a tooltip
+- If somehow navigated to while locked, a `GateWall` component blocks with a clear message
+- Gating order enforced:
+  - Dog → requires Lock
+  - Favs, HateWatch, Parlays → require Lock + Dog
+  - Props → requires Lock + Dog (parlays gate preserved for future)
+**Files:** App.jsx
+
+### TICKET-PROPS001 · Props tab full rewrite
+**Status:** ✅ Resolved  
+**What was fixed:**
+- 4 picks per day: 2 lock game pitchers + 2 dog game pitchers
+- Lock and dog fetched in single call (`fetchAllProps`) with explicit args — no stale closure values
+- `fetchedRef` guard prevents loops; refresh button works correctly
+- `refreshLock()` added to App.jsx init useEffect — `todayLock` now loads on startup
+- Dog props section hidden when lock and dog are the same game
+- Already-picked pitchers hidden from picker immediately after confirming
+- 🔒 LOCK / 🐕 DOG pill on every TODAY and YESTERDAY card
+- Dog vs lock label derived from `dogPropLines` player set at render time
+- `isDogGame` flag + correct `gameId` saved on confirm for future picks
+- Manual W/L grading removed — auto-resolves via ESPN only
+- Yesterday section collapsed by default
+- `test-props.mjs` added to project root for server-side validation
+**Files:** PropsTab.jsx, App.jsx
+
+---
+
 ### TICKET-BOT001 · Discord Bot — pick delivery & results
 **Status:** 🚨 Urgent · Not started  
 **What's needed:** A Discord bot that posts today's lock and dog of the day to a channel when they're set, then updates the message with the result (W/L) once the game finishes. This is the primary distribution layer for picks — everything else is secondary until this is live.  
@@ -89,17 +123,20 @@ Status: 🔴 Broken · 🟡 Incomplete · 🟢 Works but needs improvement · �
 
 ## 🟢 Works but needs improvement
 
-### TICKET-022 · Parlays tab — predictions collapsed by default + slip UI
-**Tab:** Parlays  
-**What's wrong:** Predictions section is expanded by default (clutters the view). Locked slips have no visual identity — just a list.  
-**Intended fix:** Predictions section collapsed by default. Locked slip should render as a proper betting slip card.  
+### TICKET-023 · Live tab — chart axis too wide + add hi/lo/current
+**Tab:** Live  
+**What's wrong:** Y-axis range is too broad so small odds movements look flat. No way to see the lowest, highest, and current odds at a glance.  
+**Intended fix:**
+- Tighten Y-axis to fit actual data range ± small padding so movement looks dramatic
+- Add Lowest / Highest / Current labels for each team's odds line
+- Vegas rarely moves lines more than 10-15 cents pre-game, chart should reflect that
 **Effort:** Small
 
-### TICKET-023 · Live tab — chart axis too wide
-**Tab:** Live  
-**What's wrong:** Y-axis range is too broad so small odds movements look flat.  
-**Intended fix:** Tighten axis to fit actual data range ± small padding so movement looks dramatic. Vegas rarely moves lines more than 10-15 cents.  
-**Effort:** Small
+### TICKET-022 · Parlays tab — slip UI redesign
+**Tab:** Parlays  
+**What's wrong:** Locked slips have no visual identity — just a list of legs. Doesn't feel like a real betting slip.  
+**Intended fix:** Redesign locked parlay slip to look like an actual sportsbook slip — card-style with header, legs, total odds, potential payout. Should entice the user and feel premium.  
+**Effort:** Medium
 
 ### TICKET-001 · Live tab chart — needs more snapshots
 **Tab:** Live  
@@ -163,6 +200,7 @@ Status: 🔴 Broken · 🟡 Incomplete · 🟢 Works but needs improvement · �
 | TICKET-016 | Tauri wrapper | src-tauri/ scaffolded, build-deb.sh provided |
 | TICKET-017 | Pitchers not shown on cards | MLB game cards: pitchers under each team name |
 | T-002 | Games tab on the-odds-api | Migrated to ESPN (free, unlimited) |
+| TICKET-FLOW001 | Pick flow gating — FavsTab/HateWatchTab read-only confirmed, sequential gate added to App.jsx | ✅ Fixed |
 | — | App.jsx was 3,051 lines | Split into per-tab components |
 | — | localStorage for persistent data | Migrated to savedata.json via Express |
 | — | NBA game lines missing | DK scraper subcategoryId 4511 |
@@ -176,3 +214,10 @@ Status: 🔴 Broken · 🟡 Incomplete · 🟢 Works but needs improvement · �
 | — | PropsInsightPanel counting pending picks | Over/under totals now resolved-only |
 | — | [DK] console label | Renamed to [stros_scraper] in odds.js |
 | — | Favs tab foundation | TICKET-021 open for expansion |
+| TICKET-NOPICK001 | HateWatch/Favs no way to skip when team not playing | Added "No pick today" button + confirm dialog in TodayGameCard — works on both game-today and no-game-today paths. Saves `{noPick:true}` to pick slot, doesn't affect analytics. |
+| TICKET-PASTLAY001 | PastLayTab always showed "Loading history..." | Bare `return` with no `if(loading)` guard — one-char fix. |
+| TICKET-PASTLAY002 | PastLayTab — no total odds or payout shown | Added `calcTotalOdds()` + `TotalOddsRow` component. Parlay math for all slips (Lock, Dog, Double Lock, Predictions, Lay). `🪙1 wins → 🪙X,XXX.XX` sub-row with comma formatting. |
+| TICKET-PASTLAY003 | PastLayTab — no final scores or prop results shown | Added `fetchGameScore()` hitting ESPN summary endpoint per gameId on day select. Final scores shown per leg as italic sub-line. Props show `Player: 7 K · line 6.5 · HIT`. |
+| TICKET-LIVE001 | Live tab showing 3 dogs when only 1 picked | `isDog` matched on home/away team presence in game, not on actual picked team. Fixed: `matchesPick()` now prefers `gameId` comparison, falls back to matching the picked team name only (not any team in that game). |
+| TICKET-PITCHER001 | Pitcher line in ParlaysTab hard to read | Restyled all 3 pitcher spots (game browser, slip legs, Lay section) as a compact navy pill (`#0d1a2a` bg, `#1a3a5a` border, `#7ab8e8` name text). |
+| TICKET-DOG001 | DogTab had no pick history | Added `📋 History NW–NL` button in header. Opens bottom-sheet modal with all past picks sorted newest-first — date, team, matchup, odds in tier color, W/L/⏳. Only shows once results exist. |

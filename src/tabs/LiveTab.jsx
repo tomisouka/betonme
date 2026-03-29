@@ -202,8 +202,15 @@ function GameCard({ gameKey, snapshots, todayLock, todayDog, yesterdayLock, yest
     const g = gameTeam.toLowerCase(), p = pickTeam.toLowerCase()
     return g.includes(p.split(' ').pop()) || p.includes(g.split(' ').pop())
   }
-  const isLock = [todayLock, yesterdayLock].some(l => l && (nameMatch(last.home, l?.home) || nameMatch(last.away, l?.away)))
-  const isDog  = [todayDog,  yesterdayDog ].some(d => d && (nameMatch(last.home, d?.home)  || nameMatch(last.away, d?.away)))
+  const matchPick = (pick) => {
+    if (!pick) return false
+    // Prefer gameId match
+    if (last.gameId && pick.gameId) return last.gameId === pick.gameId
+    // Fall back: only match the picked team
+    return nameMatch(last.home, pick.team) || nameMatch(last.away, pick.team)
+  }
+  const isLock = [todayLock, yesterdayLock].some(matchPick)
+  const isDog  = [todayDog,  yesterdayDog ].some(matchPick)
   const highlight = isLock ? '#00ff8833' : isDog ? '#ff994433' : '#1e1e1e'
   const labelColor = isLock ? '#00ff88' : isDog ? '#ff9944' : '#555'
   const labelText  = isLock ? '🔒 LOCK · ' : isDog ? '🐕 DOG · ' : ''
@@ -233,6 +240,13 @@ function GameCard({ gameKey, snapshots, todayLock, todayDog, yesterdayLock, yest
             <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#ccc' }}>
               {last.away_team || last.away} <span style={{ color: '#333', fontWeight: 'normal' }}>@</span> {last.home_team || last.home}
             </div>
+            {last.commence_time && (
+              <div style={{ fontSize: '0.62rem', color: '#444', marginTop: '0.15rem' }}>
+                {new Date(last.commence_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {' · '}
+                {new Date(last.commence_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem' }}>
             <span style={{ fontSize: '0.72rem', color: '#4c9be8', fontWeight: 'bold' }}>{fmtOdds(last.ml?.home)}</span>
@@ -422,14 +436,35 @@ export default function LiveTab({ todayLock, todayDog }) {
            t.toLowerCase().includes(g.split(' ').pop().toLowerCase())
   }
 
+  // Match a snapshot to a pick — prefer gameId, fall back to picked team name
+  const matchesPick = (snap, pick) => {
+    if (!pick) return false
+    const last = snap[snap.length - 1] || {}
+    // If both have gameId, use that exclusively
+    if (last.gameId && pick.gameId) return last.gameId === pick.gameId
+    // Fall back: only match if the picked team appears as home or away
+    return nameMatch(last.home, pick.team) || nameMatch(last.away, pick.team)
+  }
+
   // Enrich + sort game entries for a given day's data object
-  const enrichEntries = (gamesObj) =>
+  // bucketDate: the YYYY-MM-DD key — only include games that actually commence on that date
+  const enrichEntries = (gamesObj, bucketDate) =>
     Object.entries(gamesObj)
-      .filter(([, snaps]) => snaps?.length > 0)
+      .filter(([, snaps]) => {
+        if (!snaps?.length) return false
+        const last = snaps[snaps.length - 1]
+        // If we have a commence_time, only show this game in the bucket matching its game date
+        if (last?.commence_time && bucketDate) {
+          // commence_time is UTC — convert to local date for comparison
+          const localGameDate = new Date(last.commence_time)
+          const localStr = `${localGameDate.getFullYear()}-${String(localGameDate.getMonth()+1).padStart(2,'0')}-${String(localGameDate.getDate()).padStart(2,'0')}`
+          if (localStr !== bucketDate) return false
+        }
+        return true
+      })
       .map(([gameKey, snapshots], idx) => {
-        const last = snapshots[snapshots.length - 1] || {}
-        const isLock = [todayLock, yesterdayLock].some(l => l && (nameMatch(last.home, l?.home) || nameMatch(last.away, l?.away)))
-        const isDog  = [todayDog,  yesterdayDog  ].some(d => d && (nameMatch(last.home, d?.home)  || nameMatch(last.away, d?.away)))
+        const isLock = [todayLock, yesterdayLock].some(l => matchesPick(snapshots, l))
+        const isDog  = [todayDog,  yesterdayDog ].some(d => matchesPick(snapshots, d))
         return { gameKey, snapshots, idx, isLock, isDog }
       })
       .sort((a, b) => {
@@ -443,8 +478,8 @@ export default function LiveTab({ todayLock, todayDog }) {
         return new Date(aTs) - new Date(bTs)
       })
 
-  const todayEntries     = enrichEntries(oddsHistory[todayKey]     || {})
-  const yesterdayEntries = enrichEntries(oddsHistory[yesterdayKey] || {})
+  const todayEntries     = enrichEntries(oddsHistory[todayKey]     || {}, todayKey)
+  const yesterdayEntries = enrichEntries(oddsHistory[yesterdayKey] || {}, yesterdayKey)
 
   // Merge all history dates (lock + dog), last 7 unique dates desc
   const allHistoryDates = [...new Set([...Object.keys(lockHistory), ...Object.keys(dogHistory)])]

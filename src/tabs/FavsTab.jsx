@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { loadPrefs, savePrefs } from '../hooks/useSaveData.js'
+import { loadPrefs, savePrefs, loadFavPick, saveFavPick } from '../hooks/useSaveData.js'
+import { getTodayKey, getGameDateLabel } from '../utils/odds.js'
 
 const SERVER = 'http://127.0.0.1:3001'
 
@@ -122,84 +123,208 @@ function BiasMeter({ pickPct }) {
 // ── Main Tab ──────────────────────────────────────────────────────────────────
 
 
-// ── Today's Game Card ─────────────────────────────────────────────────────────
-function TodayGameCard({ team, allGames, todayLock, todayDog, mode }) {
+// ── Today's Game Card — owns favPick slot ─────────────────────────────────────
+function TodayGameCard({ team, allGames, todayFavPick, todayLock, todayDog, onFavPickChange }) {
+  const [picking, setPicking] = useState(false)
+  const [saving, setSaving]   = useState(false)
+  const [noPickConfirm, setNoPickConfirm] = useState(false)
 
-  // Fuzzy: does a pick's team field match the full team name?
-  function nameMatches(pickTeam, fullName) {
-    if (!pickTeam || !fullName) return false
-    const pt = pickTeam.toLowerCase()
-    const fn = fullName.toLowerCase()
-    if (pt === fn) return true
-    // last word match: 'HOU Astros' matches 'Houston Astros' via 'astros'
-    const ptLast = pt.split(' ').pop()
-    const fnLast = fn.split(' ').pop()
-    if (ptLast && ptLast === fnLast) return true
-    if (fn.includes(pt) || pt.includes(fn)) return true
-    return false
+  function nameMatches(a, b) {
+    if (!a || !b) return false
+    const al = a.toLowerCase(), bl = b.toLowerCase()
+    if (al === bl) return true
+    if (al.split(' ').pop() === bl.split(' ').pop()) return true
+    return al.includes(bl) || bl.includes(al)
   }
 
-  // Find today's MLB game involving this team
+  function fmtO(price) {
+    if (price == null) return null
+    const n = Math.round(price)
+    return n > 0 ? `+${n}` : `${n}`
+  }
+
+  // Check if lock or dog already covers this team
   const last = team.toLowerCase().split(' ').pop()
+  const lockCoversTeam = todayLock?.team && nameMatches(todayLock.team, team)
+  const dogCoversTeam  = todayDog?.team  && nameMatches(todayDog.team,  team)
+  const coveredPick    = lockCoversTeam ? todayLock : dogCoversTeam ? todayDog : null
+  const coverSource    = lockCoversTeam ? '🔒 Lock' : dogCoversTeam ? '🐕 Dog' : null
+  const _now = new Date()
+  const _todayMidnight = new Date(_now.getFullYear(), _now.getMonth(), _now.getDate())
+  const _tomorrowMidnight = new Date(_todayMidnight.getTime() + 86400000)
+
   const todayGame = allGames.find(g => {
     if (g.sportLabel !== 'MLB') return false
     const home = (g.home_team || '').toLowerCase()
     const away = (g.away_team || '').toLowerCase()
-    return home.includes(last) || away.includes(last)
+    if (!home.includes(last) && !away.includes(last)) return false
+    const gameTime = new Date(g.commence_time)
+    return gameTime >= _todayMidnight && gameTime < _tomorrowMidnight
   })
 
-  if (!todayGame) return null
+  if (!todayGame) {
+    const nextGame = allGames
+      .filter(g => {
+        if (g.sportLabel !== 'MLB') return false
+        const home = (g.home_team || '').toLowerCase()
+        const away = (g.away_team || '').toLowerCase()
+        if (!home.includes(last) && !away.includes(last)) return false
+        const gameDay = new Date(g.commence_time)
+        const gameMidnight = new Date(gameDay.getFullYear(), gameDay.getMonth(), gameDay.getDate())
+        return gameMidnight > _todayMidnight
+      })
+      .sort((a, b) => new Date(a.commence_time) - new Date(b.commence_time))[0]
+
+    const teamShort = team.split(' ').pop()
+    const isNoPick  = !!todayFavPick?.noPick
+
+    async function saveNoPickEarly() {
+      setSaving(true)
+      try {
+        const existing = await loadFavPick()
+        const updated  = { ...existing, [getTodayKey()]: { noPick: true, reason: 'not_playing' } }
+        await saveFavPick(updated)
+        onFavPickChange?.()
+        setNoPickConfirm(false)
+      } catch (e) { console.error(e) }
+      finally { setSaving(false) }
+    }
+
+    if (!nextGame) return (
+      <div style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: '12px', padding: '0.9rem 1.1rem', marginBottom: '1.5rem' }}>
+        <div style={{ fontSize: '0.62rem', color: '#444' }}>⚾ No upcoming MLB games found for {teamShort}</div>
+      </div>
+    )
+
+    const nextIsHome   = (nextGame.home_team || '').toLowerCase().includes(last)
+    const nextOpponent = nextIsHome ? nextGame.away_team : nextGame.home_team
+    const nextOppShort = (nextOpponent || '').split(' ').pop()
+    const dateLabel    = getGameDateLabel(nextGame.commence_time)
+
+    return (
+      <div style={{ background: '#111', border: `1px solid ${isNoPick ? '#333' : '#2a2a2a'}`, borderRadius: '12px', padding: '0.9rem 1.1rem', marginBottom: '1.5rem' }}>
+        <div style={{ fontSize: '0.58rem', color: '#444', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+          ⚾ No game today · next up
+        </div>
+        <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#ccc', marginBottom: '0.3rem' }}>
+          {nextIsHome
+            ? <>{nextOppShort} <span style={{ color: '#444', fontWeight: 'normal' }}>@</span> <span style={{ color: '#fff' }}>{teamShort}</span></>
+            : <><span style={{ color: '#fff' }}>{teamShort}</span> <span style={{ color: '#444', fontWeight: 'normal' }}>@</span> {nextOppShort}</>
+          }
+        </div>
+        <div style={{ fontSize: '0.62rem', color: '#555', marginBottom: '0.75rem' }}>{dateLabel}</div>
+
+        {/* No Pick state */}
+        {isNoPick && !noPickConfirm && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.7rem', color: '#444', fontStyle: 'italic' }}>🚫 No pick today — marked as off day</span>
+            <button onClick={() => setNoPickConfirm(true)} style={{
+              fontSize: '0.6rem', padding: '0.2rem 0.5rem', background: 'transparent',
+              border: '1px solid #222', borderRadius: '5px', color: '#444', cursor: 'pointer',
+            }}>undo</button>
+          </div>
+        )}
+
+        {/* No Pick confirm dialog */}
+        {noPickConfirm && (
+          <div style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '0.75rem 0.85rem' }}>
+            <div style={{ fontSize: '0.7rem', color: '#aaa', fontWeight: 'bold', marginBottom: '0.3rem' }}>🚫 Skip today's pick?</div>
+            <div style={{ fontSize: '0.63rem', color: '#555', marginBottom: '0.7rem', lineHeight: 1.5 }}>
+              Mark <span style={{ color: '#888' }}>{teamShort}</span> as not in play today. Won't count against your stats.
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button onClick={saveNoPickEarly} disabled={saving} style={{
+                flex: 1, padding: '0.5rem', borderRadius: '6px', cursor: saving ? 'not-allowed' : 'pointer',
+                background: '#1a1a1a', border: '1px solid #333', color: '#888', fontSize: '0.73rem', fontWeight: 'bold',
+              }}>{saving ? 'Saving...' : 'Yes, skip today'}</button>
+              <button onClick={() => setNoPickConfirm(false)} style={{
+                flex: 1, padding: '0.5rem', borderRadius: '6px', cursor: 'pointer',
+                background: 'transparent', border: '1px solid #1e1e1e', color: '#444', fontSize: '0.7rem',
+              }}>← Go back</button>
+            </div>
+          </div>
+        )}
+
+        {/* No Pick button — only show if no pick set yet */}
+        {!isNoPick && !noPickConfirm && (
+          <button onClick={() => setNoPickConfirm(true)} style={{
+            fontSize: '0.62rem', padding: '0.3rem 0.6rem', background: 'transparent',
+            border: '1px solid #1e1e1e', borderRadius: '5px', color: '#333', cursor: 'pointer',
+          }}>🚫 No pick today</button>
+        )}
+      </div>
+    )
+  }
 
   const isHome   = (todayGame.home_team || '').toLowerCase().includes(last)
-  const opponent = isHome ? todayGame.away_team : todayGame.home_team
   const teamFull = isHome ? todayGame.home_team : todayGame.away_team
+  const opponent = isHome ? todayGame.away_team : todayGame.home_team
+  const teamShort = teamFull.split(' ').pop()
+  const oppShort  = opponent.split(' ').pop()
 
   const gameTime = todayGame.commence_time
     ? new Date(todayGame.commence_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : null
 
-  // Is this game the one they locked/dogged?
-  const lockOnThisGame = todayLock && (
-    nameMatches(todayLock.home, todayGame.home_team) &&
-    nameMatches(todayLock.away, todayGame.away_team)
-  )
-  const dogOnThisGame = todayDog && (
-    nameMatches(todayDog.home, todayGame.home_team) &&
-    nameMatches(todayDog.away, todayGame.away_team)
-  )
+  const bm         = todayGame.bookmakers?.[0]
+  const mlMarket   = bm?.markets?.find(m => m.key === 'h2h')
+  const spMarket   = bm?.markets?.find(m => m.key === 'spreads')
+  const teamML     = mlMarket?.outcomes?.find(o => nameMatches(o.name, teamFull))
+  const teamSpread = spMarket?.outcomes?.find(o => nameMatches(o.name, teamFull))
 
-  // Who did they pick?
-  const lockedOnThem   = lockOnThisGame && nameMatches(todayLock.team, teamFull)
-  const lockedAgainst  = lockOnThisGame && !nameMatches(todayLock.team, teamFull)
-  const doggedOnThem   = dogOnThisGame  && nameMatches(todayDog.team,  teamFull)
-  const doggedAgainst  = dogOnThisGame  && !nameMatches(todayDog.team, teamFull)
+  const hasFavPick  = !!todayFavPick && !todayFavPick.noPick
+  const isNoPick    = !!todayFavPick?.noPick
+  const isCovered   = !!coveredPick   // lock or dog already covers this team
+  const displayPick = coveredPick || todayFavPick
+  const isSpread    = displayPick?.market === 'spreads'
+  const anyPick     = isCovered || hasFavPick || isNoPick
 
-  const hasPick = lockedOnThem || lockedAgainst || doggedOnThem || doggedAgainst
-  const noPick  = !lockOnThisGame && !dogOnThisGame
+  async function saveNoPick() {
+    setSaving(true)
+    try {
+      const existing = await loadFavPick()
+      const updated  = { ...existing, [getTodayKey()]: { noPick: true, reason: 'not_playing' } }
+      await saveFavPick(updated)
+      onFavPickChange?.()
+      setNoPickConfirm(false)
+      setPicking(false)
+    } catch (e) {
+      console.error('favPick noPick save failed', e)
+    } finally {
+      setSaving(false)
+    }
+  }
 
-  const teamShort = team.split(' ').pop()
-  const oppShort  = opponent.split(' ').pop()
-
-  // ML odds from DK if available
-  const mlOdds = todayGame._dk?.h2h
-    ? (isHome
-        ? (todayGame._dk.h2h.homeOdds > 0 ? '+' : '') + todayGame._dk.h2h.homeOdds
-        : (todayGame._dk.h2h.awayOdds > 0 ? '+' : '') + todayGame._dk.h2h.awayOdds)
-    : null
+  async function makePick(market, odds, point) {
+    setSaving(true)
+    try {
+      const existing = await loadFavPick()
+      const updated  = { ...existing, [getTodayKey()]: {
+        sport: 'MLB', sportLabel: 'MLB',
+        team: teamFull,
+        home: todayGame.home_team,
+        away: todayGame.away_team,
+        odds, market, point: point ?? null,
+        gameId: todayGame.id,
+      }}
+      await saveFavPick(updated)
+      onFavPickChange?.()
+      setPicking(false)
+    } catch (e) {
+      console.error('favPick save failed', e)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
-    <div style={{
-      background: '#111', border: '1px solid #2a2a2a',
-      borderRadius: '12px', padding: '0.9rem 1.1rem', marginBottom: '1.5rem',
-    }}>
-      {/* Header */}
+    <div style={{ background: '#111', border: `1px solid ${anyPick ? '#00ff8833' : '#2a2a2a'}`, borderRadius: '12px', padding: '0.9rem 1.1rem', marginBottom: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <span style={{ fontSize: '0.6rem', color: '#555', fontWeight: 'bold', letterSpacing: '0.08em' }}>⚾ TODAY</span>
+        <span style={{ fontSize: '0.6rem', color: '#555', fontWeight: 'bold', letterSpacing: '0.08em' }}>⚾ TODAY — YOUR PICK</span>
         {gameTime && <span style={{ fontSize: '0.62rem', color: '#444' }}>{gameTime}</span>}
       </div>
 
-      {/* Matchup row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.65rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.7rem' }}>
         <span style={{ fontWeight: 'bold', fontSize: '0.95rem', color: isHome ? '#aaa' : '#ddd' }}>
           {isHome ? oppShort : teamShort}
         </span>
@@ -207,74 +332,124 @@ function TodayGameCard({ team, allGames, todayLock, todayDog, mode }) {
         <span style={{ fontWeight: 'bold', fontSize: '0.95rem', color: isHome ? '#ddd' : '#aaa' }}>
           {isHome ? teamShort : oppShort}
         </span>
-        {mlOdds && (
-          <span style={{
-            fontSize: '0.65rem', marginLeft: 'auto', fontWeight: 'bold',
-            color: mlOdds.startsWith('+') ? '#ff9944' : '#4c9be8',
-          }}>
-            {mlOdds} ML
+        {teamML && (
+          <span style={{ fontSize: '0.65rem', marginLeft: 'auto', fontWeight: 'bold', color: teamML.price < 0 ? '#4c9be8' : '#ff9944' }}>
+            {teamShort} {fmtO(teamML.price)} ML
           </span>
         )}
       </div>
 
-      {/* Pick status */}
-      {hasPick && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {lockedOnThem && (
-            <div style={{ fontSize: '0.72rem', color: '#00ff88' }}>
-              🔒 Locked {teamShort} {todayLock.odds > 0 ? '+' : ''}{todayLock.odds}
-              {todayLock.market === 'spreads' && todayLock.point != null ? ` (${todayLock.point > 0 ? '+' : ''}${todayLock.point})` : ''}
-            </div>
-          )}
-          {lockedAgainst && (
-            <div style={{ fontSize: '0.72rem', color: '#ff9944' }}>
-              🔒 Fading {teamShort} — locked {(todayLock.team || '').split(' ').pop()} {todayLock.odds > 0 ? '+' : ''}{todayLock.odds}
-            </div>
-          )}
-          {doggedOnThem && (
-            <div style={{ fontSize: '0.72rem', color: '#ff9944' }}>
-              🐕 Dogged {teamShort} {todayDog.odds > 0 ? '+' : ''}{todayDog.odds}
-            </div>
-          )}
-          {doggedAgainst && (
-            <div style={{ fontSize: '0.72rem', color: '#8888ff' }}>
-              🐕 Dog on opponent — took {(todayDog.team || '').split(' ').pop()} {todayDog.odds > 0 ? '+' : ''}{todayDog.odds}
-            </div>
-          )}
+      {/* Covered by lock or dog — no separate pick needed */}
+      {isCovered && !picking && (
+        <div style={{ fontSize: '0.78rem', color: '#00ff88', fontWeight: 'bold' }}>
+          {coverSource} · ⭐ {teamShort} {isSpread
+            ? `${displayPick.point > 0 ? '+' : ''}${displayPick.point} (${fmtO(displayPick.odds)})`
+            : `${fmtO(displayPick.odds)} ML`}
+          <span style={{ fontSize: '0.6rem', color: '#444', fontWeight: 'normal', marginLeft: '0.5rem' }}>covered</span>
         </div>
       )}
 
-      {/* No pick yet on this game — show quick nav */}
-      {noPick && (
+      {/* No Pick Today — skipped */}
+      {isNoPick && !picking && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: '0.78rem', color: '#444', fontStyle: 'italic' }}>
+            🚫 No pick today — {teamShort} not in play
+          </div>
+          <button onClick={() => { setPicking(true); setNoPickConfirm(false) }} style={{
+            fontSize: '0.6rem', padding: '0.2rem 0.5rem', background: 'transparent',
+            border: '1px solid #222', borderRadius: '5px', color: '#444', cursor: 'pointer',
+          }}>change</button>
+        </div>
+      )}
+
+      {/* Standalone favPick already made */}
+      {!isCovered && hasFavPick && !picking && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: '0.78rem', color: '#00ff88', fontWeight: 'bold' }}>
+            ⭐ {teamShort} {isSpread
+              ? `${displayPick.point > 0 ? '+' : ''}${displayPick.point} (${fmtO(displayPick.odds)})`
+              : `${fmtO(displayPick.odds)} ML`}
+          </div>
+          <button onClick={() => setPicking(true)} style={{
+            fontSize: '0.6rem', padding: '0.2rem 0.5rem', background: 'transparent',
+            border: '1px solid #222', borderRadius: '5px', color: '#444', cursor: 'pointer',
+          }}>change</button>
+        </div>
+      )}
+
+      {/* No pick yet or changing — only show if not covered by lock/dog */}
+      {(!anyPick || picking) && !isCovered && (
         <div>
-          <div style={{ fontSize: '0.6rem', color: '#333', marginBottom: '0.4rem' }}>
-            {mode === 'favs' ? 'No pick on this game yet.' : 'No pick yet — fade or flip?'}
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('betonme:quicknav', { detail: { tab: 'lock' } }))}
-              style={{
-                flex: 1, padding: '0.5rem', fontSize: '0.68rem', fontWeight: 'bold',
-                background: mode === 'favs' ? '#0a2a1a' : '#2a0a0a',
-                border: `1px solid ${mode === 'favs' ? '#00ff8844' : '#ff444444'}`,
-                borderRadius: '7px',
-                color: mode === 'favs' ? '#00ff88' : '#ff4444',
-                cursor: 'pointer',
-              }}
-            >
-              {mode === 'favs' ? `🔒 Lock ${teamShort}` : `🔒 Fade ${teamShort}`}
-            </button>
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('betonme:quicknav', { detail: { tab: 'dogs' } }))}
-              style={{
-                flex: 1, padding: '0.5rem', fontSize: '0.68rem', fontWeight: 'bold',
-                background: '#1a1a0a', border: '1px solid #ffaa4444',
-                borderRadius: '7px', color: '#ffaa44', cursor: 'pointer',
-              }}
-            >
-              🐕 Dog tab
-            </button>
-          </div>
+          {noPickConfirm ? (
+            <div style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '0.9rem 1rem' }}>
+              <div style={{ fontSize: '0.72rem', color: '#aaa', fontWeight: 'bold', marginBottom: '0.4rem' }}>
+                🚫 Skip today's pick?
+              </div>
+              <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: '0.8rem', lineHeight: 1.5 }}>
+                Mark <span style={{ color: '#888' }}>{teamShort}</span> as not in play today. This won't count against your stats.
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={saveNoPick} disabled={saving} style={{
+                  flex: 1, padding: '0.55rem 0.5rem', borderRadius: '7px',
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  background: '#1a1a1a', border: '1px solid #333',
+                  color: '#888', fontSize: '0.75rem', fontWeight: 'bold',
+                }}>
+                  {saving ? 'Saving...' : 'Yes, skip today'}
+                </button>
+                <button onClick={() => setNoPickConfirm(false)} style={{
+                  flex: 1, padding: '0.55rem 0.5rem', borderRadius: '7px', cursor: 'pointer',
+                  background: 'transparent', border: '1px solid #1e1e1e',
+                  color: '#444', fontSize: '0.72rem',
+                }}>
+                  ← Go back
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '0.4rem', letterSpacing: '0.06em' }}>
+                ⭐ PICK {teamShort} — SPREAD OR ML
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {teamML && (
+                  <button onClick={() => makePick('h2h', teamML.price, null)} disabled={saving} style={{
+                    padding: '0.45rem 0.9rem', borderRadius: '6px', cursor: saving ? 'not-allowed' : 'pointer',
+                    background: teamML.price < 0 ? '#0a2a1a' : '#2a1a0a',
+                    border: `1px solid ${teamML.price < 0 ? '#00ff88' : '#ff9944'}`,
+                    color: teamML.price < 0 ? '#00ff88' : '#ff9944',
+                    fontSize: '0.8rem', fontWeight: 'bold',
+                  }}>
+                    {teamShort} ML {fmtO(teamML.price)}
+                  </button>
+                )}
+                {teamSpread && (
+                  <button onClick={() => makePick('spreads', teamSpread.price, teamSpread.point)} disabled={saving} style={{
+                    padding: '0.45rem 0.9rem', borderRadius: '6px', cursor: saving ? 'not-allowed' : 'pointer',
+                    background: '#1a1a2a', border: '1px solid #4444aa',
+                    color: '#8888ff', fontSize: '0.8rem', fontWeight: 'bold',
+                  }}>
+                    {teamShort} {teamSpread.point > 0 ? '+' : ''}{teamSpread.point} ({fmtO(teamSpread.price)})
+                  </button>
+                )}
+                {picking && (
+                  <button onClick={() => setPicking(false)} style={{
+                    padding: '0.45rem 0.7rem', borderRadius: '6px', cursor: 'pointer',
+                    background: 'transparent', border: '1px solid #222', color: '#444', fontSize: '0.72rem',
+                  }}>✕</button>
+                )}
+                {!teamML && !teamSpread && (
+                  <div style={{ fontSize: '0.72rem', color: '#333' }}>No odds available yet</div>
+                )}
+              </div>
+              <div style={{ marginTop: '0.5rem' }}>
+                <button onClick={() => setNoPickConfirm(true)} style={{
+                  fontSize: '0.62rem', padding: '0.3rem 0.6rem', background: 'transparent',
+                  border: '1px solid #1e1e1e', borderRadius: '5px', color: '#333', cursor: 'pointer',
+                }}>🚫 No pick today</button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -282,7 +457,8 @@ function TodayGameCard({ team, allGames, todayLock, todayDog, mode }) {
 }
 
 
-export default function FavsTab({ allGames, todayLock, todayDog, onLockChange, onDogChange }) {
+
+export default function FavsTab({ allGames, todayLock, todayDog, todayFavPick, onFavPickChange, onTeamChange }) {
   const [favTeam, setFavTeam] = useState(() => localStorage.getItem('favTeam_MLB') || '')
   const [picking, setPicking] = useState(() => !localStorage.getItem('favTeam_MLB'))
   const [saveData, setSaveData] = useState(null)
@@ -305,7 +481,8 @@ export default function FavsTab({ allGames, todayLock, todayDog, onLockChange, o
     setFavTeam(team)
     setPicking(false)
     loadPrefs().then(prefs => savePrefs({ ...prefs, 'favTeam_MLB': team }))
-    localStorage.setItem('favTeam_MLB', team)  // keep for fast reads
+    localStorage.setItem('favTeam_MLB', team)
+    onTeamChange?.()
   }
 
   // ── Crunch all pick data ───────────────────────────────────────────────────
@@ -434,11 +611,10 @@ export default function FavsTab({ allGames, todayLock, todayDog, onLockChange, o
         <TodayGameCard
           team={favTeam}
           allGames={allGames}
+          todayFavPick={todayFavPick}
           todayLock={todayLock}
           todayDog={todayDog}
-          onLockChange={onLockChange}
-          onDogChange={onDogChange}
-          mode="favs"
+          onFavPickChange={onFavPickChange}
         />
       )}
 

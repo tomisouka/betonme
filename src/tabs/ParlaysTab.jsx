@@ -248,11 +248,14 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
           try {
             const dateStr = date.replace(/-/g, '')
             const events = await fetchEspnDate(leg.sport, dateStr)
+            const homeLower = leg.home?.toLowerCase() || ''
+            const homeLast  = homeLower.split(' ').pop()
             const event = events.find(e =>
-              (e.competitions?.[0]?.competitors || []).some(c =>
-                leg.home?.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-                c.team.displayName.toLowerCase().includes(leg.home?.toLowerCase())
-              )
+              (e.competitions?.[0]?.competitors || []).some(c => {
+                const dn = c.team.displayName.toLowerCase()
+                return homeLower.includes(dn) || dn.includes(homeLower) ||
+                       (homeLast.length > 3 && dn.includes(homeLast))
+              })
             )
             if (!event) continue
             const comp = event.competitions?.[0]
@@ -263,11 +266,14 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
             let won
             if (leg.market === 'spreads' && leg.point != null) {
               const competitors = comp.competitors || []
-              const pickedComp = competitors.find(c =>
-                c.team.displayName.toLowerCase().includes(leg.team.toLowerCase()) ||
-                leg.team.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-                c.team.shortDisplayName?.toLowerCase().includes(leg.team.toLowerCase().split(' ').pop())
-              )
+              const _lt = leg.team.toLowerCase()
+              const _ll = _lt.split(' ').pop()
+              const pickedComp = competitors.find(c => {
+                const dn = c.team.displayName.toLowerCase()
+                const sn = c.team.shortDisplayName?.toLowerCase() || ''
+                return dn.includes(_lt) || _lt.includes(dn) ||
+                       (_ll.length > 3 && (dn.includes(_ll) || sn.includes(_ll)))
+              })
               if (!pickedComp) continue
               const oppComp = competitors.find(c => c.id !== pickedComp.id)
               const pickedScore = parseFloat(pickedComp.score)
@@ -279,15 +285,20 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
             } else {
               const winner = comp.competitors?.find(c => c.winner)
               if (!winner) continue
-              const winnerName = winner.team.displayName
-              won = winnerName.toLowerCase().includes(leg.team.toLowerCase()) || leg.team.toLowerCase().includes(winnerName.toLowerCase())
+              const winnerName = winner.team.displayName.toLowerCase()
+              const legTeam = leg.team.toLowerCase()
+              const legLast = legTeam.split(' ').pop()
+              won = winnerName.includes(legTeam) || legTeam.includes(winnerName) ||
+                    (legLast.length > 3 && winnerName.includes(legLast))
             }
             hist[date].legs[i].result = won ? 'W' : 'L'
             changed = true
           } catch(e) { console.error('[Predictions resolve]', e) }
         }
-        const resolvedLegs = hist[date].legs.filter(l => l.result !== null)
-        if (resolvedLegs.length === hist[date].legs.length && resolvedLegs.length > 0) {
+        // Only count legs that have a team pick (skip team=null legs)
+        const legsWithTeamP = hist[date].legs.filter(l => l.team)
+        const resolvedLegs = legsWithTeamP.filter(l => l.result !== null)
+        if (resolvedLegs.length === legsWithTeamP.length && legsWithTeamP.length > 0 && !hist[date].overallResult) {
           const hits = resolvedLegs.filter(l => l.result === 'W').length
           hist[date].overallResult = hits / resolvedLegs.length >= 0.7 ? 'W' : 'L'
           hist[date].hitCount = hits
@@ -298,6 +309,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
       if (changed) { await savePredictions(hist); setPredictionsHistory({ ...hist }) }
     }
     resolvePredictions()
+    const predInterval = setInterval(resolvePredictions, 5 * 60 * 1000)
+    return () => clearInterval(predInterval)
   }, [])
 
   useEffect(() => {
@@ -317,11 +330,14 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
           try {
             const dateStr = date.replace(/-/g, '')
             const events = await fetchEspnDate(leg.sport, dateStr)
+            const homeLower = leg.home?.toLowerCase() || ''
+            const homeLast  = homeLower.split(' ').pop()
             const event = events.find(e =>
-              (e.competitions?.[0]?.competitors || []).some(c =>
-                leg.home?.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-                c.team.displayName.toLowerCase().includes(leg.home?.toLowerCase())
-              )
+              (e.competitions?.[0]?.competitors || []).some(c => {
+                const dn = c.team.displayName.toLowerCase()
+                return homeLower.includes(dn) || dn.includes(homeLower) ||
+                       (homeLast.length > 3 && dn.includes(homeLast))
+              })
             )
             if (!event) continue
             const comp = event.competitions?.[0]
@@ -332,11 +348,14 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
             let won
             if (leg.market === 'spreads' && leg.point != null) {
               const competitors = comp.competitors || []
-              const pickedComp = competitors.find(c =>
-                c.team.displayName.toLowerCase().includes(leg.team.toLowerCase()) ||
-                leg.team.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-                c.team.shortDisplayName?.toLowerCase().includes(leg.team.toLowerCase().split(' ').pop())
-              )
+              const _lt = leg.team.toLowerCase()
+              const _ll = _lt.split(' ').pop()
+              const pickedComp = competitors.find(c => {
+                const dn = c.team.displayName.toLowerCase()
+                const sn = c.team.shortDisplayName?.toLowerCase() || ''
+                return dn.includes(_lt) || _lt.includes(dn) ||
+                       (_ll.length > 3 && (dn.includes(_ll) || sn.includes(_ll)))
+              })
               if (!pickedComp) continue
               const oppComp = competitors.find(c => c.id !== pickedComp.id)
               const pickedScore = parseFloat(pickedComp.score)
@@ -346,8 +365,11 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
             } else {
               const winner = comp.competitors?.find(c => c.winner)
               if (!winner) continue
-              const winnerName = winner.team.displayName
-              won = winnerName.toLowerCase().includes(leg.team.toLowerCase()) || leg.team.toLowerCase().includes(winnerName.toLowerCase())
+              const winnerName = winner.team.displayName.toLowerCase()
+              const legTeam = leg.team.toLowerCase()
+              const legLast = legTeam.split(' ').pop()
+              won = winnerName.includes(legTeam) || legTeam.includes(winnerName) ||
+                    (legLast.length > 3 && winnerName.includes(legLast))
             }
             hist[date].legs[i].result = won ? 'W' : 'L'
             changed = true
@@ -366,6 +388,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
       if (changed) { await saveLayHistory(hist); setLayHistoryState({ ...hist }) }
     }
     resolveLay()
+    const layInterval = setInterval(resolveLay, 5 * 60 * 1000)
+    return () => clearInterval(layInterval)
   }, [])
 
   useEffect(() => {
@@ -380,11 +404,14 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
         try {
           const dateStr = date.replace(/-/g, '')
           const events = await fetchEspnDate(lockPick.sport, dateStr)
+          const homeLower = lockPick.home?.toLowerCase() || ''
+          const homeLast  = homeLower.split(' ').pop()
           const event = events.find(e =>
-            (e.competitions?.[0]?.competitors || []).some(c =>
-              lockPick.home?.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-              c.team.displayName.toLowerCase().includes(lockPick.home?.toLowerCase())
-            )
+            (e.competitions?.[0]?.competitors || []).some(c => {
+              const dn = c.team.displayName.toLowerCase()
+              return homeLower.includes(dn) || dn.includes(homeLower) ||
+                     (homeLast.length > 3 && dn.includes(homeLast))
+            })
           )
           if (!event) continue
           const comp = event.competitions?.[0]
@@ -556,22 +583,27 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
               {predictionsLocked && todayPredictions ? (
-                todayPredictions.legs.map((leg, i) => (
-                  <div key={leg.gameId} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1a1a1a',
-                    border: `1px solid ${leg.result === 'W' ? '#00ff8844' : leg.result === 'L' ? '#ff444444' : leg.isLock ? '#00ff8844' : leg.isDog ? '#ff994444' : '#2a2a2a'}`,
-                    borderRadius: '8px', padding: '0.75rem 1rem',
-                  }}>
-                    <div>
-                      <div style={{ fontSize: '0.65rem', color: leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff', fontWeight: 'bold', marginBottom: '0.15rem' }}>
-                        {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${i + 1}`} · {leg.sport}
+                todayPredictions.legs.reduce((acc, leg) => {
+                  if (!leg.isLock && !leg.isDog) acc.n++
+                  const n = acc.n
+                  acc.els.push(
+                    <div key={leg.gameId} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1a1a1a',
+                      border: `1px solid ${leg.result === 'W' ? '#00ff8844' : leg.result === 'L' ? '#ff444444' : leg.isLock ? '#00ff8844' : leg.isDog ? '#ff994444' : '#2a2a2a'}`,
+                      borderRadius: '8px', padding: '0.75rem 1rem',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '0.65rem', color: leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff', fontWeight: 'bold', marginBottom: '0.15rem' }}>
+                          {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${n}`} · {leg.sport}
+                        </div>
+                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{leg.team || '—'}</div>
+                        <div style={{ color: '#555', fontSize: '0.72rem' }}>{leg.away} vs {leg.home}</div>
                       </div>
-                      <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{leg.team || '—'}</div>
-                      <div style={{ color: '#555', fontSize: '0.72rem' }}>{leg.away} vs {leg.home}</div>
+                      <div style={{ fontSize: '1.2rem' }}>{leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'}</div>
                     </div>
-                    <div style={{ fontSize: '1.2rem' }}>{leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'}</div>
-                  </div>
-                ))
+                  )
+                  return acc
+                }, { n: 0, els: [] }).els
               ) : (
                 <>
                   {/* ── GAME BROWSER — tap to add to slip ── */}
@@ -681,6 +713,21 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                               {game.away_team} <span style={{ color: '#333', fontWeight: 'normal' }}>@</span> {game.home_team}
                             </div>
                             <div style={{ fontSize: '0.62rem', color: '#444', marginTop: '0.1rem' }}>{getGameDateLabel(game.commence_time)}</div>
+                            {game.sportLabel === 'MLB' && (() => {
+                              const awayP = getProbablePitcher(game.away_team, mlbPitchers)
+                              const homeP = getProbablePitcher(game.home_team, mlbPitchers)
+                              if (!awayP && !homeP) return null
+                              return (
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem', background: '#0d1a2a', border: '1px solid #1a3a5a', borderRadius: '5px', padding: '0.18rem 0.5rem' }}>
+                                  <span style={{ fontSize: '0.58rem', color: '#4c9be8' }}>⚾</span>
+                                  <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{game.away_team.split(' ').pop()}:</span>
+                                  <span style={{ fontSize: '0.6rem', color: awayP ? '#7ab8e8' : '#2a4a6a', fontWeight: awayP ? 'bold' : 'normal' }}>{awayP || 'TBA'}</span>
+                                  <span style={{ fontSize: '0.55rem', color: '#1a3a5a' }}>·</span>
+                                  <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{game.home_team.split(' ').pop()}:</span>
+                                  <span style={{ fontSize: '0.6rem', color: homeP ? '#7ab8e8' : '#2a4a6a', fontWeight: homeP ? 'bold' : 'normal' }}>{homeP || 'TBA'}</span>
+                                </div>
+                              )
+                            })()}
                           </div>
                           <div style={{ fontSize: '1rem', color: isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : isSelected ? '#ff4444' : '#444' }}>
                             {isLockGame ? '🔒' : isDogGame ? '🐕' : isSelected ? '✕' : '＋'}
@@ -719,11 +766,26 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                               <div style={{ padding: '0.6rem 0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
                                   <div style={{ fontSize: '0.6rem', color: isLockLeg ? '#00ff88' : isDogLeg ? '#ff9944' : '#555', marginBottom: '0.1rem' }}>
-                                    {isLockLeg ? '🔒 LOCK · ' : isDogLeg ? '🐕 DOG · ' : `LEG ${i + 1} · `}{sportName}
+                                    {isLockLeg ? '🔒 LOCK · ' : isDogLeg ? '🐕 DOG · ' : `LEG ${predictionsSlip.slice(0, i).filter(l => { const g = l.id || l.gameId; return g !== lockGameId && g !== dogGameId }).length + 1} · `}{sportName}
                                   </div>
                                   <div style={{ fontWeight: 'bold', fontSize: '0.82rem' }}>
                                     {awayName} <span style={{ color: '#333' }}>@</span> {homeName}
                                   </div>
+                                  {sportName === 'MLB' && (() => {
+                                    const awayP = getProbablePitcher(awayName, mlbPitchers)
+                                    const homeP = getProbablePitcher(homeName, mlbPitchers)
+                                    if (!awayP && !homeP) return null
+                                    return (
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem', background: '#0d1a2a', border: '1px solid #1a3a5a', borderRadius: '5px', padding: '0.18rem 0.5rem' }}>
+                                        <span style={{ fontSize: '0.58rem', color: '#4c9be8' }}>⚾</span>
+                                        <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{(awayName || '').split(' ').pop()}:</span>
+                                        <span style={{ fontSize: '0.6rem', color: awayP ? '#7ab8e8' : '#2a4a6a', fontWeight: awayP ? 'bold' : 'normal' }}>{awayP || 'TBA'}</span>
+                                        <span style={{ fontSize: '0.55rem', color: '#1a3a5a' }}>·</span>
+                                        <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{(homeName || '').split(' ').pop()}:</span>
+                                        <span style={{ fontSize: '0.6rem', color: homeP ? '#7ab8e8' : '#2a4a6a', fontWeight: homeP ? 'bold' : 'normal' }}>{homeP || 'TBA'}</span>
+                                      </div>
+                                    )
+                                  })()}
                                 </div>
                                 {chosenTeam && (
                                   <div style={{ textAlign: 'right' }}>
@@ -840,27 +902,32 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
               {layLocked && todayLay ? (
-                todayLay.legs.map((leg, i) => (
-                  <div key={leg.gameId} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1a1a1a',
-                    border: `1px solid ${leg.result === 'W' ? '#00ff8844' : leg.result === 'L' ? '#ff444444' : leg.isLock ? '#00ff8844' : leg.isDog ? '#ff994444' : '#8888ff44'}`,
-                    borderRadius: '8px', padding: '0.75rem 1rem',
-                  }}>
-                    <div>
-                      <div style={{ fontSize: '0.65rem', color: leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff', fontWeight: 'bold', marginBottom: '0.2rem' }}>
-                        {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${i + 1}`}
-                      </div>
-                      <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{leg.team || '—'}</div>
-                      <div style={{ color: '#555', fontSize: '0.72rem' }}>{leg.away} vs {leg.home}</div>
-                      {leg.odds != null && (
-                        <div style={{ fontSize: '0.72rem', color: leg.odds < 0 ? '#00ff88' : '#ff9944', fontWeight: 'bold', marginTop: '0.15rem' }}>
-                          {formatOdds(leg.odds)}
+                todayLay.legs.reduce((acc, leg) => {
+                  if (!leg.isLock && !leg.isDog) acc.n++
+                  const legNum = acc.n
+                  acc.els.push(
+                    <div key={leg.gameId} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1a1a1a',
+                      border: `1px solid ${leg.result === 'W' ? '#00ff8844' : leg.result === 'L' ? '#ff444444' : leg.isLock ? '#00ff8844' : leg.isDog ? '#ff994444' : '#8888ff44'}`,
+                      borderRadius: '8px', padding: '0.75rem 1rem',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '0.65rem', color: leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff', fontWeight: 'bold', marginBottom: '0.2rem' }}>
+                          {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${legNum}`}
                         </div>
-                      )}
+                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{leg.team || '—'}</div>
+                        <div style={{ color: '#555', fontSize: '0.72rem' }}>{leg.away} vs {leg.home}</div>
+                        {leg.odds != null && (
+                          <div style={{ fontSize: '0.72rem', color: leg.odds < 0 ? '#00ff88' : '#ff9944', fontWeight: 'bold', marginTop: '0.15rem' }}>
+                            {formatOdds(leg.odds)}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '1.2rem' }}>{leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'}</div>
                     </div>
-                    <div style={{ fontSize: '1.2rem' }}>{leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'}</div>
-                  </div>
-                ))
+                  )
+                  return acc
+                }, { n: 0, els: [] }).els
               ) : (
                 predictionsSlip.map((game) => {
                   const bm = game.bookmakers?.[0]
@@ -899,11 +966,15 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                         {game.sportLabel === 'MLB' && (() => {
                           const awayP = getProbablePitcher(game.away_team, mlbPitchers)
                           const homeP = getProbablePitcher(game.home_team, mlbPitchers)
+                          if (!awayP && !homeP) return null
                           return (
-                            <div style={{ fontSize: '0.63rem', color: '#444', marginTop: '0.15rem' }}>
-                              ⚾ {game.away_team.split(' ').pop()}: <span style={{ color: awayP ? '#666' : '#333' }}>{awayP || 'TBA'}</span>
-                              {' · '}
-                              {game.home_team.split(' ').pop()}: <span style={{ color: homeP ? '#666' : '#333' }}>{homeP || 'TBA'}</span>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem', background: '#0d1a2a', border: '1px solid #1a3a5a', borderRadius: '5px', padding: '0.18rem 0.5rem' }}>
+                              <span style={{ fontSize: '0.58rem', color: '#4c9be8' }}>⚾</span>
+                              <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{game.away_team.split(' ').pop()}:</span>
+                              <span style={{ fontSize: '0.6rem', color: awayP ? '#7ab8e8' : '#2a4a6a', fontWeight: awayP ? 'bold' : 'normal' }}>{awayP || 'TBA'}</span>
+                              <span style={{ fontSize: '0.55rem', color: '#1a3a5a' }}>·</span>
+                              <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{game.home_team.split(' ').pop()}:</span>
+                              <span style={{ fontSize: '0.6rem', color: homeP ? '#7ab8e8' : '#2a4a6a', fontWeight: homeP ? 'bold' : 'normal' }}>{homeP || 'TBA'}</span>
                             </div>
                           )
                         })()}

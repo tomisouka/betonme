@@ -225,14 +225,19 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
       const dateStr = date.replace(/-/g, '')
       try {
         const events = await fetchEspnDate(pick.sport, dateStr)
+        const homeLower = pick.home?.toLowerCase() || ''
+        const awayLower = pick.away?.toLowerCase() || ''
+        const homeLast  = homeLower.split(' ').pop()
+        const awayLast  = awayLower.split(' ').pop()
         const event = events.find(e => {
           const competitors = e.competitions?.[0]?.competitors || []
-          return competitors.some(c =>
-            pick.home.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-            c.team.displayName.toLowerCase().includes(pick.home.toLowerCase()) ||
-            pick.away.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-            c.team.displayName.toLowerCase().includes(pick.away.toLowerCase())
-          )
+          return competitors.some(c => {
+            const dn = c.team.displayName.toLowerCase()
+            return homeLower.includes(dn) || dn.includes(homeLower) ||
+                   awayLower.includes(dn) || dn.includes(awayLower) ||
+                   (homeLast.length > 3 && dn.includes(homeLast)) ||
+                   (awayLast.length > 3 && dn.includes(awayLast))
+          })
         })
         if (!event) continue
         const competition = event.competitions?.[0]
@@ -241,20 +246,24 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
         const winner = competitors.find(c => c.winner === true)
         if (!winner) continue
         const winnerName = winner.team.displayName
+        const pickTeamL = pick.team.toLowerCase()
+        const pickLast  = pickTeamL.split(' ').pop()
         let result
         if (pick.market === 'spreads') {
-          const pickedTeam = competitors.find(c =>
-            pick.team.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-            c.team.displayName.toLowerCase().includes(pick.team.toLowerCase())
-          )
+          const pickedTeam = competitors.find(c => {
+            const dn = c.team.displayName.toLowerCase()
+            return dn.includes(pickTeamL) || pickTeamL.includes(dn) ||
+                   (pickLast.length > 3 && dn.includes(pickLast))
+          })
           const otherTeam = competitors.find(c => c !== pickedTeam)
           if (!pickedTeam || !otherTeam) continue
           const adjustedScore = parseFloat(pickedTeam.score) + pick.point
           result = adjustedScore > parseFloat(otherTeam.score) ? 'W' : 'L'
         } else {
+          const wnL = winnerName.toLowerCase()
           const userPickedWinner =
-            winnerName.toLowerCase().includes(pick.team.toLowerCase()) ||
-            pick.team.toLowerCase().includes(winnerName.toLowerCase())
+            wnL.includes(pickTeamL) || pickTeamL.includes(wnL) ||
+            (pickLast.length > 3 && wnL.includes(pickLast))
           result = userPickedWinner ? 'W' : 'L'
         }
         s.picks[date].result = result

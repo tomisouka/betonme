@@ -6,6 +6,7 @@ import SportFilter, { filterBySport } from '../components/SportFilter.jsx'
 export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
   const [dogState, setDogState] = useState({})
   const [dogModal, setDogModal] = useState(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [sportTab, setSportTab] = useState('ALL')
 
   async function saveDogState(s) {
@@ -53,19 +54,25 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
         if (!pick.sport) continue
         try {
           const events = await fetchEspnDate(pick.sport, date.replace(/-/g,''))
+          const homeLower = pick.home?.toLowerCase() || ''
+          const homeLast  = homeLower.split(' ').pop()
           const event = events.find(e =>
-            (e.competitions?.[0]?.competitors || []).some(c =>
-              pick.home.toLowerCase().includes(c.team.displayName.toLowerCase()) ||
-              c.team.displayName.toLowerCase().includes(pick.home.toLowerCase())
-            )
+            (e.competitions?.[0]?.competitors || []).some(c => {
+              const dn = c.team.displayName.toLowerCase()
+              return homeLower.includes(dn) || dn.includes(homeLower) ||
+                     (homeLast.length > 3 && dn.includes(homeLast))
+            })
           )
           if (!event) continue
           const comp = event.competitions?.[0]
           if (!comp?.status?.type?.completed) continue
           const winner = comp.competitors?.find(c => c.winner)
           if (!winner) continue
-          const won = winner.team.displayName.toLowerCase().includes(pick.team.toLowerCase()) ||
-            pick.team.toLowerCase().includes(winner.team.displayName.toLowerCase())
+          const wnL = winner.team.displayName.toLowerCase()
+          const pickL = pick.team.toLowerCase()
+          const pickLast = pickL.split(' ').pop()
+          const won = wnL.includes(pickL) || pickL.includes(wnL) ||
+            (pickLast.length > 3 && wnL.includes(pickLast))
           const result = won ? 'W' : 'L'
           s.picks[date].result = result
 
@@ -145,8 +152,13 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
   })
 
   underdogs.sort((a, b) => {
-    const timeDiff = new Date(a.gameTime) - new Date(b.gameTime)
-    if (timeDiff !== 0) return timeDiff
+    const toDateStr = (iso) => {
+      const d = new Date(iso)
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    }
+    const dayA = toDateStr(a.gameTime)
+    const dayB = toDateStr(b.gameTime)
+    if (dayA !== dayB) return dayA < dayB ? -1 : 1
     return b.mlOdds - a.mlOdds
   })
 
@@ -166,6 +178,64 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
 
   return (
     <div>
+      {/* History popout */}
+      {historyOpen && (() => {
+        const pastPicks = Object.entries(picks)
+          .filter(([date]) => date !== todayKey && picks[date]?.result !== undefined)
+          .sort(([a], [b]) => b.localeCompare(a))
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1000 }}
+            onClick={() => setHistoryOpen(false)}>
+            <div style={{ background: '#141414', border: '1px solid #2a2a2a', borderRadius: '14px 14px 0 0', padding: '1.5rem 1.25rem', width: '100%', maxWidth: '480px', maxHeight: '80vh', overflowY: 'auto' }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <div>
+                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#aaa' }}>🐕 Dog History</div>
+                  <div style={{ fontSize: '0.72rem', color: '#444', marginTop: '0.15rem' }}>{wins}W – {losses}L · {wins + losses > 0 ? Math.round(wins / (wins + losses) * 100) : 0}% win rate</div>
+                </div>
+                <button onClick={() => setHistoryOpen(false)} style={{ background: 'transparent', border: '1px solid #2a2a2a', borderRadius: '6px', color: '#555', cursor: 'pointer', padding: '0.3rem 0.7rem', fontSize: '0.75rem' }}>✕ Close</button>
+              </div>
+              {pastPicks.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#333', fontSize: '0.85rem' }}>No past picks yet.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                  {pastPicks.map(([date, pick]) => {
+                    const [, mm, dd] = date.split('-')
+                    const tier = getTier(pick.odds)
+                    return (
+                      <div key={date} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        background: pick.result === 'W' ? '#0a2a1a' : pick.result === 'L' ? '#2a0a0a' : '#1a1a1a',
+                        border: `1px solid ${pick.result === 'W' ? '#00ff8833' : pick.result === 'L' ? '#ff444433' : '#2a2a2a'}`,
+                        borderRadius: '9px', padding: '0.7rem 0.9rem',
+                      }}>
+                        <div>
+                          <div style={{ fontSize: '0.6rem', color: '#444', marginBottom: '0.15rem' }}>
+                            {mm}/{dd} · {pick.sport}
+                          </div>
+                          <div style={{ fontWeight: 'bold', fontSize: '0.88rem', color: pick.result === 'W' ? '#00ff88' : pick.result === 'L' ? '#ff4444' : '#aaa' }}>
+                            {pick.team}
+                          </div>
+                          <div style={{ fontSize: '0.68rem', color: '#444', marginTop: '0.1rem' }}>
+                            {(pick.away || '').split(' ').pop()} @ {(pick.home || '').split(' ').pop()}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: tier.color }}>{formatOdds(pick.odds)}</div>
+                          <div style={{ fontSize: '1.1rem' }}>
+                            {pick.result === 'W' ? '✅' : pick.result === 'L' ? '❌' : '⏳'}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
       {dogModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: '#141414', border: '1px solid #333', borderRadius: '14px', padding: '2rem', width: '100%', maxWidth: '420px' }}>
@@ -197,7 +267,18 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
       )}
 
       <div style={{ marginBottom: '1.5rem' }}>
-        <h2 style={{ margin: '0 0 0.4rem', fontSize: '1rem', color: '#aaa' }}>🐕 DOG OF THE DAY</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <h2 style={{ margin: '0 0 0.4rem', fontSize: '1rem', color: '#aaa' }}>🐕 DOG OF THE DAY</h2>
+          {(wins + losses) > 0 && (
+            <button onClick={() => setHistoryOpen(true)} style={{
+              background: 'transparent', border: '1px solid #2a2a2a', borderRadius: '7px',
+              color: '#555', cursor: 'pointer', padding: '0.3rem 0.75rem',
+              fontSize: '0.68rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.35rem',
+            }}>
+              📋 History <span style={{ color: wins > losses ? '#00ff88' : '#ff4444' }}>{wins}W–{losses}L</span>
+            </button>
+          )}
+        </div>
         <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>
           Positive odds = underdog. Pick one per day — no coins, just bragging rights.
         </p>
@@ -253,6 +334,24 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
             </div>
             <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#ff9944' }}>{formatOdds(todayPick.odds)}</div>
           </div>
+          {todayPick.sport === 'MLB' && (() => {
+            const game = allGames.find(g =>
+              g.id === todayPick.gameId ||
+              (g.home_team === todayPick.home && g.away_team === todayPick.away)
+            )
+            const awayP = game?.pitchers?.away || null
+            const homeP = game?.pitchers?.home || null
+            return (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem', background: '#0d1a2a', border: '1px solid #1a3a5a', borderRadius: '5px', padding: '0.18rem 0.5rem' }}>
+                <span style={{ fontSize: '0.58rem', color: '#4c9be8' }}>⚾</span>
+                <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{(todayPick.away || '').split(' ').pop()}:</span>
+                <span style={{ fontSize: '0.6rem', color: awayP ? '#7ab8e8' : '#3a6a8a', fontWeight: awayP ? 'bold' : 'normal' }}>{awayP || 'TBA'}</span>
+                <span style={{ fontSize: '0.55rem', color: '#1a3a5a' }}>·</span>
+                <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{(todayPick.home || '').split(' ').pop()}:</span>
+                <span style={{ fontSize: '0.6rem', color: homeP ? '#7ab8e8' : '#3a6a8a', fontWeight: homeP ? 'bold' : 'normal' }}>{homeP || 'TBA'}</span>
+              </div>
+            )
+          })()}
           {todayPick.result === null && <div style={{ marginTop: '0.6rem', color: '#555', fontSize: '0.78rem' }}>⏳ Pending result...</div>}
           {todayPick.result === 'W' && <div style={{ marginTop: '0.5rem', color: '#00ff88', fontWeight: 'bold' }}>✅ WIN</div>}
           {todayPick.result === 'L' && <div style={{ marginTop: '0.5rem', color: '#ff4444', fontWeight: 'bold' }}>❌ LOSS</div>}
@@ -324,9 +423,13 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
                 const awayP = dog.awayPitcher
                 const homeP = dog.homePitcher
                 return (
-                  <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.72rem', marginBottom: '0.75rem' }}>
-                    <span>⚾ <span style={{ color: '#4c9be8' }}>{dog.away.split(' ').pop()}:</span> <span style={{ color: awayP ? '#aaa' : '#444' }}>{awayP || 'TBA'}</span></span>
-                    <span>⚾ <span style={{ color: '#4c9be8' }}>{dog.home.split(' ').pop()}:</span> <span style={{ color: homeP ? '#aaa' : '#444' }}>{homeP || 'TBA'}</span></span>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem', background: '#0d1a2a', border: '1px solid #1a3a5a', borderRadius: '5px', padding: '0.2rem 0.6rem' }}>
+                    <span style={{ fontSize: '0.6rem', color: '#4c9be8' }}>⚾</span>
+                    <span style={{ fontSize: '0.62rem', color: '#4c9be855' }}>{dog.away.split(' ').pop()}:</span>
+                    <span style={{ fontSize: '0.62rem', color: awayP ? '#7ab8e8' : '#3a6a8a', fontWeight: awayP ? 'bold' : 'normal' }}>{awayP || 'TBA'}</span>
+                    <span style={{ fontSize: '0.55rem', color: '#1a3a5a' }}>·</span>
+                    <span style={{ fontSize: '0.62rem', color: '#4c9be855' }}>{dog.home.split(' ').pop()}:</span>
+                    <span style={{ fontSize: '0.62rem', color: homeP ? '#7ab8e8' : '#3a6a8a', fontWeight: homeP ? 'bold' : 'normal' }}>{homeP || 'TBA'}</span>
                   </div>
                 )
               })()}
@@ -420,16 +523,20 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
                   <div style={{ fontSize: '0.65rem', color: '#333', marginBottom: '0.35rem' }}>
                     {game.sportLabel} · {getGameDateLabel(game.commence_time)}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem', marginBottom: game.pitchers ? '0.3rem' : 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem', marginBottom: game.sportLabel === 'MLB' ? '0.3rem' : 0 }}>
                     <span style={{ color: '#555' }}>{game.away_team}</span>
                     <span style={{ color: '#2a2a2a', fontSize: '0.7rem' }}>@</span>
                     <span style={{ color: '#555' }}>{game.home_team}</span>
                     <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: '#2a2a2a', fontStyle: 'italic' }}>no odds yet</span>
                   </div>
-                  {game.pitchers && (
-                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.65rem', color: '#2a2a2a' }}>
-                      <span>⚾ {game.away_team.split(' ').pop()}: {game.pitchers.away || 'TBA'}</span>
-                      <span>⚾ {game.home_team.split(' ').pop()}: {game.pitchers.home || 'TBA'}</span>
+                  {game.sportLabel === 'MLB' && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem', background: '#0d1a2a', border: '1px solid #1a3a5a', borderRadius: '5px', padding: '0.18rem 0.5rem' }}>
+                      <span style={{ fontSize: '0.58rem', color: '#4c9be8' }}>⚾</span>
+                      <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{game.away_team.split(' ').pop()}:</span>
+                      <span style={{ fontSize: '0.6rem', color: game.pitchers?.away ? '#7ab8e8' : '#3a6a8a', fontWeight: game.pitchers?.away ? 'bold' : 'normal' }}>{game.pitchers?.away || 'TBA'}</span>
+                      <span style={{ fontSize: '0.55rem', color: '#1a3a5a' }}>·</span>
+                      <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{game.home_team.split(' ').pop()}:</span>
+                      <span style={{ fontSize: '0.6rem', color: game.pitchers?.home ? '#7ab8e8' : '#3a6a8a', fontWeight: game.pitchers?.home ? 'bold' : 'normal' }}>{game.pitchers?.home || 'TBA'}</span>
                     </div>
                   )}
                 </div>

@@ -5,13 +5,14 @@ import PropSection, { ODDS_API_PROP_MARKETS, PROP_MARKET_LABELS, MARKET_ORDER, M
 import PropsInsightPanel from '../components/PropsInsightPanel.jsx'
 
 
-export default function PropsTab({ todayLock, allGames }) {
+export default function PropsTab({ todayLock, todayDog, allGames }) {
   const todayKey = getTodayKey()
 
   const [propPick, setPropPick] = useState({})
   const [propModal, setPropModal] = useState(null)
   const [selectedSide, setSelectedSide] = useState(null)
   const [propLines, setPropLines] = useState([])
+  const [dogPropLines, setDogPropLines] = useState([])
   const [propsLoading, setPropsLoading] = useState(false)
   const [propsFetched, setPropsFetched] = useState(false)
   const [propsError, setPropsError] = useState(null)
@@ -91,90 +92,104 @@ export default function PropsTab({ todayLock, allGames }) {
   const lockHome = todayLock?.home || null
   const lockAway = todayLock?.away || null
 
-  // Load props from local DK scraper — free, no API quota
-  async function fetchDkProps() {
-    if (!espnGameId || !sportLabel) return []
+  const fetchedRef = React.useRef(false)
+
+  // Takes explicit args so it never reads stale closure values
+  async function fetchAllProps(lockGameId, lockSport, lockGames, lockHomeTeamName, lockAwayTeamName, dogPick) {
+    if (!lockGameId || !lockSport) return
+    setPropsLoading(true)
+    setPropsError(null)
+
     try {
-      const r = await fetch('http://127.0.0.1:3001/dk-props?sport=' + sportLabel)
-      if (!r.ok) return []
-      const data = await r.json()
-      const sportData = data[sportLabel]
-      if (!sportData?.props?.length) return []
+      const r = await fetch('http://127.0.0.1:3001/dk-props?sport=' + lockSport)
+      const data = r.ok ? await r.json() : {}
+      const sportData = data[lockSport]
+      const allProps = sportData?.props || []
 
-      // Match props to the locked game by last word of team name (e.g. "Astros", "Angels")
-      const lockGame = allGames.find(g => g.id === espnGameId)
-      const homeTeamName = (lockGame?.home_team || lockHome || '').toLowerCase()
-      const awayTeamName = (lockGame?.away_team || lockAway || '').toLowerCase()
-      const lastWord = s => s.trim().split(' ').pop()
+      const lastWord = s => (s || '').trim().split(' ').pop().toLowerCase()
 
-      const matchingProps = sportData.props.filter(p => {
+      // ── Lock game pitchers ──
+      const lockGame = lockGames.find(g => g.id === lockGameId)
+      const lockHomeL = (lockGame?.home_team || lockHomeTeamName || '').toLowerCase()
+      const lockAwayL = (lockGame?.away_team || lockAwayTeamName || '').toLowerCase()
+
+      const lockProps = allProps.filter(p => {
         const ph = (p.home || '').toLowerCase()
         const pa = (p.away || '').toLowerCase()
-        return lastWord(ph) === lastWord(homeTeamName) ||
-               lastWord(pa) === lastWord(awayTeamName) ||
-               homeTeamName.includes(lastWord(ph)) ||
-               awayTeamName.includes(lastWord(pa))
-      }).filter(p => p.isMainLine)  // only main lines, not alternates
+        return (lastWord(ph) === lastWord(lockHomeL) || lastWord(pa) === lastWord(lockAwayL) ||
+                lockHomeL.includes(lastWord(ph)) || lockAwayL.includes(lastWord(pa)))
+          && p.isMainLine && String(p.subcategoryId) === '15221'
+      })
 
-      if (!matchingProps.length) return []
-
-      // DK props are O/U format — each prop has overOdds + underOdds directly
-      // Dedupe to one entry per player+market
-      const seen = new Set()
-      const lines = []
-      matchingProps.forEach(p => {
+      const seenLock = new Set()
+      const lockLines = []
+      lockProps.forEach(p => {
         const key = `${p.player}||${p.subcategoryId}`
-        if (seen.has(key)) return
-        seen.add(key)
+        if (seenLock.has(key)) return
+        seenLock.add(key)
         const slugKey = SUBCAT_TO_KEY[String(p.subcategoryId)] || p.subcategoryId
-        const label = p.marketType || p.marketName?.replace(p.player, '').trim() || slugKey
-        lines.push({
-          playerName: p.player,
-          marketKey: slugKey,
-          label,
-          line: p.line,
-          overOdds: p.overOdds,
-          underOdds: p.underOdds,
-          team: p.team || p.away,
-          home: p.home,
-          away: p.away,
+        lockLines.push({
+          player: p.player, playerName: p.player,
+          marketKey: slugKey, label: p.marketType || slugKey,
+          line: p.line, overOdds: p.overOdds, underOdds: p.underOdds,
+          team: p.team || null, home: p.home, away: p.away,
           source: 'DraftKings (local)',
-          lastSeasonStat: p.lastSeasonStat,
-          lastSeasonLabel: p.lastSeasonLabel,
         })
       })
-      return lines
+      setPropLines(lockLines)
+
+      // ── Dog game pitchers ──
+      if (dogPick?.gameId && dogPick.gameId !== lockGameId) {
+        const dogHomeL = (dogPick.home || '').toLowerCase()
+        const dogAwayL = (dogPick.away || '').toLowerCase()
+
+        const dogProps = allProps.filter(p => {
+          const ph = (p.home || '').toLowerCase()
+          const pa = (p.away || '').toLowerCase()
+          return (lastWord(ph) === lastWord(dogHomeL) || lastWord(pa) === lastWord(dogAwayL) ||
+                  dogHomeL.includes(lastWord(ph)) || dogAwayL.includes(lastWord(pa)))
+            && p.isMainLine && String(p.subcategoryId) === '15221'
+        })
+
+        const seenDog = new Set()
+        const dogLines = []
+        dogProps.forEach(p => {
+          const key = `${p.player}||${p.subcategoryId}`
+          if (seenDog.has(key)) return
+          seenDog.add(key)
+          const slugKey = SUBCAT_TO_KEY[String(p.subcategoryId)] || p.subcategoryId
+          dogLines.push({
+            player: p.player, playerName: p.player,
+            marketKey: slugKey, label: p.marketType || slugKey,
+            line: p.line, overOdds: p.overOdds, underOdds: p.underOdds,
+            team: p.team || null, home: p.home, away: p.away,
+            source: 'DraftKings (local)', isDogGame: true,
+          })
+        })
+        setDogPropLines(dogLines)
+      } else {
+        setDogPropLines([])
+      }
+
+      if (lockLines.length === 0) {
+        setPropsError('No props data — run dk_scraper.py to pull fresh DK lines.')
+      }
     } catch (e) {
-      console.log('[Props] DK local props unavailable:', e.message)
-      return []
-    }
-  }
-
-  async function fetchProps(force = false) {
-    if (!espnGameId || !sportKey || !sportLabel) return
-
-    setPropsLoading(true)
-
-    // Try DK local scraper first — free, no credits
-    const dkLines = await fetchDkProps()
-    if (dkLines.length > 0) {
-      console.log(`[Props] Using DK local data — ${dkLines.length} prop lines`)
-      setPropLines(dkLines)
-      setPropsFetched(true)
-      setPropsLoading(false)
-      setPropsError(null)
-      return
+      setPropsError('Could not reach scraper — make sure server is running.')
     }
 
-    // No data from scraper — prompt user to run it
-    setPropsError('No props data from scraper — hit \'Scrape Now\' in the app header to pull fresh DK props.')
-    setPropsLoading(false)
     setPropsFetched(true)
+    setPropsLoading(false)
   }
 
+  // Wait until BOTH lock and dog are settled before firing — prevents stale dog fetch
   useEffect(() => {
-    if (todayLock && allGames.length > 0 && !propsFetched && !propsLoading) fetchProps(false)
-  }, [todayLock, allGames])
+    if (!espnGameId || !allGames.length) return
+    if (!todayDog) return  // wait for dog to load before fetching
+    if (fetchedRef.current) return
+    fetchedRef.current = true
+    fetchAllProps(espnGameId, sportLabel, allGames, lockHome, lockAway, todayDog)
+  }, [espnGameId, allGames.length, todayDog?.gameId])
 
   function openPropModal(prop, preselectedSide = null) {
     setSelectedSide(preselectedSide)
@@ -196,9 +211,10 @@ export default function PropsTab({ todayLock, allGames }) {
           odds: selectedSide === 'over' ? propModal.overOdds : propModal.underOdds,
           sport: sportLabel,
           team: propModal.team,
-          home: lockGame?.home_team || lockHome || propModal.home || null,
-          away: lockGame?.away_team || lockAway || propModal.away || null,
-          gameId: espnGameId || null,
+          home: propModal.home || lockHome || null,
+          away: propModal.away || lockAway || null,
+          gameId: propModal.isDogGame ? (todayDog?.gameId || null) : (espnGameId || null),
+          isDogGame: propModal.isDogGame || false,
           result: null,
         }
       }
@@ -233,12 +249,26 @@ export default function PropsTab({ todayLock, allGames }) {
     setPropPick(updated)
   }
 
-  const marketOrder = MARKET_ORDER[sportLabel] || []
-  const groupedProps = marketOrder.map(mKey => ({
-    marketKey: mKey,
-    label: PROP_MARKET_LABELS[mKey],
-    props: propLines.filter(p => p.marketKey === mKey).sort((a, b) => b.line - a.line),
-  })).filter(g => g.props.length > 0)
+  // Only show pitcher strikeouts for now
+  // Exclude props where this player+market is already picked today
+  const alreadyPickedKeys = new Set(Object.keys(todayTeamPicks))
+  const groupedProps = [{
+    marketKey: 'pitcher_strikeouts',
+    label: PROP_MARKET_LABELS['pitcher_strikeouts'],
+    props: propLines
+      .filter(p => p.marketKey === 'pitcher_strikeouts')
+      .filter(p => !alreadyPickedKeys.has(`${p.player}||pitcher_strikeouts`))
+      .sort((a, b) => b.line - a.line),
+  }].filter(g => g.props.length > 0)
+
+  const dogGroupedProps = [{
+    marketKey: 'pitcher_strikeouts',
+    label: PROP_MARKET_LABELS['pitcher_strikeouts'],
+    props: dogPropLines
+      .filter(p => p.marketKey === 'pitcher_strikeouts')
+      .filter(p => !alreadyPickedKeys.has(`${p.player}||pitcher_strikeouts`))
+      .sort((a, b) => b.line - a.line),
+  }].filter(g => g.props.length > 0)
 
   const lockGame = allGames.find(g => g.id === espnGameId)
   const lockHomeTeam = lockGame?.home_team || todayLock?.home || ''
@@ -308,7 +338,7 @@ export default function PropsTab({ todayLock, allGames }) {
 
       <div style={{ marginBottom: '1.75rem' }}>
         <h2 style={{ margin: '0 0 0.4rem', fontSize: '1rem', color: '#aaa' }}>🎲 PROPS</h2>
-        <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>One pick per market per day — from your lock game.</p>
+        <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>Pitcher strikeouts — from your Lock of the Day game.</p>
       </div>
 
       {!todayLock && (
@@ -325,65 +355,53 @@ export default function PropsTab({ todayLock, allGames }) {
 
       {todayLock && (
         <div>
+          {/* Header row: game info + refresh button */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <div style={{ fontSize: '0.75rem', color: '#555' }}>
-              {sportLabel} · {todayLock.home} vs {todayLock.away}
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#555' }}>
+                {sportLabel} · {todayLock.home} vs {todayLock.away}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.3rem' }}>
+                <span style={{ fontSize: '0.63rem', color: '#00ff8888', background: '#00ff8811', border: '1px solid #00ff8822', borderRadius: '4px', padding: '0.1rem 0.45rem' }}>
+                  🔒 {(todayLock.team || '').split(' ').pop()}
+                </span>
+              </div>
             </div>
-            <span style={{ fontSize: '0.68rem', color: '#555' }}>via DraftKings scraper</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.3rem' }}>
+              <button
+                onClick={() => {
+                  fetchedRef.current = true
+                  setPropsFetched(false)
+                  setPropLines([])
+                  setDogPropLines([])
+                  fetchAllProps(espnGameId, sportLabel, allGames, lockHome, lockAway, todayDog)
+                }}
+                disabled={propsLoading}
+                style={{
+                  fontSize: '0.68rem', padding: '0.3rem 0.75rem',
+                  background: '#111', border: '1px solid #2a2a2a', borderRadius: '6px',
+                  color: propsLoading ? '#333' : '#555',
+                  cursor: propsLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold',
+                }}
+              >
+                {propsLoading ? '⏳' : '↺'} Refresh
+              </button>
+              <span style={{ fontSize: '0.6rem', color: '#333' }}>via DraftKings scraper</span>
+            </div>
           </div>
 
-
-          {/* ── Yesterday's prop picks ── */}
+          {/* ── Yesterday's prop picks — collapsed by default ── */}
           {Object.keys(yesterdayTeamPicks).length > 0 && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <div style={{ fontSize: '0.62rem', color: '#444', fontWeight: 'bold', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
-                YESTERDAY
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {Object.entries(yesterdayTeamPicks).map(([teamMKey, pick]) => {
-                  if (!pick) return null
-                  const sportIcon = pick.sport === 'NBA' ? '🏀' : pick.sport === 'NFL' ? '🏈' : '⚾'
-                  const isPitcher = ['pitcher_strikeouts','pitcher_outs_recorded','pitcher_hits_allowed','pitcher_walks','pitcher_earned_runs'].includes(pick.marketKey)
-                  const categoryLabel = pick.sport === 'MLB' ? (isPitcher ? 'PITCHER' : 'BATTER') : pick.sport || 'PROP'
-                  return (
-                    <div key={teamMKey} style={{
-                      background: '#0d0d0d',
-                      border: `1px solid ${pick.result === 'W' ? '#00ff8844' : pick.result === 'L' ? '#ff444444' : '#ffffff11'}`,
-                      borderRadius: '10px', padding: '0.85rem 1.1rem', opacity: 0.85,
-                    }}>
-                      <div style={{ fontSize: '0.62rem', color: '#444', fontWeight: 'bold', letterSpacing: '0.07em', marginBottom: '0.35rem' }}>
-                        {sportIcon} {categoryLabel}
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#888' }}>{pick.player}</div>
-                          <div style={{ color: '#444', fontSize: '0.75rem' }}>
-                            {pick.label} · {pick.side === 'over' ? '⬆ Over' : '⬇ Under'} {pick.line}
-                          </div>
-                        </div>
-                        <div style={{ fontWeight: 'bold', fontSize: '1rem', color: pick.result === 'W' ? '#00ff88' : pick.result === 'L' ? '#ff4444' : '#444' }}>{formatOdds(pick.odds)}</div>
-                      </div>
-                      {pick.result === null && (
-                        <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ color: '#333', fontSize: '0.7rem' }}>⏳ Pending</span>
-                          <div style={{ display: 'flex', gap: '0.4rem', marginLeft: 'auto' }}>
-                            <button onClick={() => gradeYesterdayProp(teamMKey, 'W')} style={{ fontSize: '0.68rem', padding: '0.2rem 0.6rem', background: '#0a2a1a', border: '1px solid #00ff88', borderRadius: '5px', color: '#00ff88', cursor: 'pointer', fontWeight: 'bold' }}>✅ W</button>
-                            <button onClick={() => gradeYesterdayProp(teamMKey, 'L')} style={{ fontSize: '0.68rem', padding: '0.2rem 0.6rem', background: '#2a0a0a', border: '1px solid #ff4444', borderRadius: '5px', color: '#ff4444', cursor: 'pointer', fontWeight: 'bold' }}>❌ L</button>
-                          </div>
-                        </div>
-                      )}
-                      {pick.result === 'W' && <div style={{ marginTop: '0.35rem', color: '#00ff88', fontWeight: 'bold', fontSize: '0.85rem' }}>✅ WIN</div>}
-                      {pick.result === 'L' && <div style={{ marginTop: '0.35rem', color: '#ff4444', fontWeight: 'bold', fontSize: '0.85rem' }}>❌ LOSS</div>}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            <YesterdayProps picks={yesterdayTeamPicks} />
           )}
 
           {/* ── Today's prop picks ── */}
           {Object.keys(todayTeamPicks).length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '0.62rem', color: '#8888ff', fontWeight: 'bold', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
+                TODAY
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {Object.entries(todayTeamPicks).map(([teamMKey, pick]) => {
                 if (!pick) return null
                 const sportIcon = pick.sport === 'NBA' ? '🏀' : pick.sport === 'NFL' ? '🏈' : '⚾'
@@ -395,8 +413,17 @@ export default function PropsTab({ todayLock, allGames }) {
                     border: `1px solid ${pick.result === 'W' ? '#00ff88' : pick.result === 'L' ? '#ff4444' : '#8888ff44'}`,
                     borderRadius: '10px', padding: '0.85rem 1.1rem',
                   }}>
-                    <div style={{ fontSize: '0.62rem', color: '#555', fontWeight: 'bold', letterSpacing: '0.07em', marginBottom: '0.35rem' }}>
-                      {sportIcon} {categoryLabel}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                      <span style={{ fontSize: '0.62rem', color: '#555', fontWeight: 'bold', letterSpacing: '0.07em' }}>
+                        {sportIcon} {categoryLabel}
+                      </span>
+                      {(() => {
+                        const dogPlayers = new Set(dogPropLines.map(p => p.player))
+                        const isDog = pick.isDogGame || dogPlayers.has(pick.player)
+                        return isDog
+                          ? <span style={{ fontSize: '0.58rem', color: '#ff994488', background: '#ff994411', border: '1px solid #ff994422', borderRadius: '4px', padding: '0.1rem 0.4rem', fontWeight: 'bold' }}>🐕 DOG</span>
+                          : <span style={{ fontSize: '0.58rem', color: '#00ff8888', background: '#00ff8811', border: '1px solid #00ff8822', borderRadius: '4px', padding: '0.1rem 0.4rem', fontWeight: 'bold' }}>🔒 LOCK</span>
+                      })()}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
@@ -408,12 +435,8 @@ export default function PropsTab({ todayLock, allGames }) {
                       <div style={{ fontWeight: 'bold', fontSize: '1rem', color: pick.result === 'W' ? '#00ff88' : pick.result === 'L' ? '#ff4444' : '#8888ff' }}>{formatOdds(pick.odds)}</div>
                     </div>
                     {pick.result === null && (
-                      <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ color: '#444', fontSize: '0.7rem' }}>⏳ Pending</span>
-                        <div style={{ display: 'flex', gap: '0.4rem', marginLeft: 'auto' }}>
-                          <button onClick={() => gradeProp(teamMKey, 'W')} style={{ fontSize: '0.68rem', padding: '0.2rem 0.6rem', background: '#0a2a1a', border: '1px solid #00ff88', borderRadius: '5px', color: '#00ff88', cursor: 'pointer', fontWeight: 'bold' }}>✅ W</button>
-                          <button onClick={() => gradeProp(teamMKey, 'L')} style={{ fontSize: '0.68rem', padding: '0.2rem 0.6rem', background: '#2a0a0a', border: '1px solid #ff4444', borderRadius: '5px', color: '#ff4444', cursor: 'pointer', fontWeight: 'bold' }}>❌ L</button>
-                        </div>
+                      <div style={{ marginTop: '0.4rem' }}>
+                        <span style={{ color: '#444', fontSize: '0.68rem' }}>⏳ Pending — auto-resolves after game</span>
                       </div>
                     )}
                     {pick.result === 'W' && <div style={{ marginTop: '0.35rem', color: '#00ff88', fontWeight: 'bold', fontSize: '0.85rem' }}>✅ WIN</div>}
@@ -421,6 +444,7 @@ export default function PropsTab({ todayLock, allGames }) {
                   </div>
                 )
               })}
+              </div>
             </div>
           )}
 
@@ -444,46 +468,63 @@ export default function PropsTab({ todayLock, allGames }) {
             </div>
           )}
 
-          {propLines.length > 0 && (() => {
-            const sections = MARKET_SECTION_LABELS[sportLabel]
-            let pitcherHeaderShown = false
-            let batterHeaderShown = false
-            return (
-              <div>
-                {groupedProps.map((group, i) => {
-                  const isPitcherMarket = sections?.pitcher?.keys?.includes(group.marketKey)
-                  const isBatterMarket = sections?.batter?.keys?.includes(group.marketKey)
-                  const showPitcherHeader = isPitcherMarket && !pitcherHeaderShown && (pitcherHeaderShown = true)
-                  const showBatterHeader = isBatterMarket && !batterHeaderShown && (batterHeaderShown = true)
-                  return (
-                    <React.Fragment key={group.marketKey}>
-                      {showPitcherHeader && (
-                        <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#555', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0.5rem 0.25rem 0.4rem', marginTop: i > 0 ? '0.5rem' : 0 }}>
-                          ⚾ Pitcher Props
-                        </div>
-                      )}
-                      {showBatterHeader && (
-                        <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#555', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0.5rem 0.25rem 0.4rem', marginTop: '0.5rem' }}>
-                          🥎 Batter Props
-                        </div>
-                      )}
-                      <PropSection
-                        marketKey={group.marketKey}
-                        label={group.label}
-                        props={group.props}
-                        pickedTeams={pickedTeams}
-                        onPick={openPropModal}
-                        defaultOpen={i === 0}
-                        homeTeam={lockHomeTeam}
-                        awayTeam={lockAwayTeam}
-                        teamColorMap={teamColorMap}
-                      />
-                    </React.Fragment>
-                  )
-                })}
+          {propLines.length > 0 && (
+            <div>
+              {/* Lock game label */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.62rem', color: '#00ff8888', background: '#00ff8811', border: '1px solid #00ff8822', borderRadius: '4px', padding: '0.15rem 0.5rem', fontWeight: 'bold', letterSpacing: '0.05em' }}>
+                  🔒 LOCK · {todayLock?.away?.split(' ').pop()} @ {todayLock?.home?.split(' ').pop()}
+                </span>
               </div>
-            )
-          })()}
+              {groupedProps.length > 0 ? groupedProps.map((group) => (
+                <PropSection
+                  key={group.marketKey}
+                  marketKey={group.marketKey}
+                  label={group.label}
+                  props={group.props}
+                  pickedTeams={pickedTeams}
+                  onPick={openPropModal}
+                  defaultOpen={true}
+                  homeTeam={lockHomeTeam}
+                  awayTeam={lockAwayTeam}
+                  teamColorMap={teamColorMap}
+                />
+              )) : (
+                <div style={{ fontSize: '0.72rem', color: '#444', padding: '0.5rem 0 0.75rem', fontStyle: 'italic' }}>
+                  All lock game props picked ✓
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Dog game props — only when dog is a different game */}
+          {dogPropLines.length > 0 && todayDog && todayDog.gameId !== espnGameId && (
+            <div style={{ marginTop: propLines.length > 0 ? '0.75rem' : 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.62rem', color: '#ff994488', background: '#ff994411', border: '1px solid #ff994422', borderRadius: '4px', padding: '0.15rem 0.5rem', fontWeight: 'bold', letterSpacing: '0.05em' }}>
+                  🐕 DOG · {todayDog?.away?.split(' ').pop()} @ {todayDog?.home?.split(' ').pop()}
+                </span>
+              </div>
+              {dogGroupedProps.length > 0 ? dogGroupedProps.map((group) => (
+                <PropSection
+                  key={`dog_${group.marketKey}`}
+                  marketKey={group.marketKey}
+                  label={group.label}
+                  props={group.props}
+                  pickedTeams={pickedTeams}
+                  onPick={openPropModal}
+                  defaultOpen={true}
+                  homeTeam={todayDog?.home || ''}
+                  awayTeam={todayDog?.away || ''}
+                  teamColorMap={{}}
+                />
+              )) : (
+                <div style={{ fontSize: '0.72rem', color: '#444', padding: '0.5rem 0 0.75rem', fontStyle: 'italic' }}>
+                  All dog game props picked ✓
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Error banner — only show if props failed, nothing loaded, AND no picks made yet today */}
           {propsError && !propsLoading && !tooLate && propLines.length === 0 && Object.keys(todayTeamPicks).length === 0 && Object.keys(yesterdayTeamPicks).length === 0 && (
@@ -503,17 +544,80 @@ export default function PropsTab({ todayLock, allGames }) {
   )
 }
 
-// ─── SNEAK PEEK COMPONENT ────────────────────────────────────────────────────
-// Shows pitcher strikeout props for all upcoming games from DK scraper
+
+// ─── YESTERDAY PROPS — collapsed by default ──────────────────────────────────
+function YesterdayProps({ picks }) {
+  const [open, setOpen] = React.useState(false)
+  const entries = Object.entries(picks).filter(([, p]) => p)
+  const wins = entries.filter(([, p]) => p.result === 'W').length
+  const losses = entries.filter(([, p]) => p.result === 'L').length
+  const pending = entries.filter(([, p]) => p.result === null).length
+
+  return (
+    <div style={{ marginBottom: '1.5rem', border: '1px solid #1e1e1e', borderRadius: '10px', overflow: 'hidden' }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: '100%', padding: '0.65rem 1rem', background: '#0d0d0d',
+        border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <span style={{ fontSize: '0.62rem', color: '#444', fontWeight: 'bold', letterSpacing: '0.07em' }}>YESTERDAY</span>
+          <span style={{ fontSize: '0.6rem', color: '#333' }}>· {entries.length} pick{entries.length !== 1 ? 's' : ''}</span>
+          {wins > 0 && <span style={{ fontSize: '0.62rem', color: '#00ff8888' }}>✅ {wins}W</span>}
+          {losses > 0 && <span style={{ fontSize: '0.62rem', color: '#ff444488' }}>❌ {losses}L</span>}
+          {pending > 0 && <span style={{ fontSize: '0.62rem', color: '#555' }}>⏳ {pending}</span>}
+        </div>
+        <span style={{ color: '#333', fontSize: '0.65rem' }}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: '#0a0a0a' }}>
+          {entries.map(([teamMKey, pick]) => {
+            const sportIcon = pick.sport === 'NBA' ? '🏀' : pick.sport === 'NFL' ? '🏈' : '⚾'
+            const isPitcher = ['pitcher_strikeouts','pitcher_outs_recorded','pitcher_hits_allowed','pitcher_walks','pitcher_earned_runs'].includes(pick.marketKey)
+            const categoryLabel = pick.sport === 'MLB' ? (isPitcher ? 'PITCHER' : 'BATTER') : pick.sport || 'PROP'
+            return (
+              <div key={teamMKey} style={{
+                background: '#0d0d0d',
+                border: `1px solid ${pick.result === 'W' ? '#00ff8833' : pick.result === 'L' ? '#ff444433' : '#1a1a1a'}`,
+                borderRadius: '10px', padding: '0.85rem 1.1rem', opacity: 0.85,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <span style={{ fontSize: '0.62rem', color: '#444', fontWeight: 'bold', letterSpacing: '0.07em' }}>
+                    {sportIcon} {categoryLabel}
+                  </span>
+                  {pick.isDogGame
+                    ? <span style={{ fontSize: '0.58rem', color: '#ff994466', background: '#ff994411', border: '1px solid #ff994422', borderRadius: '4px', padding: '0.1rem 0.4rem', fontWeight: 'bold' }}>🐕 DOG</span>
+                    : <span style={{ fontSize: '0.58rem', color: '#00ff8866', background: '#00ff8811', border: '1px solid #00ff8822', borderRadius: '4px', padding: '0.1rem 0.4rem', fontWeight: 'bold' }}>🔒 LOCK</span>
+                  }
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#888' }}>{pick.player}</div>
+                    <div style={{ color: '#444', fontSize: '0.75rem' }}>
+                      {pick.label} · {pick.side === 'over' ? '⬆ Over' : '⬇ Under'} {pick.line}
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 'bold', fontSize: '1rem', color: pick.result === 'W' ? '#00ff88' : pick.result === 'L' ? '#ff4444' : '#444' }}>
+                    {pick.odds > 0 ? `+${pick.odds}` : pick.odds}
+                  </div>
+                </div>
+                {pick.result === null && <div style={{ marginTop: '0.35rem', color: '#444', fontSize: '0.68rem' }}>⏳ Pending — auto-resolves</div>}
+                {pick.result === 'W' && <div style={{ marginTop: '0.35rem', color: '#00ff88', fontWeight: 'bold', fontSize: '0.85rem' }}>✅ WIN</div>}
+                {pick.result === 'L' && <div style={{ marginTop: '0.35rem', color: '#ff4444', fontWeight: 'bold', fontSize: '0.85rem' }}>❌ LOSS</div>}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── SNEAK PEEK — Strikeouts only, all games ────────────────────────────────
 function PropsSneakPeek({ propLines, allGames, onPick, todayPicks = {} }) {
-  const handlePick = (prop, side) => onPick && onPick(prop, side)
-  const [open, setOpen] = React.useState(true)
+  const [open, setOpen] = React.useState(false)
   const [dkProps, setDkProps] = React.useState([])
-  const [visiblePerGame, setVisiblePerGame] = React.useState({})
-  const [visibleCount, setVisibleCount] = React.useState(3)
 
   React.useEffect(() => {
-    // Fetch props for all sports on mount, then every 5 minutes
     const loadProps = () => {
       fetch('http://127.0.0.1:3001/dk-props')
         .then(r => r.ok ? r.json() : {})
@@ -521,7 +625,7 @@ function PropsSneakPeek({ propLines, allGames, onPick, todayPicks = {} }) {
           const allProps = Object.entries(data).flatMap(([sport, sd]) =>
             (sd.props || []).map(p => ({ ...p, _sport: sport }))
           )
-          setDkProps(allProps.filter(p => p.isMainLine))
+          setDkProps(allProps.filter(p => p.isMainLine && String(p.subcategoryId) === '15221'))
         })
         .catch(() => {})
     }
@@ -530,40 +634,13 @@ function PropsSneakPeek({ propLines, allGames, onPick, todayPicks = {} }) {
     return () => clearInterval(interval)
   }, [])
 
-  // Group props by eventId → player → market, tag with sport
-  const MARKET_LABELS = {
-    '15221': 'Ks',
-    '17413': 'Outs',
-  }
-
-  const PITCHER_SUBCATS = new Set(['15221', '17413'])
-  const SPORT_ORDER = { 'MLB': 0, 'NBA': 1 }
-
   const byGame = {}
   dkProps.forEach(p => {
     const eid = p.eventId
-    if (!byGame[eid]) byGame[eid] = { home: p.home, away: p.away, sport: p._sport, pitchers: {}, batters: {} }
-    const isPitcher = PITCHER_SUBCATS.has(String(p.subcategoryId))
-    const bucket = isPitcher ? 'pitchers' : 'batters'
-    if (!byGame[eid][bucket][p.player]) byGame[eid][bucket][p.player] = {}
-    byGame[eid][bucket][p.player][p.subcategoryId] = p
+    if (!byGame[eid]) byGame[eid] = { home: p.home, away: p.away, pitchers: [] }
+    byGame[eid].pitchers.push(p)
   })
-
-  // Sort: MLB before NBA, then alphabetically by away team within sport
-  const sortedGames = Object.entries(byGame).sort(([, a], [, b]) => {
-    const sa = SPORT_ORDER[a.sport] ?? 99
-    const sb = SPORT_ORDER[b.sport] ?? 99
-    if (sa !== sb) return sa - sb
-    return (a.away || '').localeCompare(b.away || '')
-  })
-
-  // Group locked game's player props by market
-  const markets = {}
-  propLines.forEach(p => {
-    if (!markets[p.marketKey]) markets[p.marketKey] = []
-    markets[p.marketKey].push(p)
-  })
-  const marketKeys = Object.keys(markets)
+  const sortedGames = Object.entries(byGame).sort(([, a], [, b]) => (a.away || '').localeCompare(b.away || ''))
 
   return (
     <div style={{ marginTop: '1.5rem', border: '1px solid #1a1a1a', borderRadius: '10px', overflow: 'hidden' }}>
@@ -572,208 +649,40 @@ function PropsSneakPeek({ propLines, allGames, onPick, todayPicks = {} }) {
         border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <span style={{ fontSize: '0.68rem', color: '#555', fontWeight: 'bold', letterSpacing: '0.07em' }}>
-          🔬 PROPS SNEAK PEEK · {sortedGames.length > 0 ? `${sortedGames.length} games · ${dkProps.length} props` : 'run dk_scraper.py to load'}
+          ⚾ ALL STRIKEOUTS · {sortedGames.length > 0 ? `${sortedGames.length} games · ${dkProps.length} pitchers` : 'run dk_scraper.py to load'}
         </span>
         <span style={{ color: '#444', fontSize: '0.7rem' }}>{open ? '▲' : '▼'}</span>
       </button>
-
       {open && (
         <div style={{ background: '#0d0d0d', padding: '0.75rem' }}>
-
-          {/* Player props for locked game */}
-          {marketKeys.length > 0 && (
-            <div style={{ marginBottom: '1rem' }}>
-              <div style={{ fontSize: '0.6rem', color: '#00ff88', fontWeight: 'bold', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
-                🔒 LOCKED GAME · {marketKeys.length} prop markets
+          {sortedGames.map(([eventId, game]) => (
+            <div key={eventId} style={{ marginBottom: '0.65rem', paddingBottom: '0.65rem', borderBottom: '1px solid #111' }}>
+              <div style={{ fontSize: '0.62rem', fontWeight: 'bold', color: '#555', marginBottom: '0.3rem' }}>
+                {game.away} @ {game.home}
               </div>
-              {marketKeys.map(mKey => {
-                const lines = markets[mKey]
-                const shown = lines.slice(0, visibleCount)
+              {game.pitchers.sort((a, b) => b.line - a.line).map(prop => {
+                const pickKey = `${prop.player}||pitcher_strikeouts`
+                const alreadyPicked = todayPicks[pickKey]
                 return (
-                  <div key={mKey} style={{ marginBottom: '0.75rem' }}>
-                    <div style={{ fontSize: '0.6rem', color: '#333', fontWeight: 'bold', letterSpacing: '0.06em', marginBottom: '0.3rem' }}>
-                      {mKey.replace(/_/g, ' ').toUpperCase()}
-                    </div>
-                    {shown.map((p, i) => {
-                      const pickKey = `${p.playerName}||${p.marketKey}`
-                      const alreadyPicked = todayPicks && todayPicks[pickKey]
-                      return (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: '#555', padding: '0.25rem 0', borderBottom: '1px solid #111', gap: '0.5rem' }}>
-                          <span style={{ color: '#777', flex: 1 }}>{p.playerName} <span style={{ color: '#444', fontFamily: 'monospace' }}>{p.line}</span></span>
-                          {alreadyPicked ? (
-                            <span style={{ fontSize: '0.65rem', color: alreadyPicked.side === 'over' ? '#00ff88' : '#ff4488', background: '#1a1a1a', border: `1px solid ${alreadyPicked.side === 'over' ? '#00ff8844' : '#ff448844'}`, borderRadius: '4px', padding: '0.1rem 0.5rem', whiteSpace: 'nowrap' }}>
-                              {alreadyPicked.side === 'over' ? '⬆ Over' : '⬇ Under'} ✓
-                            </span>
-                          ) : onPick ? (
-                            <div style={{ display: 'flex', gap: '0.3rem' }}>
-                              <button
-                                onClick={() => onPick({ player: p.playerName, marketKey: p.marketKey, label: p.label || mKey, line: p.line, overOdds: p.overOdds, underOdds: p.underOdds, sport: 'MLB' }, 'over')}
-                                style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', background: '#0a1a0a', border: '1px solid #00ff8844', borderRadius: '4px', color: '#00ff88', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                ⬆ o{p.overOdds > 0 ? '+' : ''}{p.overOdds}
-                              </button>
-                              <button
-                                onClick={() => onPick({ player: p.playerName, marketKey: p.marketKey, label: p.label || mKey, line: p.line, overOdds: p.overOdds, underOdds: p.underOdds, sport: 'MLB' }, 'under')}
-                                style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', background: '#1a0a1a', border: '1px solid #ff448844', borderRadius: '4px', color: '#ff4488', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                ⬇ u{p.underOdds > 0 ? '+' : ''}{p.underOdds}
-                              </button>
-                            </div>
-                          ) : (
-                            <span style={{ fontFamily: 'monospace', fontSize: '0.68rem' }}>
-                              <span style={{ color: p.overOdds > 0 ? '#ff9944' : '#aaa' }}>o{p.overOdds > 0 ? '+' : ''}{p.overOdds}</span>
-                              {' / '}
-                              <span style={{ color: p.underOdds > 0 ? '#ff9944' : '#aaa' }}>u{p.underOdds > 0 ? '+' : ''}{p.underOdds}</span>
-                            </span>
-                          )}
-                        </div>
-                      )
-                    })}
-                    {lines.length > visibleCount && (
-                      <button onClick={() => setVisibleCount(v => v + 6)} style={{
-                        background: 'none', border: 'none', color: '#444', cursor: 'pointer',
-                        fontSize: '0.65rem', marginTop: '0.3rem', padding: 0,
-                      }}>
-                        + {lines.length - visibleCount} more
-                      </button>
-                    )}
-                    {visibleCount > 3 && (
-                      <button onClick={() => setVisibleCount(3)} style={{
-                        background: 'none', border: 'none', color: '#333', cursor: 'pointer',
-                        fontSize: '0.65rem', marginTop: '0.3rem', marginLeft: '0.5rem', padding: 0,
-                      }}>
-                        show less
-                      </button>
+                  <div key={prop.player} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.2rem 0', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#888', flex: 1 }}>
+                      {prop.player} <span style={{ color: '#555', fontFamily: 'monospace' }}>{prop.line}</span>
+                    </span>
+                    {alreadyPicked ? (
+                      <span style={{ fontSize: '0.65rem', color: alreadyPicked.side === 'over' ? '#00ff88' : '#ff4488', background: '#1a1a1a', border: `1px solid ${alreadyPicked.side === 'over' ? '#00ff8844' : '#ff448844'}`, borderRadius: '4px', padding: '0.1rem 0.5rem' }}>
+                        {alreadyPicked.side === 'over' ? '⬆ Over' : '⬇ Under'} ✓
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '0.68rem', color: '#4c9be8' }}>
+                        ⬆ {prop.overOdds > 0 ? '+' : ''}{prop.overOdds} · ⬇ {prop.underOdds > 0 ? '+' : ''}{prop.underOdds}
+                      </span>
                     )}
                   </div>
                 )
               })}
             </div>
-          )}
-
-          {/* Props by game — sorted MLB first (pitchers then batters), then NBA */}
-          {sortedGames.length > 0 && (
-            <div>
-              {sortedGames.map(([eventId, game]) => {
-                const pitcherList = Object.entries(game.pitchers || {})
-                const batterList  = Object.entries(game.batters  || {})
-                const shownP = visiblePerGame[eventId + '_p'] ?? 2
-                const shownB = visiblePerGame[eventId + '_b'] ?? 2
-                const sportIcon = game.sport === 'NBA' ? '🏀' : '⚾'
-                return (
-                  <div key={eventId} style={{ marginBottom: '0.85rem', paddingBottom: '0.85rem', borderBottom: '1px solid #111' }}>
-                    {/* Game header */}
-                    <div style={{ fontSize: '0.68rem', fontWeight: 'bold', color: '#666', marginBottom: '0.4rem' }}>
-                      {sportIcon} {game.away} @ {game.home}
-                    </div>
-
-                    {/* ── Pitcher props ── */}
-                    {pitcherList.length > 0 && (
-                      <>
-                        <div style={{ fontSize: '0.58rem', color: '#4c9be8', fontWeight: 'bold', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>PITCHERS</div>
-                        {pitcherList.slice(0, shownP).map(([playerName, markets]) => (
-                          <div key={playerName} style={{ padding: '0.25rem 0', borderBottom: '1px solid #0d0d0d' }}>
-                            <div style={{ color: '#888', fontSize: '0.72rem', marginBottom: '0.25rem' }}>{playerName}</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                              {['15221', '17413'].map(subId => {
-                                const label = MARKET_LABELS[subId]
-                                const prop = markets[subId]
-                                if (!prop) return null
-                                const slugKey = subId === '15221' ? 'pitcher_strikeouts' : 'pitcher_outs_recorded'
-                                const pickKey = `${playerName}||${slugKey}`
-                                const alreadyPicked = todayPicks[pickKey]
-                                return (
-                                  <div key={subId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '0.68rem', color: '#555' }}>{label} <span style={{ color: '#888' }}>{prop.line}</span></span>
-                                    {alreadyPicked ? (
-                                      <span style={{ fontSize: '0.65rem', color: alreadyPicked.side === 'over' ? '#00ff88' : '#ff4488', background: '#1a1a1a', border: `1px solid ${alreadyPicked.side === 'over' ? '#00ff8844' : '#ff448844'}`, borderRadius: '4px', padding: '0.1rem 0.5rem' }}>
-                                        {alreadyPicked.side === 'over' ? '⬆ Over' : '⬇ Under'} ✓
-                                      </span>
-                                    ) : onPick ? (
-                                      <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                        <button onClick={() => handlePick({ player: playerName, marketKey: slugKey, label, line: prop.line, overOdds: prop.overOdds, underOdds: prop.underOdds, team: prop.away, sport: game.sport, home: game.home, away: game.away }, 'over')}
-                                          style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', background: '#0a1a0a', border: '1px solid #00ff8844', borderRadius: '4px', color: '#00ff88', cursor: 'pointer' }}>
-                                          ⬆ o{prop.overOdds > 0 ? '+' : ''}{prop.overOdds}
-                                        </button>
-                                        <button onClick={() => handlePick({ player: playerName, marketKey: slugKey, label, line: prop.line, overOdds: prop.overOdds, underOdds: prop.underOdds, team: prop.away, sport: game.sport, home: game.home, away: game.away }, 'under')}
-                                          style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', background: '#1a0a1a', border: '1px solid #ff448844', borderRadius: '4px', color: '#ff4488', cursor: 'pointer' }}>
-                                          ⬇ u{prop.underOdds > 0 ? '+' : ''}{prop.underOdds}
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <span style={{ fontSize: '0.68rem', color: '#4c9be8' }}>
-                                        o{prop.overOdds > 0 ? '+' : ''}{prop.overOdds} / <span style={{ color: '#8888ff' }}>u{prop.underOdds > 0 ? '+' : ''}{prop.underOdds}</span>
-                                      </span>
-                                    )}
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                        {pitcherList.length > shownP && (
-                          <button onClick={() => setVisiblePerGame(v => ({ ...v, [eventId + '_p']: shownP + 3 }))}
-                            style={{ background: 'none', border: 'none', color: '#333', cursor: 'pointer', fontSize: '0.62rem', padding: '0.15rem 0' }}>
-                            + {pitcherList.length - shownP} more pitchers
-                          </button>
-                        )}
-                      </>
-                    )}
-
-                    {/* ── Batter props ── */}
-                    {batterList.length > 0 && (
-                      <>
-                        <div style={{ fontSize: '0.58rem', color: '#ff9944', fontWeight: 'bold', letterSpacing: '0.06em', marginTop: pitcherList.length > 0 ? '0.5rem' : 0, marginBottom: '0.25rem' }}>BATTERS</div>
-                        {batterList.slice(0, shownB).map(([playerName, markets]) => (
-                          <div key={playerName} style={{ padding: '0.25rem 0', borderBottom: '1px solid #0d0d0d' }}>
-                            <div style={{ color: '#888', fontSize: '0.72rem', marginBottom: '0.25rem' }}>{playerName}</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                              {Object.entries(markets).map(([subId, prop]) => {
-                                const slugKey = subId === '17319' ? 'batter_home_runs' : subId === '17320' ? 'batter_hits' : subId
-                                const label = subId === '17319' ? 'HRs' : subId === '17320' ? 'Hits' : subId
-                                const pickKey = `${playerName}||${slugKey}`
-                                const alreadyPicked = todayPicks[pickKey]
-                                return (
-                                  <div key={subId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '0.68rem', color: '#555' }}>{label} <span style={{ color: '#888' }}>{prop.line}+</span></span>
-                                    {alreadyPicked ? (
-                                      <span style={{ fontSize: '0.65rem', color: '#8888ff', background: '#1a1a1a', border: '1px solid #8888ff44', borderRadius: '4px', padding: '0.1rem 0.5rem' }}>
-                                        ✓ picked
-                                      </span>
-                                    ) : onPick ? (
-                                      <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                        <button onClick={() => handlePick({ player: playerName, marketKey: slugKey, label, line: prop.line, overOdds: prop.overOdds, underOdds: prop.underOdds, team: prop.away, sport: game.sport, home: game.home, away: game.away }, 'over')}
-                                          style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', background: '#0a1a0a', border: '1px solid #00ff8844', borderRadius: '4px', color: '#00ff88', cursor: 'pointer' }}>
-                                          ⬆ o{prop.overOdds > 0 ? '+' : ''}{prop.overOdds}
-                                        </button>
-                                        <button onClick={() => handlePick({ player: playerName, marketKey: slugKey, label, line: prop.line, overOdds: prop.overOdds, underOdds: prop.underOdds, team: prop.away, sport: game.sport, home: game.home, away: game.away }, 'under')}
-                                          style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem', background: '#1a0a1a', border: '1px solid #ff448844', borderRadius: '4px', color: '#ff4488', cursor: 'pointer' }}>
-                                          ⬇ u{prop.underOdds > 0 ? '+' : ''}{prop.underOdds}
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <span style={{ fontSize: '0.68rem', color: '#ff9944' }}>
-                                        o{prop.overOdds > 0 ? '+' : ''}{prop.overOdds} / <span style={{ color: '#aaa' }}>u{prop.underOdds > 0 ? '+' : ''}{prop.underOdds}</span>
-                                      </span>
-                                    )}
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                        {batterList.length > shownB && (
-                          <button onClick={() => setVisiblePerGame(v => ({ ...v, [eventId + '_b']: shownB + 5 }))}
-                            style={{ background: 'none', border: 'none', color: '#333', cursor: 'pointer', fontSize: '0.62rem', padding: '0.15rem 0' }}>
-                            + {batterList.length - shownB} more batters
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-          {sortedGames.length === 0 && dkProps.length === 0 && (
+          ))}
+          {sortedGames.length === 0 && (
             <div style={{ color: '#333', fontSize: '0.72rem', textAlign: 'center', padding: '1rem' }}>
               Run dk_scraper.py to load props
             </div>

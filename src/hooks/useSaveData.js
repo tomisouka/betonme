@@ -130,6 +130,32 @@ export async function loadOuPick() {
 export async function saveOuPick(picks) {
   return enqueueWrite('ouPick', picks)
 }
+// ─── FAV PICK (per-day pick made from FavsTab) ────────────────────────────────
+
+export async function loadFavPick() {
+  try {
+    const data = await loadAllData()
+    return data.favPick || {}
+  } catch { return {} }
+}
+
+export async function saveFavPick(picks) {
+  return enqueueWrite('favPick', picks)
+}
+
+// ─── HATE PICK (per-day pick made from HateWatchTab) ─────────────────────────
+
+export async function loadHatePick() {
+  try {
+    const data = await loadAllData()
+    return data.hatePick || {}
+  } catch { return {} }
+}
+
+export async function saveHatePick(picks) {
+  return enqueueWrite('hatePick', picks)
+}
+
 // ─── USER PREFS (fav team, hate team, etc.) ───────────────────────────────────
 
 export async function loadPrefs() {
@@ -227,9 +253,16 @@ export function getCachedEspnDate(dateStr) {
     const raw = localStorage.getItem(`espn_${dateStr}`)
     if (!raw) return null
     const { timestamp, events } = JSON.parse(raw)
-    const isToday = dateStr === new Date().toISOString().split('T')[0].replace(/-/g, '')
-    if (isToday && Date.now() - timestamp > 8 * 60 * 60 * 1000) return null
-    // Historical dates: cache forever
+    const todayStr = new Date().toISOString().split('T')[0].replace(/-/g, '')
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0].replace(/-/g, '')
+    if (dateStr === todayStr) {
+      // Today: 5-minute TTL so resolution polling actually sees updated scores
+      if (Date.now() - timestamp > 5 * 60 * 1000) return null
+    } else if (dateStr === yesterdayStr) {
+      // Yesterday: 30-minute TTL to catch late-finishing games (extra innings, OT)
+      if (Date.now() - timestamp > 30 * 60 * 1000) return null
+    }
+    // Historical dates (2+ days ago): cache forever — scores never change
     return events
   } catch { return null }
 }

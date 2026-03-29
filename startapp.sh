@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+cd "$(dirname "$0")"
+
+# rest of your script...
 #!/bin/bash
 
 # Kill all processes on Ctrl+C
