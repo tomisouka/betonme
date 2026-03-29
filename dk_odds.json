@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-03-29T16:49:01.460531Z",
+  "fetchedAt": "2026-03-29T17:19:02.014213Z",
   "source": "DraftKings (sportsbook-nash internal API)",
   "sports": {
     "MLB": {
@@ -16,7 +16,7 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699631Z",
+              "last_update": "2026-03-29T17:19:02.426977Z",
               "markets": [
                 {
                   "key": "h2h",
@@ -36,12 +36,12 @@
                   "outcomes": [
                     {
                       "name": "TEX Rangers",
-                      "price": -156,
+                      "price": -163,
                       "point": 1.5
                     },
                     {
                       "name": "PHI Phillies",
-                      "price": 129,
+                      "price": 135,
                       "point": -1.5
                     }
                   ]
@@ -86,7 +86,7 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699667Z",
+              "last_update": "2026-03-29T17:19:02.427025Z",
               "markets": [
                 {
                   "key": "h2h",
@@ -156,7 +156,7 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699721Z",
+              "last_update": "2026-03-29T17:19:02.427051Z",
               "markets": [
                 {
                   "key": "h2h",
@@ -226,7 +226,7 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699749Z",
+              "last_update": "2026-03-29T17:19:02.427076Z",
               "markets": [
                 {
                   "key": "h2h",
@@ -296,7 +296,7 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699770Z",
+              "last_update": "2026-03-29T17:19:02.427098Z",
               "markets": [
                 {
                   "key": "h2h",
@@ -366,7 +366,7 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699788Z",
+              "last_update": "2026-03-29T17:19:02.427117Z",
               "markets": [
                 {
                   "key": "h2h",
@@ -436,7 +436,7 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699808Z",
+              "last_update": "2026-03-29T17:19:02.427138Z",
               "markets": [
                 {
                   "key": "h2h",
@@ -506,18 +506,18 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699824Z",
+              "last_update": "2026-03-29T17:19:02.427158Z",
               "markets": [
                 {
                   "key": "h2h",
                   "outcomes": [
                     {
                       "name": "CHI White Sox",
-                      "price": 139
+                      "price": 141
                     },
                     {
                       "name": "MIL Brewers",
-                      "price": -168
+                      "price": -171
                     }
                   ]
                 },
@@ -576,7 +576,7 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699840Z",
+              "last_update": "2026-03-29T17:19:02.427182Z",
               "markets": [
                 {
                   "key": "h2h",
@@ -646,7 +646,7 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699854Z",
+              "last_update": "2026-03-29T17:19:02.427205Z",
               "markets": [
                 {
                   "key": "h2h",
@@ -666,12 +666,12 @@
                   "outcomes": [
                     {
                       "name": "TB Rays",
-                      "price": 144,
+                      "price": 141,
                       "point": -1.5
                     },
                     {
                       "name": "STL Cardinals",
-                      "price": -175,
+                      "price": -171,
                       "point": 1.5
                     }
                   ]
@@ -681,12 +681,12 @@
                   "outcomes": [
                     {
                       "name": "Over",
-                      "price": -115,
+                      "price": -118,
                       "point": 7.5
                     },
                     {
                       "name": "Under",
-                      "price": -105,
+                      "price": -102,
                       "point": 7.5
                     }
                   ]
@@ -716,7 +716,7 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699870Z",
+              "last_update": "2026-03-29T17:19:02.427225Z",
               "markets": [
                 {
                   "key": "h2h",
@@ -786,7 +786,7 @@
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T16:49:01.699885Z",
+              "last_update": "2026-03-29T17:19:02.427244Z",
               "markets": [
                 {
                   "key": "h2h",
@@ -821,12 +821,12 @@
                   "outcomes": [
                     {
                       "name": "Over",
-                      "price": -115,
+                      "price": -112,
                       "point": 7.5
                     },
                     {
                       "name": "Under",
-                      "price": -105,
+                      "price": -108,
                       "point": 7.5
                     }
                   ]
