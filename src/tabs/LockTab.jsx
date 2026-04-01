@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { getTodayKey, isSaturday, formatOdds, calcProfit, calcPayout, getGameDateLabel, fetchMlbProbablePitchers, getProbablePitcher } from '../utils/odds.js'
 import { loadState, saveState, fetchEspnDate } from '../hooks/useSaveData.js'
 import SportFilter, { filterBySport } from '../components/SportFilter.jsx'
+import { getTeamLogoUrl, LOGO_STYLE } from '../utils/teamLogos.js'
 
 
 function getGameStatus(game) {
@@ -75,7 +76,8 @@ function calcTeamStats(picks) {
     if (pick.result === 'W') teams[t].w++
     else teams[t].l++
   })
-  const entries = Object.entries(teams).filter(([, r]) => r.w + r.l > 0)
+  // Require at least 2 picks to avoid 1-game flukes
+  const entries = Object.entries(teams).filter(([, r]) => r.w + r.l >= 2)
   if (!entries.length) return { biased: null, cursed: null }
   const biased = entries.reduce((best, [team, r]) => {
     const rate = r.w / (r.w + r.l)
@@ -86,9 +88,175 @@ function calcTeamStats(picks) {
     return rate < worst.rate ? { team, rate, w: r.w, l: r.l } : worst
   }, { team: null, rate: 2, w: 0, l: 0 })
   return {
-    biased: biased.team ? { name: biased.team, record: `${biased.w}W-${biased.l}L` } : null,
-    cursed: cursed.team ? { name: cursed.team, record: `${cursed.w}W-${cursed.l}L` } : null,
+    biased: biased.team ? { name: biased.team, record: `${biased.w}W-${biased.l}L`, pct: Math.round(biased.rate * 100) } : null,
+    cursed: cursed.team ? { name: cursed.team, record: `${cursed.w}W-${cursed.l}L`, pct: Math.round(cursed.rate * 100) } : null,
   }
+}
+
+// ─── INSIGHTS ENGINE ─────────────────────────────────────────────────────────
+function calcInsights(picks) {
+  const entries = Object.entries(picks).filter(([, p]) => p.result !== null)
+  if (entries.length < 3) return null
+
+  // Best day of week
+  const byDay = {}
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  entries.forEach(([date, p]) => {
+    const day = DAY_NAMES[new Date(date + 'T12:00:00').getDay()]
+    if (!byDay[day]) byDay[day] = { w: 0, l: 0 }
+    if (p.result === 'W') byDay[day].w++
+    else byDay[day].l++
+  })
+  const dayEntries = Object.entries(byDay).filter(([, r]) => r.w + r.l >= 2)
+  const bestDay = dayEntries.length
+    ? dayEntries.reduce((best, [day, r]) => r.w / (r.w + r.l) > best.rate ? { day, rate: r.w / (r.w + r.l), w: r.w, l: r.l } : best, { day: null, rate: -1 })
+    : null
+
+  // ML vs Spread record
+  const mlPicks = entries.filter(([, p]) => p.market === 'h2h')
+  const spPicks = entries.filter(([, p]) => p.market === 'spreads')
+  const mlW = mlPicks.filter(([, p]) => p.result === 'W').length
+  const spW = spPicks.filter(([, p]) => p.result === 'W').length
+  const mlPct = mlPicks.length ? Math.round(mlW / mlPicks.length * 100) : null
+  const spPct = spPicks.length ? Math.round(spW / spPicks.length * 100) : null
+
+  // Sport breakdown
+  const bySport = {}
+  entries.forEach(([, p]) => {
+    const s = p.sport || 'Unknown'
+    if (!bySport[s]) bySport[s] = { w: 0, l: 0 }
+    if (p.result === 'W') bySport[s].w++
+    else bySport[s].l++
+  })
+
+  // ROI (simplified: net coins / total coins staked)
+  let totalStaked = 0, netCoins = 0
+  entries.forEach(([, p]) => {
+    const stake = p.stake || 1
+    totalStaked += stake
+    if (p.result === 'W') netCoins += p.profit || 0
+    else netCoins -= stake
+  })
+  const roi = totalStaked > 0 ? Math.round((netCoins / totalStaked) * 100) : null
+
+  // Hot/cold streaks by sport
+  const recentSport = {}
+  entries.slice(-10).forEach(([, p]) => {
+    const s = p.sport || 'Unknown'
+    if (!recentSport[s]) recentSport[s] = { w: 0, l: 0 }
+    if (p.result === 'W') recentSport[s].w++
+    else recentSport[s].l++
+  })
+
+  return { bestDay, mlW, mlL: mlPicks.length - mlW, mlPct, spW, spL: spPicks.length - spW, spPct, bySport, roi, recentSport, totalPicks: entries.length }
+}
+
+function InsightsPanel({ picks }) {
+  const [open, setOpen] = useState(false)
+  const insights = calcInsights(picks)
+  if (!insights) return null
+
+  return (
+    <div style={{ background: '#111', border: '1px solid #1e1e2a', borderRadius: '12px', marginBottom: '1.5rem', overflow: 'hidden' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.85rem 1.1rem', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.9rem' }}>🧠</span>
+          <span style={{ fontWeight: 'bold', fontSize: '0.88rem', color: '#8888ff' }}>INSIGHTS</span>
+          <span style={{ fontSize: '0.62rem', color: '#444', background: '#1a1a2a', border: '1px solid #2a2a4a', borderRadius: '4px', padding: '0.1rem 0.45rem' }}>
+            {insights.totalPicks} picks analyzed
+          </span>
+        </div>
+        <span style={{ color: '#444', fontSize: '0.75rem' }}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div style={{ padding: '0 1.1rem 1.1rem', borderTop: '1px solid #1a1a1a' }}>
+          {/* ROI */}
+          {insights.roi !== null && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0', borderBottom: '1px solid #1a1a1a' }}>
+              <span style={{ fontSize: '0.78rem', color: '#666' }}>💰 Overall ROI</span>
+              <span style={{
+                fontWeight: 'bold', fontSize: '0.88rem',
+                color: insights.roi > 0 ? '#00ff88' : insights.roi < 0 ? '#ff4444' : '#888',
+              }}>
+                {insights.roi > 0 ? '+' : ''}{insights.roi}%
+              </span>
+            </div>
+          )}
+          {/* Best day */}
+          {insights.bestDay?.day && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0', borderBottom: '1px solid #1a1a1a' }}>
+              <span style={{ fontSize: '0.78rem', color: '#666' }}>📅 Best Day</span>
+              <span style={{ fontWeight: 'bold', fontSize: '0.88rem', color: '#00ff88' }}>
+                {insights.bestDay.day} · {insights.bestDay.w}W-{insights.bestDay.l}L ({Math.round(insights.bestDay.rate * 100)}%)
+              </span>
+            </div>
+          )}
+          {/* ML vs Spread */}
+          <div style={{ padding: '0.65rem 0', borderBottom: '1px solid #1a1a1a' }}>
+            <div style={{ fontSize: '0.68rem', color: '#555', marginBottom: '0.4rem', letterSpacing: '0.06em' }}>📊 MARKET BREAKDOWN</div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              {insights.mlPct !== null && (
+                <div style={{ flex: 1, background: '#0d0d0d', border: '1px solid #00ff8822', borderRadius: '8px', padding: '0.5rem 0.75rem' }}>
+                  <div style={{ fontSize: '0.6rem', color: '#00ff8888', fontWeight: 'bold', marginBottom: '0.2rem' }}>MONEYLINE</div>
+                  <div style={{ fontWeight: 'bold', color: insights.mlPct >= 55 ? '#00ff88' : insights.mlPct >= 45 ? '#888' : '#ff4444' }}>
+                    {insights.mlW}W-{insights.mlL}L · {insights.mlPct}%
+                  </div>
+                </div>
+              )}
+              {insights.spPct !== null && (
+                <div style={{ flex: 1, background: '#0d0d0d', border: '1px solid #8888ff22', borderRadius: '8px', padding: '0.5rem 0.75rem' }}>
+                  <div style={{ fontSize: '0.6rem', color: '#8888ffaa', fontWeight: 'bold', marginBottom: '0.2rem' }}>SPREAD</div>
+                  <div style={{ fontWeight: 'bold', color: insights.spPct >= 55 ? '#00ff88' : insights.spPct >= 45 ? '#888' : '#ff4444' }}>
+                    {insights.spW}W-{insights.spL}L · {insights.spPct}%
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Sport breakdown */}
+          {Object.keys(insights.bySport).length > 0 && (
+            <div style={{ padding: '0.65rem 0', borderBottom: '1px solid #1a1a1a' }}>
+              <div style={{ fontSize: '0.68rem', color: '#555', marginBottom: '0.4rem', letterSpacing: '0.06em' }}>🏆 BY SPORT</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                {Object.entries(insights.bySport).sort((a, b) => (b[1].w / (b[1].w + b[1].l)) - (a[1].w / (a[1].w + a[1].l))).map(([sport, r]) => {
+                  const pct = Math.round(r.w / (r.w + r.l) * 100)
+                  return (
+                    <div key={sport} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#666' }}>{sport}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.72rem', color: '#555' }}>{r.w}W-{r.l}L</span>
+                        <div style={{ width: '40px', height: '4px', background: '#1a1a1a', borderRadius: '2px' }}>
+                          <div style={{ width: `${pct}%`, height: '100%', borderRadius: '2px', background: pct >= 55 ? '#00ff88' : pct >= 45 ? '#555' : '#ff4444' }} />
+                        </div>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 'bold', minWidth: '2.5rem', textAlign: 'right', color: pct >= 55 ? '#00ff88' : pct >= 45 ? '#888' : '#ff4444' }}>{pct}%</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          {/* Tip */}
+          <div style={{ paddingTop: '0.65rem' }}>
+            {(() => {
+              const tips = []
+              if (insights.mlPct !== null && insights.spPct !== null) {
+                if (insights.mlPct > insights.spPct + 10) tips.push('📈 You hit Moneyline at a significantly higher rate — lean ML on close picks.')
+                else if (insights.spPct > insights.mlPct + 10) tips.push('📈 You hit Spreads better than ML — consider covering when the line is right.')
+              }
+              if (insights.bestDay?.rate > 0.65) tips.push(`🔥 ${insights.bestDay.day} is your best day (${Math.round(insights.bestDay.rate * 100)}% win rate) — don't skip it.`)
+              if (insights.roi !== null && insights.roi < -20) tips.push('⚠️ ROI is significantly negative — consider smaller stakes until form improves.')
+              if (!tips.length) tips.push('Keep locking in — more data = sharper insights.')
+              return <div style={{ fontSize: '0.75rem', color: '#666', fontStyle: 'italic', lineHeight: 1.5 }}>{tips[0]}</div>
+            })()}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function useMidnightCountdown() {
@@ -128,8 +296,8 @@ function StatsBar({ coins, streakInfo, streak, streakDates, bestStreaks, picks }
       <StatCard label="ALL TIME" value={calcRecord(picks, null)} color="#666" hidden />
       <StatCard label="BEST W STREAK" value={bestStreaks.W.count ? `🔥 ${bestStreaks.W.count} W` : '—'} sub={bestStreaks.W.since ? `started ${bestStreaks.W.since}` : null} color="#00ff88" />
       <StatCard label="WORST L STREAK" value={bestStreaks.L.count ? `❄ ${bestStreaks.L.count} L` : '—'} sub={bestStreaks.L.since ? `started ${bestStreaks.L.since}` : null} color="#ff4444" />
-      <StatCard label="😇 BIASED TEAM" value={biased ? biased.name : '—'} sub={biased ? biased.record : null} color="#00ff88" hidden />
-      <StatCard label="😈 CURSED TEAM" value={cursed ? cursed.name : '—'} sub={cursed ? cursed.record : null} color="#ff4444" hidden />
+      <StatCard label="😇 BIASED TEAM" value={biased ? biased.name : '—'} sub={biased ? `${biased.record} · ${biased.pct}%` : null} color="#00ff88" hidden />
+      <StatCard label="😈 CURSED TEAM" value={cursed ? cursed.name : '—'} sub={cursed ? `${cursed.record} · ${cursed.pct}%` : null} color="#ff4444" hidden />
     </div>
   )
 }
@@ -416,14 +584,17 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
 
       <StatsBar coins={coins} streakInfo={streakInfo} streak={streak} streakDates={streakDates} bestStreaks={bestStreaks} picks={appState.picks || {}} />
 
+      <InsightsPanel picks={appState.picks || {}} />
+
       {resolving && <div style={{ color: '#888', fontSize: '0.85rem', marginBottom: '1rem' }}>⏳ Checking results...</div>}
 
       {todayPick && (
         <div style={{ background: '#111', border: `1px solid ${todayPick.result === 'W' ? '#00ff88' : todayPick.result === 'L' ? '#ff4444' : '#444'}`, borderRadius: '10px', padding: '1.25rem', marginBottom: '2rem' }}>
           <div style={{ fontSize: '0.75rem', color: '#00ff88', marginBottom: '0.5rem' }}>🔒 TODAY'S LOCK</div>
-          <div style={{ marginBottom: '0.5rem' }}>
+          <div style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {getTeamLogoUrl(todayPick.team, todayPick.sport) && <img src={getTeamLogoUrl(todayPick.team, todayPick.sport)} style={{ ...LOGO_STYLE, width: '28px', height: '28px' }} alt="" />}
             <strong style={{ fontSize: '1.1rem' }}>{todayPick.team}</strong>
-            <span style={{ color: '#888', marginLeft: '0.75rem' }}>
+            <span style={{ color: '#888', marginLeft: '0.25rem' }}>
               {todayPick.market === 'h2h' ? 'Moneyline' : `Spread ${todayPick.point > 0 ? '+' : ''}${todayPick.point}`} ({formatOdds(todayPick.odds)})
             </span>
           </div>
@@ -475,10 +646,12 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
               return (
                 <div key={game.id} style={{ background: '#1a1a1a', border: `1px solid ${isLive ? '#ff994433' : '#2a2a2a'}`, borderRadius: '10px', padding: '1.25rem', marginBottom: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: isMlb ? '0.3rem' : '0.75rem' }}>
-                    <div>
-                      <span style={{ color: '#555', fontSize: '0.75rem', marginRight: '0.5rem' }}>{game.sportLabel}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <span style={{ color: '#555', fontSize: '0.75rem', marginRight: '0.3rem' }}>{game.sportLabel}</span>
+                      {getTeamLogoUrl(game.home_team, game.sportLabel) && <img src={getTeamLogoUrl(game.home_team, game.sportLabel)} style={{ ...LOGO_STYLE, width: '20px', height: '20px' }} alt="" />}
                       <strong>{game.home_team}</strong>
-                      <span style={{ color: '#444', margin: '0 0.5rem' }}>vs</span>
+                      <span style={{ color: '#444', margin: '0 0.3rem' }}>vs</span>
+                      {getTeamLogoUrl(game.away_team, game.sportLabel) && <img src={getTeamLogoUrl(game.away_team, game.sportLabel)} style={{ ...LOGO_STYLE, width: '20px', height: '20px' }} alt="" />}
                       <strong>{game.away_team}</strong>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { loadState, loadDogState } from '../hooks/useSaveData.js'
+import { getTeamLogoUrl, LOGO_STYLE } from '../utils/teamLogos.js'
 
 const SERVER = 'http://127.0.0.1:3001'
 
@@ -98,6 +99,27 @@ function OddsChart({ snapshots, homeTeam, awayTeam }) {
           {last.awayOdds != null && (
             <circle cx={xScale(displayPts.length-1)} cy={oddsY(last.awayOdds)} r="3.5" fill={awayColor} />
           )}
+          {/* High/low range markers — only meaningful with 2+ snapshots */}
+          {pts.length >= 2 && (() => {
+            const homeOddsArr = pts.map(p => p.homeOdds).filter(v => v != null)
+            const awayOddsArr = pts.map(p => p.awayOdds).filter(v => v != null)
+            const homeHi = Math.max(...homeOddsArr), homeLo = Math.min(...homeOddsArr)
+            const awayHi = Math.max(...awayOddsArr), awayLo = Math.min(...awayOddsArr)
+            const RangeLine = ({ hi, lo, color, x }) => hi === lo ? null : (
+              <g>
+                <line x1={x} x2={x} y1={oddsY(hi)} y2={oddsY(lo)}
+                  stroke={color} strokeWidth="1" strokeOpacity="0.25" strokeDasharray="2,2" />
+                <text x={x - 3} y={oddsY(hi) + 3} textAnchor="end" fill={color} fontSize="7" opacity="0.6">{fmtOdds(hi)}</text>
+                <text x={x - 3} y={oddsY(lo) + 3} textAnchor="end" fill={color} fontSize="7" opacity="0.6">{fmtOdds(lo)}</text>
+              </g>
+            )
+            return (
+              <>
+                <RangeLine hi={homeHi} lo={homeLo} color={homeColor} x={4} />
+                <RangeLine hi={awayHi} lo={awayLo} color={awayColor} x={10} />
+              </>
+            )
+          })()}
           {/* For single snapshot show one centered label; for multi show first+last */}
           {pts.length === 1 ? (
             <text x={iW / 2} y={iH + 16} textAnchor="middle" fill="#555" fontSize="9">
@@ -139,18 +161,34 @@ function OddsChart({ snapshots, homeTeam, awayTeam }) {
           </text>
         </g>
       </svg>
-      <div style={{ display: 'flex', gap: '1.25rem', justifyContent: 'center', marginTop: '0.35rem' }}>
-        <span style={{ fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          <span style={{ width: 12, height: 2, background: homeColor, display: 'inline-block', borderRadius: 2 }} />
-          <span style={{ color: homeColor }}>{homeTeam.split(' ').pop()}</span>
-          <span style={{ color: '#555' }}>{fmtOdds(last.homeOdds)}</span>
-        </span>
-        <span style={{ fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          <span style={{ width: 12, height: 2, background: awayColor, display: 'inline-block', borderRadius: 2 }} />
-          <span style={{ color: awayColor }}>{awayTeam.split(' ').pop()}</span>
-          <span style={{ color: '#555' }}>{fmtOdds(last.awayOdds)}</span>
-        </span>
-      </div>
+      {(() => {
+        const homeOddsArr = pts.map(p => p.homeOdds).filter(v => v != null)
+        const awayOddsArr = pts.map(p => p.awayOdds).filter(v => v != null)
+        const homeHi = homeOddsArr.length > 1 ? Math.max(...homeOddsArr) : null
+        const homeLo = homeOddsArr.length > 1 ? Math.min(...homeOddsArr) : null
+        const awayHi = awayOddsArr.length > 1 ? Math.max(...awayOddsArr) : null
+        const awayLo = awayOddsArr.length > 1 ? Math.min(...awayOddsArr) : null
+        return (
+          <div style={{ display: 'flex', gap: '1.25rem', justifyContent: 'center', marginTop: '0.35rem' }}>
+            <span style={{ fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <span style={{ width: 12, height: 2, background: homeColor, display: 'inline-block', borderRadius: 2 }} />
+              <span style={{ color: homeColor }}>{homeTeam.split(' ').pop()}</span>
+              <span style={{ color: '#555' }}>{fmtOdds(last.homeOdds)}</span>
+              {homeHi !== null && homeHi !== homeLo && (
+                <span style={{ color: '#333', fontSize: '0.6rem' }}>({fmtOdds(homeLo)}–{fmtOdds(homeHi)})</span>
+              )}
+            </span>
+            <span style={{ fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <span style={{ width: 12, height: 2, background: awayColor, display: 'inline-block', borderRadius: 2 }} />
+              <span style={{ color: awayColor }}>{awayTeam.split(' ').pop()}</span>
+              <span style={{ color: '#555' }}>{fmtOdds(last.awayOdds)}</span>
+              {awayHi !== null && awayHi !== awayLo && (
+                <span style={{ color: '#333', fontSize: '0.6rem' }}>({fmtOdds(awayLo)}–{fmtOdds(awayHi)})</span>
+              )}
+            </span>
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -190,8 +228,34 @@ function MovementLog({ snapshots }) {
   )
 }
 
+// ─── LIVE STATUS BADGE ───────────────────────────────────────────────────────
+function LiveBadge() {
+  const [dot, setDot] = useState(true)
+  useEffect(() => {
+    const t = setInterval(() => setDot(d => !d), 700)
+    return () => clearInterval(t)
+  }, [])
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+      background: '#2a0a00', border: '1px solid #ff4444aa',
+      borderRadius: '4px', padding: '0.1rem 0.5rem',
+      fontSize: '0.6rem', fontWeight: 'bold', color: '#ff4444',
+      marginLeft: '0.5rem', verticalAlign: 'middle',
+    }}>
+      <span style={{
+        width: '5px', height: '5px', borderRadius: '50%',
+        background: dot ? '#ff4444' : 'transparent',
+        transition: 'background 0.3s',
+        display: 'inline-block',
+      }} />
+      LIVE
+    </span>
+  )
+}
+
 // ─── GAME CARD ────────────────────────────────────────────────────────────────
-function GameCard({ gameKey, snapshots, todayLock, todayDog, yesterdayLock, yesterdayDog, defaultOpen = true }) {
+function GameCard({ gameKey, snapshots, todayLock, todayDog, yesterdayLock, yesterdayDog, defaultOpen = true, espnStatusMap = {} }) {
   const [open, setOpen] = useState(defaultOpen)
   if (!snapshots?.length) return null
 
@@ -204,14 +268,29 @@ function GameCard({ gameKey, snapshots, todayLock, todayDog, yesterdayLock, yest
   }
   const matchPick = (pick) => {
     if (!pick) return false
-    // Prefer gameId match
     if (last.gameId && pick.gameId) return last.gameId === pick.gameId
-    // Fall back: only match the picked team
     return nameMatch(last.home, pick.team) || nameMatch(last.away, pick.team)
   }
   const isLock = [todayLock, yesterdayLock].some(matchPick)
   const isDog  = [todayDog,  yesterdayDog ].some(matchPick)
-  const highlight = isLock ? '#00ff8833' : isDog ? '#ff994433' : '#1e1e1e'
+
+  // Detect live/final from ESPN status (passed via espnStatusMap) or commence_time heuristic
+  const espnStatus = last.gameId ? espnStatusMap[last.gameId] : null
+  const isLiveEspn = espnStatus?.state === 'in'
+  const isFinalEspn = espnStatus?.state === 'post' || espnStatus?.completed
+  // Fallback heuristic: if commence_time is in the past and no ESPN status, treat as potentially live
+  const now = Date.now()
+  const startMs = last.commence_time ? new Date(last.commence_time).getTime() : null
+  const isStarted = startMs && startMs < now
+  const hoursAgo = startMs ? (now - startMs) / 3600000 : null
+  // Games that started 3.5+ hours ago are almost certainly done; yesterday's games (12h+) definitely are
+  const isLikelyFinal = isStarted && hoursAgo >= 3.5
+  const isLikelyLive = !isFinalEspn && !isLikelyFinal && isStarted && hoursAgo < 3.5
+  const isLive = isLiveEspn || (!isFinalEspn && !isLikelyFinal && isLikelyLive)
+  const isFinal = isFinalEspn || isLikelyFinal
+
+  const statusBorderColor = isLive ? '#ff444466' : isFinal ? '#33333388' : isLock ? '#00ff8833' : isDog ? '#ff994433' : '#1e1e1e'
+  const statusBg = isLive ? '#1a0500' : '#111'
   const labelColor = isLock ? '#00ff88' : isDog ? '#ff9944' : '#555'
   const labelText  = isLock ? '🔒 LOCK · ' : isDog ? '🐕 DOG · ' : ''
 
@@ -222,7 +301,7 @@ function GameCard({ gameKey, snapshots, todayLock, todayDog, yesterdayLock, yest
 
   return (
     <div style={{
-      background: '#111', border: `1px solid ${highlight}`,
+      background: statusBg, border: `1px solid ${statusBorderColor}`,
       borderRadius: '10px', marginBottom: '0.75rem', overflow: 'hidden',
     }}>
       <button onClick={() => setOpen(o => !o)} style={{
@@ -230,27 +309,44 @@ function GameCard({ gameKey, snapshots, todayLock, todayDog, yesterdayLock, yest
         border: 'none', cursor: 'pointer', textAlign: 'left',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: '0.62rem', color: labelColor, fontWeight: 'bold', marginBottom: '0.2rem' }}>
-              {labelText}{last.sport} · {snapshots.length} snapshot{snapshots.length !== 1 ? 's' : ''}
-              {moved && <span style={{ marginLeft: '0.5rem', color: mlDiff > 0 ? '#00ff88' : '#ff4444' }}>
-                {mlDiff > 0 ? '▲' : '▼'} Line moving
-              </span>}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '0.62rem', color: labelColor, fontWeight: 'bold', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.25rem' }}>
+              <span>{labelText}{last.sport} · {snapshots.length} snapshot{snapshots.length !== 1 ? 's' : ''}</span>
+              {isLive && <LiveBadge />}
+              {isFinal && !isLive && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                  background: '#1e1e1e', border: '1px solid #3a3a3a',
+                  borderRadius: '4px', padding: '0.12rem 0.55rem',
+                  fontSize: '0.62rem', fontWeight: 'bold', color: '#888',
+                  letterSpacing: '0.06em',
+                }}>✓ FINAL</span>
+              )}
+              {moved && !isLive && !isFinal && (
+                <span style={{ color: mlDiff > 0 ? '#00ff88' : '#ff4444' }}>
+                  {mlDiff > 0 ? '▲' : '▼'} Line moving
+                </span>
+              )}
             </div>
-            <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#ccc' }}>
-              {last.away_team || last.away} <span style={{ color: '#333', fontWeight: 'normal' }}>@</span> {last.home_team || last.home}
+            <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: isFinal ? '#666' : '#ccc', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+              {getTeamLogoUrl(last.away_team || last.away, last.sport) && <img src={getTeamLogoUrl(last.away_team || last.away, last.sport)} style={{ ...LOGO_STYLE, width: '20px', height: '20px', opacity: isFinal ? 0.5 : 1 }} alt="" />}
+              {last.away_team || last.away} <span style={{ color: '#333', fontWeight: 'normal' }}>@</span>
+              {getTeamLogoUrl(last.home_team || last.home, last.sport) && <img src={getTeamLogoUrl(last.home_team || last.home, last.sport)} style={{ ...LOGO_STYLE, width: '20px', height: '20px', opacity: isFinal ? 0.5 : 1 }} alt="" />}
+              {last.home_team || last.home}
             </div>
             {last.commence_time && (
-              <div style={{ fontSize: '0.62rem', color: '#444', marginTop: '0.15rem' }}>
+              <div style={{ fontSize: '0.62rem', color: isLive ? '#ff444488' : '#444', marginTop: '0.15rem' }}>
                 {new Date(last.commence_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 {' · '}
                 {new Date(last.commence_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                {isLive && espnStatus?.label && <span style={{ color: '#ff4444', marginLeft: '0.4rem' }}>· {espnStatus.label}</span>}
+                {isFinal && espnStatus?.label && <span style={{ color: '#555', marginLeft: '0.4rem' }}>· {espnStatus.label}</span>}
               </div>
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem' }}>
-            <span style={{ fontSize: '0.72rem', color: '#4c9be8', fontWeight: 'bold' }}>{fmtOdds(last.ml?.home)}</span>
-            <span style={{ fontSize: '0.72rem', color: '#8888ff', fontWeight: 'bold' }}>{fmtOdds(last.ml?.away)}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem', flexShrink: 0, marginLeft: '0.75rem' }}>
+            <span style={{ fontSize: '0.72rem', color: isFinal ? '#444' : '#4c9be8', fontWeight: 'bold' }}>{fmtOdds(last.ml?.home)}</span>
+            <span style={{ fontSize: '0.72rem', color: isFinal ? '#444' : '#8888ff', fontWeight: 'bold' }}>{fmtOdds(last.ml?.away)}</span>
             <span style={{ color: '#444', fontSize: '0.65rem' }}>{open ? '▲' : '▼'}</span>
           </div>
         </div>
@@ -358,16 +454,40 @@ function HistoryPairRow({ dateKey, lockPick, dogPick }) {
 }
 
 // ─── MAIN TAB ────────────────────────────────────────────────────────────────
-export default function LiveTab({ todayLock, todayDog }) {
+export default function LiveTab({ todayLock, todayDog, allGames = [] }) {
   const [oddsHistory, setOddsHistory] = useState({})
   const [loading, setLoading]         = useState(true)
   const [scraping, setScraping]       = useState(false)
+  const [refreshed, setRefreshed]     = useState(false)
+  const [refreshFailed, setRefreshFailed] = useState(false)
   const [lastScrape, setLastScrape]   = useState(null)
   const [yesterdayLock, setYesterdayLock] = useState(null)
   const [yesterdayDog,  setYesterdayDog]  = useState(null)
   // Last 7 lock/dog picks for the history panel
   const [lockHistory, setLockHistory] = useState({})
   const [dogHistory,  setDogHistory]  = useState({})
+
+  // Build a map of gameId -> ESPN status from allGames (passed from App)
+  const espnStatusMap = {}
+  allGames.forEach(g => {
+    if (g.id && g.espnStatus) {
+      const s = g.espnStatus
+      const state = s.type?.state
+      const completed = s.type?.completed
+      let label = null
+      if (completed || state === 'post') {
+        const sc = g.espnScores
+        label = sc ? `Final · ${g.away_team?.split(' ').pop()} ${sc.away} – ${g.home_team?.split(' ').pop()} ${sc.home}` : 'Final'
+        espnStatusMap[g.id] = { state: 'post', completed: true, label }
+      } else if (state === 'in') {
+        const sc = g.espnScores
+        const scoreLabel = sc ? `${g.away_team?.split(' ').pop()} ${sc.away} – ${g.home_team?.split(' ').pop()} ${sc.home}` : null
+        const timePart = [s.period ? `P${s.period}` : null, s.displayClock].filter(Boolean).join(' ')
+        label = [timePart, scoreLabel].filter(Boolean).join(' · ') || 'In Progress'
+        espnStatusMap[g.id] = { state: 'in', label }
+      }
+    }
+  })
 
   const todayKey     = getTodayKey()
   const yesterdayKey = getDateKey(-1)
@@ -411,22 +531,29 @@ export default function LiveTab({ todayLock, todayDog }) {
       setDogHistory(dh)
     }).catch(() => {})
 
-    // 30-minute interval — sweet spot for catching meaningful line movement
-    // without over-polling. Sharp money typically moves lines in 15–60min windows.
-    const interval = setInterval(loadHistory, 30 * 60 * 1000)
+    // 5-minute interval — keeps odds current as game-day approaches
+    const interval = setInterval(loadHistory, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
   async function refreshNow() {
     setScraping(true)
+    setRefreshed(false)
+    setRefreshFailed(false)
     try {
       const res = await fetch(`${SERVER}/scrape-now`, { method: 'POST' })
+      if (!res.ok) throw new Error(`Server error ${res.status}`)
       const data = await res.json().catch(() => ({}))
       setLastScrape(new Date())
       const count = data.snapshotCount ?? 0
       console.info(`[LiveTab] Refresh: force-saved ${count} snapshots`)
       loadHistory()
-    } catch {}
+      setRefreshed(true)
+      setTimeout(() => setRefreshed(false), 2000)
+    } catch {
+      setRefreshFailed(true)
+      setTimeout(() => setRefreshFailed(false), 2000)
+    }
     setScraping(false)
   }
 
@@ -507,14 +634,15 @@ export default function LiveTab({ todayLock, todayDog }) {
           )}
         </div>
         <button onClick={refreshNow} disabled={scraping} style={{
-          background: scraping ? '#1a1a1a' : '#1a2a1a',
-          border: `1px solid ${scraping ? '#333' : '#00ff8833'}`,
-          color: scraping ? '#444' : '#00ff88',
+          background: scraping ? '#1a1a1a' : refreshFailed ? '#2a0a0a' : refreshed ? '#0a2a1a' : '#1a2a1a',
+          border: `1px solid ${scraping ? '#333' : refreshFailed ? '#ff444433' : refreshed ? '#00ff8855' : '#00ff8833'}`,
+          color: scraping ? '#444' : refreshFailed ? '#ff4444' : refreshed ? '#00ff88' : '#00ff88',
           borderRadius: '8px', padding: '0.5rem 1rem',
           cursor: scraping ? 'not-allowed' : 'pointer',
           fontSize: '0.75rem', fontWeight: 'bold', flexShrink: 0,
+          transition: 'all 0.3s',
         }}>
-          {scraping ? '⏳ Fetching...' : '↺ Refresh Now'}
+          {scraping ? '⏳ Fetching...' : refreshFailed ? '✗ Unavailable' : refreshed ? '✓ Updated' : '↺ Refresh Now'}
         </button>
       </div>
 
@@ -541,6 +669,7 @@ export default function LiveTab({ todayLock, todayDog }) {
                 todayDog={todayDog}
                 yesterdayLock={yesterdayLock}
                 yesterdayDog={yesterdayDog}
+                espnStatusMap={espnStatusMap}
                 defaultOpen={isLock || isDog}
               />
             ))}
@@ -563,6 +692,7 @@ export default function LiveTab({ todayLock, todayDog }) {
                 todayDog={todayDog}
                 yesterdayLock={yesterdayLock}
                 yesterdayDog={yesterdayDog}
+                espnStatusMap={espnStatusMap}
                 defaultOpen={isLock || isDog}
               />
             ))}

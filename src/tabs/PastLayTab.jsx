@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { loadLayHistory, saveLayHistory, loadPredictions, savePredictions, loadState, saveState, loadDogState, saveDogStateServer, loadOuPick, saveOuPick, loadPropPick, fetchEspnDate } from '../hooks/useSaveData.js'
+import { loadLayHistory, saveLayHistory, loadPredictions, savePredictions, loadState, saveState, loadDogState, saveDogStateServer, loadOuPick, saveOuPick, loadPropPick, fetchEspnDate, loadAllData } from '../hooks/useSaveData.js'
 import { formatOdds, calcProfit } from '../utils/odds.js'
 
 function fmtDateLabel(key) {
@@ -197,18 +197,23 @@ function TotalOddsRow({ legs, label = 'TOTAL ODDS' }) {
   )
 }
 
-export default function PastLayTab() {
+export default function PastLayTab({ todayLock, onRefresh }) {
   const [allData, setAllData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshed, setRefreshed] = useState(false)
   const [selectedKey, setSelectedKey] = useState(null)
   const [gameScores, setGameScores] = useState({}) // gameId -> { score, playerStats }
+  const [showLayPopup, setShowLayPopup] = useState(false)
+  const [showPastSlip, setShowPastSlip] = useState(null) // { dateKey, lay, lock }
+  const [todayLayData, setTodayLayData] = useState(null)
 
-  useEffect(() => {
-    async function load() {
+  async function load() {
       setLoading(true)
-      const [appState, dogState, layHist, predHist, ouHist, propHist] = await Promise.all([
-        loadState(), loadDogState(), loadLayHistory(), loadPredictions(), loadOuPick(), loadPropPick(),
+      const [appState, dogState, layHist, predHist, ouHist, propHist, allServerData] = await Promise.all([
+        loadState(), loadDogState(), loadLayHistory(), loadPredictions(), loadOuPick(), loadPropPick(), loadAllData(),
       ])
+      const allInHist = allServerData?.allIn || {}
 
       // Resolve any unresolved LOCK picks
       let lockChanged = false
@@ -455,7 +460,13 @@ export default function PastLayTab() {
       }
       if (predChanged) await savePredictions(predHist)
 
-      setAllData({ appState, dogState, layHist, predHist, ouHist, propHist })
+      setAllData({ appState, dogState, layHist, predHist, ouHist, propHist, allInHist })
+
+      // Also load today's lay for popup
+      const todayKey = getTodayKey()
+      const todayLay = layHist[todayKey] || null
+      setTodayLayData(todayLay)
+
       const allDays = new Set([
         ...Object.keys(appState.picks || {}),
         ...Object.keys(dogState.picks || {}),
@@ -464,17 +475,37 @@ export default function PastLayTab() {
         ...Object.keys(ouHist),
         ...Object.keys(propHist),
       ])
-      const past = [...allDays].filter(k => k < today).sort((a, b) => b.localeCompare(a))
+      // Always show the last 7 days in the selector even if no picks were made
+      const todayDateObj = new Date(todayKey + 'T12:00:00')
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(todayDateObj)
+        d.setDate(d.getDate() - i)
+        const yyyy = d.getFullYear()
+        const mm = String(d.getMonth() + 1).padStart(2, '0')
+        const dd = String(d.getDate()).padStart(2, '0')
+        allDays.add(`${yyyy}-${mm}-${dd}`)
+      }
+      const past = [...allDays].filter(k => k < todayKey).sort((a, b) => b.localeCompare(a))
       if (past.length > 0) setSelectedKey(past[0])
       setLoading(false)
-    }
-    load()
-  }, [])
+      setRefreshing(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  async function handleRefresh() {
+    setRefreshing(true)
+    setRefreshed(false)
+    if (onRefresh) onRefresh()
+    await load()
+    setRefreshed(true)
+    setTimeout(() => setRefreshed(false), 2000)
+  }
 
   // Fetch game scores whenever the selected day changes
   useEffect(() => {
     if (!selectedKey || !allData) return
-    const { appState, dogState, layHist, predHist, propHist } = allData
+    const { appState, dogState, layHist, predHist, propHist, allInHist } = allData
     const toFetch = [] // { sport, gameId }
 
     const collect = (pick) => {
@@ -504,7 +535,7 @@ export default function PastLayTab() {
   if (loading) return <p style={{ color: '#555', fontSize: '0.85rem' }}>Loading history...</p>
 
   const today = getTodayKey()
-  const { appState, dogState, layHist, predHist, ouHist, propHist } = allData
+  const { appState, dogState, layHist, predHist, ouHist, propHist, allInHist } = allData
 
   const allDays = new Set([
     ...Object.keys(appState.picks || {}),
@@ -514,12 +545,40 @@ export default function PastLayTab() {
     ...Object.keys(ouHist),
     ...Object.keys(propHist),
   ])
+  // Fill in the last 7 days so recent days with no picks still appear in the selector
+  // This ensures yesterday (and up to 6 days back) always shows up
+  const todayDate = new Date(today + 'T12:00:00')
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(todayDate)
+    d.setDate(d.getDate() - i)
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    allDays.add(`${yyyy}-${mm}-${dd}`)
+  }
   const pastDays = [...allDays].filter(k => k < today).sort((a, b) => b.localeCompare(a))
 
   if (pastDays.length === 0) {
     return (
       <div>
-        <h2 style={{ margin: '0 0 0.3rem', fontSize: '1rem', color: '#aaa' }}>📋 PAST LAYS</h2>
+        {showLayPopup && (
+          <LayOfDayPopup lay={todayLayData} lock={todayLock} onClose={() => setShowLayPopup(false)} />
+        )}
+        <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h2 style={{ margin: '0 0 0.3rem', fontSize: '1rem', color: '#aaa' }}>📋 PAST LAYS</h2>
+          </div>
+          <button onClick={handleRefresh} disabled={refreshing} style={{ fontSize: '0.62rem', padding: '0.28rem 0.65rem', background: 'transparent', border: '1px solid #252525', borderRadius: '5px', color: '#444', cursor: 'pointer' }}>
+            {refreshing ? '↺ …' : '↺ Refresh'}
+          </button>
+        </div>
+        <button onClick={() => setShowLayPopup(true)} style={{ width: '100%', background: '#111', border: '1px solid #00ff8822', borderRadius: '14px', padding: '0.9rem 1.25rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: '0.6rem', color: '#00ff8866', fontWeight: 'bold', letterSpacing: '0.1em', marginBottom: '0.2rem' }}>TODAY'S SLIP</div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#fff' }}>🎯 Lay of the Day</div>
+          </div>
+          <div style={{ background: 'linear-gradient(135deg, #0a2a1a 0%, #062010 100%)', border: '1px solid #00ff8844', borderRadius: '10px', padding: '0.5rem 1rem', fontSize: '0.72rem', fontWeight: 'bold', color: '#00ff88', display: 'flex', alignItems: 'center', gap: '0.3rem', boxShadow: '0 0 12px rgba(0,255,136,0.08)', letterSpacing: '0.03em' }}>View Slip <span style={{ fontSize: '0.85rem' }}>›</span></div>
+        </button>
         <div style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '1.5rem', textAlign: 'center', marginTop: '1rem' }}>
           <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🎯</div>
           <div style={{ color: '#555', fontSize: '0.85rem' }}>No past picks yet. History shows up here after your first day.</div>
@@ -542,17 +601,387 @@ export default function PastLayTab() {
   const pred = predHist[key] || null
   const lay  = layHist[key] || null
   const prop = propHist[key] || null
+  const allIn = allInHist?.[key] || null
 
   const propEntries = prop
     ? Object.entries(prop).filter(([, v]) => typeof v === 'object' && v !== null && v.player)
     : []
 
+  // ── DK-Style Bet Slip Modal ────────────────────────────────────────────────
+  function BetSlipModal({ dateKey, lay, lock, allIn, onClose }) {
+    const isToday = dateKey === getTodayKey()
+    const hasLay = lay?.legs?.length > 0
+    const hasLock = !!lock
+
+    // Combine all legs: lock first, then lay legs (excluding isLock duplicate)
+    const allLegs = []
+    if (hasLock) {
+      allLegs.push({
+        ...lock,
+        isLock: true, isDog: false,
+        label: lock.team,
+        marketLabel: lock.market === 'h2h' ? 'Moneyline' : `Spread ${lock.point > 0 ? '+' : ''}${lock.point}`,
+        accentColor: '#00ff88',
+        tag: '🔒 LOCK',
+      })
+    }
+    if (hasLay) {
+      let nonAutoIdx = 0
+      lay.legs.filter(l => !l.isLock).forEach((leg) => {
+        const isDog = leg.isDog
+        const isSuperDog = leg.isSuperDog
+        const isFav = leg.isFav
+        const isHate = leg.isHate
+        const isAuto = isDog || isSuperDog || isFav || isHate
+        if (!isAuto) nonAutoIdx++
+        allLegs.push({
+          ...leg,
+          label: leg.team || '—',
+          marketLabel: leg.market === 'spreads' && leg.point != null
+            ? `Spread ${leg.point > 0 ? '+' : ''}${leg.point}`
+            : 'Moneyline',
+          accentColor: isDog ? '#ff9944' : isSuperDog ? '#b44fff' : isFav ? '#4c9be8' : isHate ? '#ff4466' : '#8888ff',
+          tag: isDog ? '🐕 DOG' : isSuperDog ? '⚡ SUPER' : isFav ? '⭐ FAV' : isHate ? '😤 HATE' : `LEG ${nonAutoIdx}`,
+        })
+      })
+    }
+
+    // Overall result
+    const resolved = allLegs.filter(l => l.result !== null)
+    const wins = resolved.filter(l => l.result === 'W').length
+    const hasResult = hasLay && lay.overallResult
+    const slipResult = hasResult ? lay.overallResult : null
+    const pending = allLegs.some(l => l.result === null)
+    const slipColor = slipResult === 'W' ? '#00ff88' : slipResult === 'L' ? '#ff4444' : '#8888ff'
+    const slipGlow = slipResult === 'W' ? 'rgba(0,255,136,0.15)' : slipResult === 'L' ? 'rgba(255,68,68,0.12)' : 'rgba(136,136,255,0.08)'
+
+    // Parlay odds
+    const legsForOdds = allLegs.filter(l => l.odds != null)
+    const totalOdds = legsForOdds.length >= 2 ? calcTotalOdds(legsForOdds) : legsForOdds[0]?.odds ?? null
+    const fmtOdds = (o) => o == null ? '—' : o > 0 ? `+${o}` : `${o}`
+    const payoutMultiplier = totalOdds != null
+      ? totalOdds > 0 ? (1 + totalOdds / 100).toFixed(2) : (1 + 100 / Math.abs(totalOdds)).toFixed(2)
+      : null
+
+    const statusLabel = slipResult === 'W' ? '🎉 PARLAY WIN' : slipResult === 'L' ? '❌ PARLAY LOSS' : pending ? '⏳ IN PROGRESS' : '📋 SLIP'
+
+    return (
+      <div
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', overflowX: 'hidden',
+            background: '#0a0a0a',
+            borderRadius: '20px',
+            boxShadow: `0 0 80px ${slipGlow}, 0 24px 60px rgba(0,0,0,0.9)`,
+            border: `1px solid ${slipColor}33`,
+          }}
+        >
+
+          {/* Header */}
+          <div style={{
+            padding: '1rem 1.4rem 0.85rem',
+            borderBottom: `1px solid ${slipColor}22`,
+            background: `linear-gradient(180deg, #111 0%, #0d0d0d 100%)`,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ fontSize: '0.55rem', color: '#666', fontWeight: 'bold', letterSpacing: '0.14em', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
+                  {isToday ? "TODAY'S SLIP" : fmtDateLabel(dateKey)}
+                </div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.25rem' }}>
+                  🎯 Lay of the Day
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#555' }}>
+                  {allLegs.length}-Leg Parlay
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                <button onClick={onClose} style={{
+                  background: '#1e1e1e', border: '1px solid #2a2a2a', borderRadius: '50%',
+                  width: '32px', height: '32px', color: '#888', cursor: 'pointer',
+                  fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>✕</button>
+                {allLegs.length > 0 && (
+                  <div style={{
+                    background: `${slipColor}18`,
+                    border: `1px solid ${slipColor}44`,
+                    borderRadius: '8px', padding: '0.28rem 0.75rem',
+                    fontSize: '0.68rem', fontWeight: 'bold', color: slipColor,
+                    letterSpacing: '0.02em',
+                  }}>
+                    {statusLabel}
+                    {slipResult && ` · ${wins}/${resolved.length}`}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* No picks state */}
+          {allLegs.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📋</div>
+              <div style={{ color: '#555', fontSize: '0.88rem' }}>{isToday ? 'No picks set yet today.' : 'No picks on this day.'}</div>
+            </div>
+          )}
+
+          {/* Legs */}
+          {allLegs.length > 0 && (
+            <div style={{ padding: '0 1.25rem' }}>
+              {allLegs.map((leg, idx) => {
+                const legColor = leg.accentColor
+                const resultIcon = leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'
+                const isLast = idx === allLegs.length - 1
+                const legBg = leg.result === 'W' ? '#0a1a0f' : leg.result === 'L' ? '#1a0a0a' : 'transparent'
+                return (
+                  <div key={idx} style={{
+                    padding: '1rem 0',
+                    borderBottom: isLast ? 'none' : `1px solid #1e1e1e`,
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.85rem',
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Tag + sport row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                        <span style={{
+                          fontSize: '0.58rem', fontWeight: 'bold', letterSpacing: '0.07em',
+                          color: legColor, background: `${legColor}18`,
+                          border: `1px solid ${legColor}40`, padding: '0.12rem 0.5rem', borderRadius: '4px',
+                        }}>{leg.tag}</span>
+                        <span style={{ fontSize: '0.58rem', color: '#444', letterSpacing: '0.05em' }}>{leg.sport}</span>
+                      </div>
+                      {/* Team name */}
+                      <div style={{
+                        fontWeight: 'bold', fontSize: '1rem',
+                        color: leg.result === 'W' ? '#fff' : leg.result === 'L' ? '#777' : '#eee',
+                        marginBottom: '0.18rem', lineHeight: 1.2,
+                      }}>
+                        {leg.label}
+                      </div>
+                      {/* Market label */}
+                      <div style={{ fontSize: '0.7rem', color: '#555', marginBottom: '0.12rem' }}>{leg.marketLabel}</div>
+                      {/* Matchup */}
+                      {leg.away && leg.home && (
+                        <div style={{ fontSize: '0.65rem', color: '#3a3a3a' }}>{leg.away} vs {leg.home}</div>
+                      )}
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0, paddingTop: '0.2rem' }}>
+                      {leg.odds != null && (
+                        <div style={{
+                          fontSize: '0.95rem', fontWeight: 'bold',
+                          color: leg.odds > 0 ? '#ff9944' : '#00ff88',
+                          marginBottom: '0.3rem',
+                        }}>
+                          {fmtOdds(leg.odds)}
+                        </div>
+                      )}
+                      <div style={{ fontSize: '1.25rem' }}>{resultIcon}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Perforation line */}
+          {totalOdds != null && allLegs.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+              <div style={{ width: '12px', height: '24px', borderRadius: '0 12px 12px 0', background: '#000', flexShrink: 0 }} />
+              <div style={{ flex: 1, borderTop: '2px dashed #2a2a2a' }} />
+              <div style={{ width: '12px', height: '24px', borderRadius: '12px 0 0 12px', background: '#000', flexShrink: 0 }} />
+            </div>
+          )}
+
+          {/* Odds + payout footer */}
+          {totalOdds != null && allLegs.length >= 1 && (
+            <div style={{ padding: '1rem 1.4rem 0.5rem', background: '#080808' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '0.55rem', color: '#444', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.22rem' }}>PARLAY ODDS</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 'bold', color: totalOdds > 0 ? '#ff9944' : '#4c9be8', lineHeight: 1 }}>
+                    {fmtOdds(totalOdds)}
+                  </div>
+                </div>
+                {payoutMultiplier && (
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.55rem', color: '#444', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.22rem' }}>🪙1 WINS</div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#ccc', lineHeight: 1 }}>
+                      {payoutMultiplier}x
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Result banner */}
+          {slipResult && (
+            <div style={{
+              margin: '0.75rem 1.25rem',
+              background: slipResult === 'W'
+                ? 'linear-gradient(135deg, #0a2a1a 0%, #061a0f 100%)'
+                : 'linear-gradient(135deg, #2a0a0a 0%, #1a0606 100%)',
+              border: `1px solid ${slipColor}55`,
+              borderRadius: '12px', padding: '1rem 1.1rem',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <div>
+                <div style={{ fontSize: '0.58rem', color: slipColor, fontWeight: 'bold', letterSpacing: '0.1em', marginBottom: '0.25rem', opacity: 0.8 }}>FINAL RESULT</div>
+                <div style={{ fontSize: '0.9rem', color: slipColor, fontWeight: 'bold' }}>
+                  {wins}/{resolved.length} legs hit · {slipResult === 'W' ? 'Parlay WIN 🎉' : 'Parlay LOSS'}
+                </div>
+              </div>
+              <div style={{ fontSize: '1.75rem' }}>{slipResult === 'W' ? '✅' : '❌'}</div>
+            </div>
+          )}
+
+          {/* Locked stamp */}
+          {!slipResult && allLegs.length > 0 && (
+            <div style={{ textAlign: 'center', padding: '0.5rem 0 0.25rem', fontSize: '0.58rem', color: '#2a2a2a', letterSpacing: '0.1em' }}>
+              ●●● LOCKED IN ●●●
+            </div>
+          )}
+
+          {/* 🚀 All In Slip */}
+          {allIn?.legs?.length > 0 && (
+            <div style={{ borderTop: '1px solid #1e1e1e', marginTop: '0.5rem' }}>
+              <div style={{ padding: '0.75rem 1.4rem 0.25rem', fontSize: '0.55rem', color: '#888', fontWeight: 'bold', letterSpacing: '0.14em' }}>
+                🚀 ALL IN SLIP · {allIn.legs.length} LEG{allIn.legs.length !== 1 ? 'S' : ''}
+              </div>
+              {allIn.legs.map((leg, idx) => {
+                const isLast = idx === allIn.legs.length - 1
+                const resultIcon = leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'
+                return (
+                  <div key={idx} style={{
+                    padding: '0.75rem 1.25rem',
+                    borderBottom: isLast ? 'none' : '1px solid #1a1a1a',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem',
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.58rem', color: '#b44fff', fontWeight: 'bold', letterSpacing: '0.07em', marginBottom: '0.25rem' }}>
+                        🚀 ALL IN
+                      </div>
+                      <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#eee', marginBottom: '0.15rem', lineHeight: 1.2 }}>
+                        {leg.team || '—'}
+                      </div>
+                      {leg.away && leg.home && (
+                        <div style={{ fontSize: '0.62rem', color: '#3a3a3a' }}>{leg.away} vs {leg.home}</div>
+                      )}
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      {leg.odds != null && (
+                        <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: leg.odds > 0 ? '#ff9944' : '#00ff88', marginBottom: '0.25rem' }}>
+                          {fmtOdds(leg.odds)}
+                        </div>
+                      )}
+                      <div style={{ fontSize: '1.1rem' }}>{resultIcon}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          <div style={{ height: '1.75rem' }} />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
-      <div style={{ marginBottom: '1.25rem' }}>
-        <h2 style={{ margin: '0 0 0.3rem', fontSize: '1rem', color: '#aaa' }}>📋 PAST LAYS</h2>
-        <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>Every pick, every day — see what hit and what didn't.</p>
+      {/* Bet Slip Modal — today or selected past day */}
+      {showLayPopup && (
+        <BetSlipModal
+          dateKey={getTodayKey()}
+          lay={todayLayData}
+          lock={todayLock}
+          allIn={allInHist?.[getTodayKey()] || null}
+          onClose={() => setShowLayPopup(false)}
+        />
+      )}
+      {showPastSlip && (
+        <BetSlipModal
+          dateKey={showPastSlip.dateKey}
+          lay={showPastSlip.lay}
+          lock={showPastSlip.lock}
+          allIn={allInHist?.[showPastSlip.dateKey] || null}
+          onClose={() => setShowPastSlip(null)}
+        />
+      )}
+
+      <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h2 style={{ margin: '0 0 0.3rem', fontSize: '1rem', color: '#aaa' }}>📋 PAST LAYS</h2>
+          <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>Every pick, every day — see what hit and what didn't.</p>
+        </div>
+        {/* Refresh button */}
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          style={{
+            fontSize: '0.62rem', padding: '0.28rem 0.65rem',
+            background: refreshed ? '#0a2a1a' : 'transparent',
+            border: `1px solid ${refreshed ? '#00ff8844' : '#252525'}`,
+            borderRadius: '5px',
+            color: refreshing ? '#333' : refreshed ? '#00ff88' : '#444',
+            cursor: refreshing ? 'not-allowed' : 'pointer',
+            transition: 'all 0.3s ease',
+            flexShrink: 0,
+          }}
+        >
+          {refreshing ? '↺ …' : refreshed ? '✓ Updated' : '↺ Refresh'}
+        </button>
       </div>
+
+      {/* Lay of the Day CTA button */}
+      <button
+        onClick={() => setShowLayPopup(true)}
+        style={{
+          width: '100%',
+          background: 'linear-gradient(135deg, #111 0%, #0d1a0d 100%)',
+          border: '1px solid #00ff8822',
+          borderRadius: '14px',
+          padding: '0.9rem 1.25rem',
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1.25rem',
+          transition: 'border-color 0.2s ease',
+        }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = '#00ff8844'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = '#00ff8822'}
+      >
+        <div style={{ textAlign: 'left' }}>
+          <div style={{ fontSize: '0.6rem', color: '#00ff8866', fontWeight: 'bold', letterSpacing: '0.1em', marginBottom: '0.2rem' }}>TODAY'S SLIP</div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#fff' }}>🎯 Lay of the Day</div>
+          <div style={{ fontSize: '0.7rem', color: '#333', marginTop: '0.15rem' }}>
+            {todayLock ? `🔒 ${todayLock.team?.split(' ').pop()} locked` : 'No lock set yet'}
+            {todayLayData?.legs?.length > 0 ? ` · ${todayLayData.legs.filter(l => !l.isLock).length} lay leg${todayLayData.legs.filter(l => !l.isLock).length !== 1 ? 's' : ''}` : ''}
+          </div>
+        </div>
+        <div style={{
+          background: 'linear-gradient(135deg, #0a2a1a 0%, #062010 100%)',
+          border: '1px solid #00ff8844',
+          borderRadius: '10px',
+          padding: '0.5rem 1rem',
+          fontSize: '0.72rem',
+          fontWeight: 'bold',
+          color: '#00ff88',
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.3rem',
+          boxShadow: '0 0 12px rgba(0,255,136,0.08)',
+          letterSpacing: '0.03em',
+        }}>
+          View Slip <span style={{ fontSize: '0.85rem' }}>›</span>
+        </div>
+      </button>
 
       {/* Record pills */}
       <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
@@ -576,27 +1005,109 @@ export default function PastLayTab() {
         )}
       </div>
 
-      {/* Day selector */}
-      <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '0.5rem', marginBottom: '1.25rem' }}>
-        {pastDays.map(dk => {
-          const result = layHist[dk]?.overallResult || appState.picks?.[dk]?.result || null
-          const isSelected = dk === key
-          return (
-            <button key={dk} onClick={() => setSelectedKey(dk)} style={{
-              flexShrink: 0, padding: '0.4rem 0.8rem', borderRadius: '8px',
-              cursor: 'pointer', fontWeight: 'bold', fontSize: '0.75rem',
-              background: isSelected ? (result === 'W' ? '#0a2a1a' : result === 'L' ? '#2a0a0a' : '#222') : '#111',
-              border: `1px solid ${isSelected ? (result === 'W' ? '#00ff8866' : result === 'L' ? '#ff444466' : '#444') : '#222'}`,
-              color: isSelected ? (result === 'W' ? W_COLOR : result === 'L' ? L_COLOR : '#fff') : (result === 'W' ? '#00ff8855' : result === 'L' ? '#ff444455' : '#333'),
-            }}>
-              {fmtDateLabel(dk)}{result === 'W' ? ' ✅' : result === 'L' ? ' ❌' : ''}
-            </button>
-          )
-        })}
+      {/* Day selector — clean grid instead of horizontal scroll */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <div style={{ fontSize: '0.6rem', color: '#333', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.6rem' }}>SELECT DAY</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem' }}>
+          {/* TODAY button */}
+          {(() => {
+            const dk = today
+            const isSelected = dk === key
+            const todayHasLock = !!(appState.picks?.[dk])
+            const todayHasLay = !!(layHist[dk]?.legs?.length > 0)
+            const todayHasDog = !!(dogState.picks?.[dk])
+            const todayHasPred = !!(predHist[dk])
+            const hasAnyPick = todayHasLock || todayHasLay || todayHasDog || todayHasPred
+            return (
+              <button key={dk} onClick={() => setSelectedKey(dk)} style={{
+                padding: '0.45rem 0.3rem', borderRadius: '8px',
+                cursor: 'pointer', fontWeight: isSelected ? 'bold' : 'normal',
+                fontSize: '0.72rem', textAlign: 'center',
+                background: isSelected ? '#1a1a0a' : '#111',
+                border: `1px solid ${isSelected ? '#aaaa4466' : (hasAnyPick ? '#2a2a14' : '#1a1a14')}`,
+                color: isSelected ? '#cccc44' : (hasAnyPick ? '#666633' : '#333322'),
+                transition: 'all 0.12s',
+              }}>
+                <div style={{ fontSize: '0.48rem', color: isSelected ? '#aaaa44' : '#555533', marginBottom: '0.1rem', fontWeight: 'bold', letterSpacing: '0.06em' }}>TODAY</div>
+                <div style={{ fontSize: '0.65rem' }}>{fmtDateLabel(dk).split(' ')[1]}</div>
+                <div style={{ fontSize: '0.48rem', color: isSelected ? '#cccc44' : '#555533', marginTop: '0.1rem' }}>
+                  {[todayHasLock && '🔒', todayHasLay && '🎯', todayHasDog && '🐕', todayHasPred && '🔮'].filter(Boolean).join(' ') || '—'}
+                </div>
+              </button>
+            )
+          })()}
+          {pastDays.slice(0, 11).map(dk => {
+            const result = layHist[dk]?.overallResult || appState.picks?.[dk]?.result || null
+            const isSelected = dk === key
+            const hasAnyPick = !!(appState.picks?.[dk] || dogState.picks?.[dk] || layHist[dk] || predHist[dk])
+            return (
+              <button key={dk} onClick={() => setSelectedKey(dk)} style={{
+                padding: '0.45rem 0.3rem', borderRadius: '8px',
+                cursor: 'pointer', fontWeight: isSelected ? 'bold' : 'normal',
+                fontSize: '0.72rem', textAlign: 'center',
+                background: isSelected
+                  ? (result === 'W' ? '#0a2a1a' : result === 'L' ? '#2a0a0a' : '#1a1a2a')
+                  : '#111',
+                border: `1px solid ${isSelected
+                  ? (result === 'W' ? '#00ff8866' : result === 'L' ? '#ff444466' : '#4444aa66')
+                  : (hasAnyPick ? '#1e1e1e' : '#161616')}`,
+                color: isSelected
+                  ? (result === 'W' ? W_COLOR : result === 'L' ? L_COLOR : '#8888ff')
+                  : (hasAnyPick ? '#444' : '#2a2a2a'),
+                transition: 'all 0.12s',
+              }}>
+                <div style={{ fontSize: '0.58rem', color: isSelected ? 'inherit' : '#2a2a2a', marginBottom: '0.15rem', opacity: 0.7 }}>
+                  {fmtDateLabel(dk).split(' ')[0]}
+                </div>
+                <div>{fmtDateLabel(dk).split(' ')[1]}</div>
+                {result && <div style={{ fontSize: '0.65rem', marginTop: '0.1rem' }}>{result === 'W' ? '✅' : '❌'}</div>}
+                {!result && hasAnyPick && <div style={{ fontSize: '0.55rem', color: '#2a2a2a', marginTop: '0.1rem' }}>·</div>}
+              </button>
+            )
+          })}
+        </div>
+        {pastDays.length > 11 && (
+          <div style={{ fontSize: '0.65rem', color: '#2a2a2a', textAlign: 'center', marginTop: '0.5rem' }}>
+            Showing today + 11 most recent days
+          </div>
+        )}
       </div>
 
-      <div style={{ fontSize: '0.88rem', fontWeight: 'bold', color: '#555', marginBottom: '0.85rem' }}>
-        {fmtDateLabel(key)}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '0.75rem',
+        marginBottom: '1rem', padding: '0.6rem 1rem',
+        background: key === today ? '#0d0d08' : '#0d0d0d',
+        border: `1px solid ${key === today ? '#2a2a14' : '#1a1a1a'}`,
+        borderRadius: '10px',
+      }}>
+        <div style={{ fontSize: '1.25rem' }}>📅</div>
+        <div>
+          <div style={{ fontSize: '0.58rem', color: key === today ? '#aaaa44' : '#333', letterSpacing: '0.1em', fontWeight: 'bold' }}>
+            {key === today ? 'TODAY · IN PROGRESS' : 'VIEWING'}
+          </div>
+          <div style={{ fontSize: '0.88rem', fontWeight: 'bold', color: key === today ? '#cccc66' : '#888' }}>{fmtDateLabel(key)}</div>
+        </div>
+        {(() => {
+          const r = layHist[key]?.overallResult || appState.picks?.[key]?.result || null
+          const hasSlipData = !!(layHist[key]?.legs?.length || appState.picks?.[key])
+          return (
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {hasSlipData && (
+                <button
+                  onClick={() => setShowPastSlip({ dateKey: key, lay: layHist[key] || null, lock: appState.picks?.[key] || null })}
+                  style={{ fontSize: '0.65rem', padding: '0.28rem 0.65rem', background: '#0d0d1a', border: '1px solid #8888ff44', borderRadius: '6px', color: '#8888ff', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                >
+                  🎯 Slip
+                </button>
+              )}
+              {r && (
+                <div style={{ fontSize: '0.75rem', fontWeight: 'bold', padding: '0.25rem 0.65rem', borderRadius: '6px', background: r === 'W' ? '#0a2a1a' : '#2a0a0a', border: `1px solid ${r === 'W' ? '#00ff8844' : '#ff444444'}`, color: r === 'W' ? W_COLOR : L_COLOR }}>
+                  {r === 'W' ? '✅ W' : '❌ L'}
+                </div>
+              )}
+            </div>
+          )
+        })()}
       </div>
 
       {/* 1. Lock */}
@@ -690,7 +1201,7 @@ export default function PastLayTab() {
           <Section emoji="🔮" title="Predictions" accent="#8888ff"
             badge={pred.overallResult ? resultBadge(pred.overallResult, pred.hitCount, pred.totalCount) : null}>
             {renderedLegs.reduce((acc, leg, i) => {
-              if (!leg.isLock && !leg.isDog) acc.n++
+              if (!leg.isLock && !leg.isDog && !leg.isSuperDog && !leg.isFav && !leg.isHate) acc.n++
               const n = acc.n
               const gs = gameScores[leg.gameId]
               let scoreInfo = null
@@ -702,10 +1213,12 @@ export default function PastLayTab() {
                   scoreInfo = `Final: ${away?.[0]?.split(' ').pop()} ${away?.[1]} – ${home?.[0]?.split(' ').pop()} ${home?.[1]}`
                 }
               }
+              const legLabel = leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`
+              const legColor = leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : leg.isSuperDog ? '#b44fff' : leg.isFav ? '#4c9be8' : leg.isHate ? '#ff4466' : '#8888ff'
               acc.els.push(
                 <LegRow key={leg.gameId || i}
-                  label={leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${n}`}
-                  labelColor={leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff'}
+                  label={legLabel}
+                  labelColor={legColor}
                   team={leg.team} sub={`${leg.away} vs ${leg.home} · ${leg.sport}`}
                   result={leg.result} odds={leg.odds ?? null} scoreInfo={scoreInfo} />
               )
@@ -716,14 +1229,37 @@ export default function PastLayTab() {
         )
       })()}
 
-      {/* 5. Lay of the Day */}
+      {/* 5. All In */}
+      {allIn?.legs?.length > 0 && (() => {
+        const allInW = allIn.legs.filter(l => l.result === 'W').length
+        const allInResolved = allIn.legs.filter(l => l.result !== null).length
+        const allInOverall = allInResolved === allIn.legs.length && allIn.legs.length > 0
+          ? (allInW === allIn.legs.length ? 'W' : 'L') : null
+        return (
+          <Section emoji="🚀" title="All In" accent="#b44fff"
+            badge={allInOverall ? resultBadge(allInOverall, allInW, allIn.legs.length) : null}>
+            {allIn.legs.map((leg, i) => (
+              <LegRow key={i}
+                label={`${leg.sport || ''} · MONEYLINE`}
+                labelColor="#b44fff"
+                team={leg.team || '—'}
+                sub={leg.away && leg.home ? `${leg.away} vs ${leg.home}` : ''}
+                result={leg.result ?? null}
+                odds={leg.odds}
+              />
+            ))}
+          </Section>
+        )
+      })()}
+
+      {/* 6. Lay of the Day */}
       {lay?.legs?.length > 0 && (() => {
         const layLegs = lay.legs
         return (
           <Section emoji="🎯" title="Lay of the Day" accent="#8888ff"
             badge={lay.overallResult ? resultBadge(lay.overallResult, lay.hitCount, lay.totalCount) : null}>
             {layLegs.reduce((acc, leg, i) => {
-              if (!leg.isLock && !leg.isDog) acc.n++
+              if (!leg.isLock && !leg.isDog && !leg.isSuperDog && !leg.isFav && !leg.isHate) acc.n++
               const n = acc.n
               const gs = gameScores[leg.gameId]
               let scoreInfo = null
@@ -735,10 +1271,12 @@ export default function PastLayTab() {
                   scoreInfo = `Final: ${away?.[0]?.split(' ').pop()} ${away?.[1]} – ${home?.[0]?.split(' ').pop()} ${home?.[1]}`
                 }
               }
+              const legLabel = leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`
+              const legColor = leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : leg.isSuperDog ? '#b44fff' : leg.isFav ? '#4c9be8' : leg.isHate ? '#ff4466' : '#8888ff'
               acc.els.push(
                 <LegRow key={leg.gameId || i}
-                  label={leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${n}`}
-                  labelColor={leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff'}
+                  label={legLabel}
+                  labelColor={legColor}
                   team={leg.team || '—'} sub={`${leg.away} vs ${leg.home} · ${leg.sport}`}
                   result={leg.result} odds={leg.odds ?? null} scoreInfo={scoreInfo} />
               )
@@ -750,8 +1288,15 @@ export default function PastLayTab() {
       })()}
 
       {/* 6. Prop */}
-      {propEntries.length > 0 && (
-        <Section emoji="🎲" title="Prop Pick" accent="#ffdd44">
+      {propEntries.length > 0 && (() => {
+        const resolvedProps = propEntries.filter(([, p]) => p.result !== null)
+        const propW = resolvedProps.filter(([, p]) => p.result === 'W').length
+        const propL = resolvedProps.filter(([, p]) => p.result === 'L').length
+        const propTotal = resolvedProps.length
+        const propOverall = propTotal > 0 ? (propW / propTotal >= 0.5 ? 'W' : 'L') : null
+        return (
+        <Section emoji="🎲" title="Prop Pick" accent="#ffdd44"
+          badge={propOverall ? resultBadge(propOverall, propW, propTotal) : null}>
           {propEntries.map(([teamKey, pick], i) => {
             const gs = gameScores[pick.gameId]
             let scoreInfo = null
@@ -778,9 +1323,10 @@ export default function PastLayTab() {
             )
           })}
         </Section>
-      )}
+        )
+      })()}
 
-      {!lock && !dog && !ou && !pred && !lay && propEntries.length === 0 && (
+      {!lock && !dog && !ou && !pred && !lay && propEntries.length === 0 && !allIn && (
         <div style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '1.25rem', color: '#444', fontSize: '0.85rem', textAlign: 'center' }}>
           No picks recorded for {fmtDateLabel(key)}.
         </div>

@@ -1,33 +1,33 @@
 {
-  "fetchedAt": "2026-03-29T17:19:02.014213Z",
+  "fetchedAt": "2026-04-01T21:00:25.680691Z",
   "source": "DraftKings (sportsbook-nash internal API)",
   "sports": {
     "MLB": {
       "games": [
         {
-          "id": "dk_33891176",
+          "id": "dk_33910458",
           "sport_key": "mlb",
           "sport_title": "MLB",
-          "commence_time": "2026-03-29T17:35:00.0000000Z",
-          "home_team": "PHI Phillies",
-          "away_team": "TEX Rangers",
-          "status": "NOT_STARTED",
+          "commence_time": "2026-04-01T18:15:22.0000000Z",
+          "home_team": "STL Cardinals",
+          "away_team": "NY Mets",
+          "status": "STARTED",
           "bookmakers": [
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.426977Z",
+              "last_update": "2026-04-01T21:00:26.256649Z",
               "markets": [
                 {
                   "key": "h2h",
                   "outcomes": [
                     {
-                      "name": "TEX Rangers",
-                      "price": 135
+                      "name": "NY Mets",
+                      "price": 145
                     },
                     {
-                      "name": "PHI Phillies",
-                      "price": -163
+                      "name": "STL Cardinals",
+                      "price": -191
                     }
                   ]
                 },
@@ -35,13 +35,302 @@
                   "key": "spreads",
                   "outcomes": [
                     {
-                      "name": "TEX Rangers",
-                      "price": -163,
+                      "name": "NY Mets",
+                      "price": 367,
+                      "point": -1.5
+                    },
+                    {
+                      "name": "STL Cardinals",
+                      "price": -546,
+                      "point": 1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": 117,
+                      "point": 3.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -153,
+                      "point": 3.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33910458",
+            "homePitcher": "Matthew Liberatore",
+            "awayPitcher": "Freddy Peralta",
+            "homeColor": "#c41e3a",
+            "awayColor": "#002d72",
+            "liveState": {
+              "period": "10th"
+            },
+            "score": {
+              "mainScore": {
+                "homeScore": "1",
+                "awayScore": "1",
+                "name": "R"
+              },
+              "gamePartScores": [
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "1"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "2"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "3"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "4"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "5"
+                },
+                {
+                  "homeScore": "1",
+                  "awayScore": "1",
+                  "name": "6"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "7"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "8"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "9"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "10"
+                }
+              ],
+              "statScores": [
+                {
+                  "homeScore": "4",
+                  "awayScore": "5",
+                  "name": "H"
+                }
+              ],
+              "metadata": {
+                "atBat": "away",
+                "awayCurrentBatter": "109677",
+                "awayNextBatter": "108723",
+                "awayNextPlusOneBatter": "106248",
+                "balls": "0",
+                "bases": "110",
+                "homeCurrentBatter": "161035",
+                "homeNextBatter": "178757",
+                "homeNextPlusOneBatter": "178901",
+                "outs": "2",
+                "strikes": "0"
+              }
+            }
+          }
+        },
+        {
+          "id": "dk_33910462",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-04-01T18:20:32.0000000Z",
+          "home_team": "CHI Cubs",
+          "away_team": "LA Angels",
+          "status": "STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-04-01T21:00:26.256671Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "LA Angels",
+                      "price": 6100
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "LA Angels",
+                      "price": 420,
+                      "point": 3.5
+                    },
+                    {
+                      "name": "CHI Cubs",
+                      "price": -680,
+                      "point": -3.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": 420,
+                      "point": 8.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -680,
+                      "point": 8.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33910462",
+            "homePitcher": "Matthew Boyd",
+            "awayPitcher": "Yusei Kikuchi",
+            "homeColor": "#0e3386",
+            "awayColor": "#003263",
+            "liveState": {
+              "period": "9th"
+            },
+            "score": {
+              "mainScore": {
+                "homeScore": "6",
+                "awayScore": "2",
+                "name": "R"
+              },
+              "gamePartScores": [
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "1"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "2"
+                },
+                {
+                  "homeScore": "5",
+                  "awayScore": "0",
+                  "name": "3"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "4"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "5"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "2",
+                  "name": "6"
+                },
+                {
+                  "homeScore": "1",
+                  "awayScore": "0",
+                  "name": "7"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "8"
+                },
+                {
+                  "name": "9"
+                }
+              ],
+              "statScores": [
+                {
+                  "homeScore": "10",
+                  "awayScore": "3",
+                  "name": "H"
+                }
+              ],
+              "metadata": {
+                "atBat": "away",
+                "awayCurrentBatter": "109021",
+                "awayNextBatter": "106147",
+                "awayNextPlusOneBatter": "108858",
+                "balls": "0",
+                "bases": "000",
+                "homeCurrentBatter": "108955",
+                "homeNextBatter": "105978",
+                "homeNextPlusOneBatter": "109108",
+                "outs": "0",
+                "strikes": "0"
+              }
+            }
+          }
+        },
+        {
+          "id": "dk_33910464",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-04-01T19:41:05.0000000Z",
+          "home_team": "ARI Diamondbacks",
+          "away_team": "DET Tigers",
+          "status": "STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-04-01T21:00:26.256687Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "DET Tigers",
+                      "price": 170
+                    },
+                    {
+                      "name": "ARI Diamondbacks",
+                      "price": -227
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "DET Tigers",
+                      "price": -246,
                       "point": 1.5
                     },
                     {
-                      "name": "PHI Phillies",
-                      "price": 135,
+                      "name": "ARI Diamondbacks",
+                      "price": 183,
                       "point": -1.5
                     }
                   ]
@@ -51,13 +340,13 @@
                   "outcomes": [
                     {
                       "name": "Over",
-                      "price": -112,
-                      "point": 8
+                      "price": -104,
+                      "point": 4.5
                     },
                     {
                       "name": "Under",
-                      "price": -108,
-                      "point": 8
+                      "price": -125,
+                      "point": 4.5
                     }
                   ]
                 }
@@ -65,39 +354,376 @@
             }
           ],
           "_dk": {
-            "eventId": "33891176",
-            "homePitcher": "Jesus Luzardo",
-            "awayPitcher": "MacKenzie Gore",
-            "homeColor": "#e81828",
-            "awayColor": "#003278",
-            "liveState": null,
-            "score": null
+            "eventId": "33910464",
+            "homePitcher": "Zac Gallen",
+            "awayPitcher": "Tarik Skubal",
+            "homeColor": "#a71930",
+            "awayColor": "#0c2340",
+            "liveState": {
+              "period": "6th"
+            },
+            "score": {
+              "mainScore": {
+                "homeScore": "1",
+                "awayScore": "0",
+                "name": "R"
+              },
+              "gamePartScores": [
+                {
+                  "homeScore": "1",
+                  "awayScore": "0",
+                  "name": "1"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "2"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "3"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "4"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "5"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "6"
+                },
+                {
+                  "name": "7"
+                },
+                {
+                  "name": "8"
+                },
+                {
+                  "name": "9"
+                }
+              ],
+              "statScores": [
+                {
+                  "homeScore": "5",
+                  "awayScore": "3",
+                  "name": "H"
+                }
+              ],
+              "metadata": {
+                "atBat": "away",
+                "awayCurrentBatter": "178743",
+                "awayNextBatter": "229172",
+                "awayNextPlusOneBatter": "109384",
+                "balls": "0",
+                "bases": "000",
+                "homeCurrentBatter": "108914",
+                "homeNextBatter": "105852",
+                "homeNextPlusOneBatter": "108855",
+                "outs": "0",
+                "strikes": "0"
+              }
+            }
           }
         },
         {
-          "id": "dk_33891168",
+          "id": "dk_33910465",
           "sport_key": "mlb",
           "sport_title": "MLB",
-          "commence_time": "2026-03-29T17:35:00.0000000Z",
-          "home_team": "BAL Orioles",
+          "commence_time": "2026-04-01T20:10:31.0000000Z",
+          "home_team": "SD Padres",
+          "away_team": "SF Giants",
+          "status": "STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-04-01T21:00:26.256702Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "SF Giants",
+                      "price": 247
+                    },
+                    {
+                      "name": "SD Padres",
+                      "price": -347
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "SF Giants",
+                      "price": 105,
+                      "point": 1.5
+                    },
+                    {
+                      "name": "SD Padres",
+                      "price": -137,
+                      "point": -1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -130,
+                      "point": 6.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": 100,
+                      "point": 6.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33910465",
+            "homePitcher": "Nick Pivetta",
+            "awayPitcher": "Adrian Houser",
+            "homeColor": "#2f241d",
+            "awayColor": "#fd5a1e",
+            "liveState": {
+              "period": "3rd"
+            },
+            "score": {
+              "mainScore": {
+                "homeScore": "1",
+                "awayScore": "0",
+                "name": "R"
+              },
+              "gamePartScores": [
+                {
+                  "homeScore": "1",
+                  "awayScore": "0",
+                  "name": "1"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "2"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "3"
+                },
+                {
+                  "name": "4"
+                },
+                {
+                  "name": "5"
+                },
+                {
+                  "name": "6"
+                },
+                {
+                  "name": "7"
+                },
+                {
+                  "name": "8"
+                },
+                {
+                  "name": "9"
+                }
+              ],
+              "statScores": [
+                {
+                  "homeScore": "3",
+                  "awayScore": "1",
+                  "name": "H"
+                }
+              ],
+              "metadata": {
+                "atBat": "home",
+                "awayCurrentBatter": "107822",
+                "awayNextBatter": "108408",
+                "awayNextPlusOneBatter": "109273",
+                "balls": "0",
+                "bases": "010",
+                "homeCurrentBatter": "107723",
+                "homeNextBatter": "178727",
+                "homeNextPlusOneBatter": "109345",
+                "outs": "1",
+                "strikes": "0"
+              }
+            }
+          }
+        },
+        {
+          "id": "dk_33910466",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-04-01T20:11:28.0000000Z",
+          "home_team": "SEA Mariners",
+          "away_team": "NY Yankees",
+          "status": "STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-04-01T21:00:26.256714Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "NY Yankees",
+                      "price": -178
+                    },
+                    {
+                      "name": "SEA Mariners",
+                      "price": 136
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "NY Yankees",
+                      "price": 135,
+                      "point": -1.5
+                    },
+                    {
+                      "name": "SEA Mariners",
+                      "price": -178,
+                      "point": 1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -145,
+                      "point": 4.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": 112,
+                      "point": 4.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33910466",
+            "homePitcher": "George Kirby",
+            "awayPitcher": "Cam Schlittler",
+            "homeColor": "#0c2c56",
+            "awayColor": "#003087",
+            "liveState": {
+              "period": "4th"
+            },
+            "score": {
+              "mainScore": {
+                "homeScore": "0",
+                "awayScore": "1",
+                "name": "R"
+              },
+              "gamePartScores": [
+                {
+                  "homeScore": "0",
+                  "awayScore": "1",
+                  "name": "1"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "2"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "3"
+                },
+                {
+                  "homeScore": "0",
+                  "awayScore": "0",
+                  "name": "4"
+                },
+                {
+                  "name": "5"
+                },
+                {
+                  "name": "6"
+                },
+                {
+                  "name": "7"
+                },
+                {
+                  "name": "8"
+                },
+                {
+                  "name": "9"
+                }
+              ],
+              "statScores": [
+                {
+                  "homeScore": "2",
+                  "awayScore": "2",
+                  "name": "H"
+                }
+              ],
+              "metadata": {
+                "atBat": "home",
+                "awayCurrentBatter": "109187",
+                "awayNextBatter": "108850",
+                "awayNextPlusOneBatter": "108328",
+                "balls": "0",
+                "bases": "000",
+                "homeCurrentBatter": "106790",
+                "homeNextBatter": "151675",
+                "homeNextPlusOneBatter": "109408",
+                "outs": "0",
+                "strikes": "0"
+              }
+            }
+          }
+        },
+        {
+          "id": "dk_33910467",
+          "sport_key": "mlb",
+          "sport_title": "MLB",
+          "commence_time": "2026-04-01T23:40:00.0000000Z",
+          "home_team": "KC Royals",
           "away_team": "MIN Twins",
           "status": "NOT_STARTED",
           "bookmakers": [
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.427025Z",
+              "last_update": "2026-04-01T21:00:26.256727Z",
               "markets": [
                 {
                   "key": "h2h",
                   "outcomes": [
                     {
                       "name": "MIN Twins",
-                      "price": 135
+                      "price": -113
                     },
                     {
-                      "name": "BAL Orioles",
-                      "price": -163
+                      "name": "KC Royals",
+                      "price": -107
                     }
                   ]
                 },
@@ -106,433 +732,13 @@
                   "outcomes": [
                     {
                       "name": "MIN Twins",
-                      "price": -156,
-                      "point": 1.5
-                    },
-                    {
-                      "name": "BAL Orioles",
-                      "price": 129,
+                      "price": 146,
                       "point": -1.5
-                    }
-                  ]
-                },
-                {
-                  "key": "totals",
-                  "outcomes": [
-                    {
-                      "name": "Over",
-                      "price": 100,
-                      "point": 9
                     },
-                    {
-                      "name": "Under",
-                      "price": -120,
-                      "point": 9
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "_dk": {
-            "eventId": "33891168",
-            "homePitcher": "Shane Baz",
-            "awayPitcher": "Bailey Ober",
-            "homeColor": "#df4601",
-            "awayColor": "#002b5c",
-            "liveState": null,
-            "score": null
-          }
-        },
-        {
-          "id": "dk_33891166",
-          "sport_key": "mlb",
-          "sport_title": "MLB",
-          "commence_time": "2026-03-29T17:35:00.0000000Z",
-          "home_team": "ATL Braves",
-          "away_team": "KC Royals",
-          "status": "NOT_STARTED",
-          "bookmakers": [
-            {
-              "key": "draftkings",
-              "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.427051Z",
-              "markets": [
-                {
-                  "key": "h2h",
-                  "outcomes": [
                     {
                       "name": "KC Royals",
-                      "price": 126
-                    },
-                    {
-                      "name": "ATL Braves",
-                      "price": -153
-                    }
-                  ]
-                },
-                {
-                  "key": "spreads",
-                  "outcomes": [
-                    {
-                      "name": "KC Royals",
-                      "price": -169,
+                      "price": -177,
                       "point": 1.5
-                    },
-                    {
-                      "name": "ATL Braves",
-                      "price": 139,
-                      "point": -1.5
-                    }
-                  ]
-                },
-                {
-                  "key": "totals",
-                  "outcomes": [
-                    {
-                      "name": "Over",
-                      "price": -112,
-                      "point": 8
-                    },
-                    {
-                      "name": "Under",
-                      "price": -108,
-                      "point": 8
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "_dk": {
-            "eventId": "33891166",
-            "homePitcher": "Grant Holmes",
-            "awayPitcher": "Seth Lugo",
-            "homeColor": "#ce1141",
-            "awayColor": "#004687",
-            "liveState": null,
-            "score": null
-          }
-        },
-        {
-          "id": "dk_33891177",
-          "sport_key": "mlb",
-          "sport_title": "MLB",
-          "commence_time": "2026-03-29T17:37:00.0000000Z",
-          "home_team": "TOR Blue Jays",
-          "away_team": "Athletics",
-          "status": "NOT_STARTED",
-          "bookmakers": [
-            {
-              "key": "draftkings",
-              "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.427076Z",
-              "markets": [
-                {
-                  "key": "h2h",
-                  "outcomes": [
-                    {
-                      "name": "Athletics",
-                      "price": 129
-                    },
-                    {
-                      "name": "TOR Blue Jays",
-                      "price": -156
-                    }
-                  ]
-                },
-                {
-                  "key": "spreads",
-                  "outcomes": [
-                    {
-                      "name": "Athletics",
-                      "price": -156,
-                      "point": 1.5
-                    },
-                    {
-                      "name": "TOR Blue Jays",
-                      "price": 129,
-                      "point": -1.5
-                    }
-                  ]
-                },
-                {
-                  "key": "totals",
-                  "outcomes": [
-                    {
-                      "name": "Over",
-                      "price": 100,
-                      "point": 9
-                    },
-                    {
-                      "name": "Under",
-                      "price": -120,
-                      "point": 9
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "_dk": {
-            "eventId": "33891177",
-            "homePitcher": "Eric Lauer",
-            "awayPitcher": "Luis Morales",
-            "homeColor": "#134a8e",
-            "awayColor": "#003831",
-            "liveState": null,
-            "score": null
-          }
-        },
-        {
-          "id": "dk_33891183",
-          "sport_key": "mlb",
-          "sport_title": "MLB",
-          "commence_time": "2026-03-29T17:40:00.0000000Z",
-          "home_team": "NY Mets",
-          "away_team": "PIT Pirates",
-          "status": "NOT_STARTED",
-          "bookmakers": [
-            {
-              "key": "draftkings",
-              "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.427098Z",
-              "markets": [
-                {
-                  "key": "h2h",
-                  "outcomes": [
-                    {
-                      "name": "PIT Pirates",
-                      "price": 153
-                    },
-                    {
-                      "name": "NY Mets",
-                      "price": -186
-                    }
-                  ]
-                },
-                {
-                  "key": "spreads",
-                  "outcomes": [
-                    {
-                      "name": "PIT Pirates",
-                      "price": -143,
-                      "point": 1.5
-                    },
-                    {
-                      "name": "NY Mets",
-                      "price": 119,
-                      "point": -1.5
-                    }
-                  ]
-                },
-                {
-                  "key": "totals",
-                  "outcomes": [
-                    {
-                      "name": "Over",
-                      "price": -115,
-                      "point": 7.5
-                    },
-                    {
-                      "name": "Under",
-                      "price": -105,
-                      "point": 7.5
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "_dk": {
-            "eventId": "33891183",
-            "homePitcher": "Nolan McLean",
-            "awayPitcher": "Carmen Mlodzinski",
-            "homeColor": "#002d72",
-            "awayColor": "#27251f",
-            "liveState": null,
-            "score": null
-          }
-        },
-        {
-          "id": "dk_33891180",
-          "sport_key": "mlb",
-          "sport_title": "MLB",
-          "commence_time": "2026-03-29T17:40:00.0000000Z",
-          "home_team": "MIA Marlins",
-          "away_team": "COL Rockies",
-          "status": "NOT_STARTED",
-          "bookmakers": [
-            {
-              "key": "draftkings",
-              "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.427117Z",
-              "markets": [
-                {
-                  "key": "h2h",
-                  "outcomes": [
-                    {
-                      "name": "COL Rockies",
-                      "price": 159
-                    },
-                    {
-                      "name": "MIA Marlins",
-                      "price": -194
-                    }
-                  ]
-                },
-                {
-                  "key": "spreads",
-                  "outcomes": [
-                    {
-                      "name": "COL Rockies",
-                      "price": -136,
-                      "point": 1.5
-                    },
-                    {
-                      "name": "MIA Marlins",
-                      "price": 113,
-                      "point": -1.5
-                    }
-                  ]
-                },
-                {
-                  "key": "totals",
-                  "outcomes": [
-                    {
-                      "name": "Over",
-                      "price": -105,
-                      "point": 8
-                    },
-                    {
-                      "name": "Under",
-                      "price": -115,
-                      "point": 8
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "_dk": {
-            "eventId": "33891180",
-            "homePitcher": "Max Meyer",
-            "awayPitcher": "Jose Quintana",
-            "homeColor": "#00a3e0",
-            "awayColor": "#333366",
-            "liveState": null,
-            "score": null
-          }
-        },
-        {
-          "id": "dk_33891178",
-          "sport_key": "mlb",
-          "sport_title": "MLB",
-          "commence_time": "2026-03-29T17:40:00.0000000Z",
-          "home_team": "CIN Reds",
-          "away_team": "BOS Red Sox",
-          "status": "NOT_STARTED",
-          "bookmakers": [
-            {
-              "key": "draftkings",
-              "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.427138Z",
-              "markets": [
-                {
-                  "key": "h2h",
-                  "outcomes": [
-                    {
-                      "name": "BOS Red Sox",
-                      "price": -130
-                    },
-                    {
-                      "name": "CIN Reds",
-                      "price": 108
-                    }
-                  ]
-                },
-                {
-                  "key": "spreads",
-                  "outcomes": [
-                    {
-                      "name": "BOS Red Sox",
-                      "price": 124,
-                      "point": -1.5
-                    },
-                    {
-                      "name": "CIN Reds",
-                      "price": -149,
-                      "point": 1.5
-                    }
-                  ]
-                },
-                {
-                  "key": "totals",
-                  "outcomes": [
-                    {
-                      "name": "Over",
-                      "price": -110,
-                      "point": 8.5
-                    },
-                    {
-                      "name": "Under",
-                      "price": -110,
-                      "point": 8.5
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "_dk": {
-            "eventId": "33891178",
-            "homePitcher": "Rhett Lowder",
-            "awayPitcher": "Connelly Early",
-            "homeColor": "#c6011f",
-            "awayColor": "#bd3039",
-            "liveState": null,
-            "score": null
-          }
-        },
-        {
-          "id": "dk_33891187",
-          "sport_key": "mlb",
-          "sport_title": "MLB",
-          "commence_time": "2026-03-29T18:10:00.0000000Z",
-          "home_team": "MIL Brewers",
-          "away_team": "CHI White Sox",
-          "status": "NOT_STARTED",
-          "bookmakers": [
-            {
-              "key": "draftkings",
-              "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.427158Z",
-              "markets": [
-                {
-                  "key": "h2h",
-                  "outcomes": [
-                    {
-                      "name": "CHI White Sox",
-                      "price": 141
-                    },
-                    {
-                      "name": "MIL Brewers",
-                      "price": -171
-                    }
-                  ]
-                },
-                {
-                  "key": "spreads",
-                  "outcomes": [
-                    {
-                      "name": "CHI White Sox",
-                      "price": -149,
-                      "point": 1.5
-                    },
-                    {
-                      "name": "MIL Brewers",
-                      "price": 123,
-                      "point": -1.5
                     }
                   ]
                 },
@@ -542,12 +748,12 @@
                     {
                       "name": "Over",
                       "price": -118,
-                      "point": 7.5
+                      "point": 8
                     },
                     {
                       "name": "Under",
                       "price": -102,
-                      "point": 7.5
+                      "point": 8
                     }
                   ]
                 }
@@ -555,38 +761,3928 @@
             }
           ],
           "_dk": {
-            "eventId": "33891187",
-            "homePitcher": "Brandon Sproat",
-            "awayPitcher": "Anthony Kay",
-            "homeColor": "#ffc52f",
-            "awayColor": "#27251f",
+            "eventId": "33910467",
+            "homePitcher": "Noah Cameron",
+            "awayPitcher": "Joe Ryan",
+            "homeColor": "#004687",
+            "awayColor": "#002b5c",
             "liveState": null,
-            "score": null
+            "score": null,
+            "f5": {
+              "h2h": {
+                "homeOdds": 105,
+                "awayOdds": -135,
+                "homeName": "KC Royals",
+                "awayName": "MIN Twins"
+              },
+              "runline": {
+                "homeOdds": -135,
+                "homePoint": 0.5,
+                "awayOdds": 105,
+                "awayPoint": -0.5,
+                "homeName": "KC Royals",
+                "awayName": "MIN Twins"
+              },
+              "total": {
+                "point": 4.5,
+                "overOdds": 100,
+                "underOdds": -130
+              }
+            }
           }
         },
         {
-          "id": "dk_33891186",
+          "id": "dk_33910468",
           "sport_key": "mlb",
           "sport_title": "MLB",
-          "commence_time": "2026-03-29T18:10:00.0000000Z",
-          "home_team": "HOU Astros",
-          "away_team": "LA Angels",
+          "commence_time": "2026-04-02T00:20:00.0000000Z",
+          "home_team": "LA Dodgers",
+          "away_team": "CLE Guardians",
           "status": "NOT_STARTED",
           "bookmakers": [
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.427182Z",
+              "last_update": "2026-04-01T21:00:26.256741Z",
               "markets": [
                 {
                   "key": "h2h",
                   "outcomes": [
                     {
-                      "name": "LA Angels",
-                      "price": 144
+                      "name": "CLE Guardians",
+                      "price": 224
                     },
                     {
-                      "name": "HOU Astros",
+                      "name": "LA Dodgers",
+                      "price": -280
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "CLE Guardians",
+                      "price": 102,
+                      "point": 1.5
+                    },
+                    {
+                      "name": "LA Dodgers",
+                      "price": -122,
+                      "point": -1.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -108,
+                      "point": 8
+                    },
+                    {
+                      "name": "Under",
+                      "price": -112,
+                      "point": 8
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33910468",
+            "homePitcher": "Yoshinobu Yamamoto",
+            "awayPitcher": "Gavin Williams",
+            "homeColor": "#005a9c",
+            "awayColor": "#00385d",
+            "liveState": null,
+            "score": null,
+            "f5": {
+              "h2h": {
+                "homeOdds": -270,
+                "awayOdds": 200,
+                "homeName": "LA Dodgers",
+                "awayName": "CLE Guardians"
+              },
+              "runline": {
+                "homeOdds": 105,
+                "homePoint": -1.5,
+                "awayOdds": -135,
+                "awayPoint": 1.5,
+                "homeName": "LA Dodgers",
+                "awayName": "CLE Guardians"
+              },
+              "total": {
+                "point": 4.5,
+                "overOdds": 100,
+                "underOdds": -130
+              }
+            }
+          }
+        }
+      ],
+      "count": 7,
+      "props": [
+        {
+          "player": "Noah Cameron",
+          "marketName": "Noah Cameron Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 4.5,
+          "label": "O/U 4.5",
+          "overOdds": -101,
+          "underOdds": -127,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 7.42,
+          "lastSeasonLabel": "Last Season K/9"
+        },
+        {
+          "player": "Joe Ryan",
+          "marketName": "Joe Ryan Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 5.5,
+          "label": "O/U 5.5",
+          "overOdds": 124,
+          "underOdds": -159,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 10.21,
+          "lastSeasonLabel": "Last Season K/9"
+        },
+        {
+          "player": "Yoshinobu Yamamoto",
+          "marketName": "Yoshinobu Yamamoto Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 6.5,
+          "label": "O/U 6.5",
+          "overOdds": -117,
+          "underOdds": -109,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 9.98,
+          "lastSeasonLabel": "Last Season K/9"
+        },
+        {
+          "player": "Gavin Williams",
+          "marketName": "Gavin Williams Strikeouts Thrown O/U",
+          "marketType": "Strikeouts Thrown O/U",
+          "subcategoryId": "15221",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 5.5,
+          "label": "O/U 5.5",
+          "overOdds": 116,
+          "underOdds": -148,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 12.6,
+          "lastSeasonLabel": "K/9"
+        },
+        {
+          "player": "Gavin Williams",
+          "marketName": "Gavin Williams Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 15.5,
+          "label": "O/U 15.5",
+          "overOdds": 117,
+          "underOdds": -155,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 5,
+          "lastSeasonLabel": "IP/GS"
+        },
+        {
+          "player": "Yoshinobu Yamamoto",
+          "marketName": "Yoshinobu Yamamoto Outs O/U",
+          "marketType": "Outs O/U",
+          "subcategoryId": "17413",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 17.5,
+          "label": "O/U 17.5",
+          "overOdds": -190,
+          "underOdds": 142,
+          "isMainLine": true,
+          "format": "ou",
+          "lastSeasonStat": 0,
+          "lastSeasonLabel": "Last Season IP/GS"
+        },
+        {
+          "player": "Byron Buxton",
+          "marketName": "Byron Buxton Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 283,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Byron Buxton",
+          "marketName": "Byron Buxton Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 2500,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Josh Bell",
+          "marketName": "Josh Bell Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 572,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Josh Bell",
+          "marketName": "Josh Bell Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 6800,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Isaac Collins",
+          "marketName": "Isaac Collins Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 830,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Isaac Collins",
+          "marketName": "Isaac Collins Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 10000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Jonathan India",
+          "marketName": "Jonathan India Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 1040,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Jonathan India",
+          "marketName": "Jonathan India Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 10000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Bobby Witt Jr.",
+          "marketName": "Bobby Witt Jr. Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 385,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Bobby Witt Jr.",
+          "marketName": "Bobby Witt Jr. Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 4300,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Victor Caratini",
+          "marketName": "Victor Caratini Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 760,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Victor Caratini",
+          "marketName": "Victor Caratini Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 10000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Ryan Jeffers",
+          "marketName": "Ryan Jeffers Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 710,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Ryan Jeffers",
+          "marketName": "Ryan Jeffers Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 9500,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Luke Keaschall",
+          "marketName": "Luke Keaschall Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 1000,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Luke Keaschall",
+          "marketName": "Luke Keaschall Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 10000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Maikel Garcia",
+          "marketName": "Maikel Garcia Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 770,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Maikel Garcia",
+          "marketName": "Maikel Garcia Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 8900,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Carter Jensen",
+          "marketName": "Carter Jensen Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 360,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Carter Jensen",
+          "marketName": "Carter Jensen Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 3800,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Royce Lewis",
+          "marketName": "Royce Lewis Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 481,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Royce Lewis",
+          "marketName": "Royce Lewis Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 5700,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Matt Wallner",
+          "marketName": "Matt Wallner Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 372,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Matt Wallner",
+          "marketName": "Matt Wallner Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 4000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Austin Martin",
+          "marketName": "Austin Martin Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 870,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Austin Martin",
+          "marketName": "Austin Martin Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 10000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Brooks Lee",
+          "marketName": "Brooks Lee Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 840,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Brooks Lee",
+          "marketName": "Brooks Lee Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 10000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Salvador Perez",
+          "marketName": "Salvador Perez Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 398,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Salvador Perez",
+          "marketName": "Salvador Perez Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 4600,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Jac Caglianone",
+          "marketName": "Jac Caglianone Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 660,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Jac Caglianone",
+          "marketName": "Jac Caglianone Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 8000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Kyle Isbel",
+          "marketName": "Kyle Isbel Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 1080,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Kyle Isbel",
+          "marketName": "Kyle Isbel Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 10000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Vinnie Pasquantino",
+          "marketName": "Vinnie Pasquantino Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 395,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Vinnie Pasquantino",
+          "marketName": "Vinnie Pasquantino Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 4600,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Kyle Tucker",
+          "marketName": "Kyle Tucker Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 376,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Kyle Tucker",
+          "marketName": "Kyle Tucker Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 3900,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Steven Kwan",
+          "marketName": "Steven Kwan Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 1340,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Max Muncy (LAD)",
+          "marketName": "Max Muncy (LAD) Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 341,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Max Muncy (LAD)",
+          "marketName": "Max Muncy (LAD) Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 3500,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Gabriel Arias",
+          "marketName": "Gabriel Arias Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 750,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Gabriel Arias",
+          "marketName": "Gabriel Arias Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 9000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Teoscar Hernandez",
+          "marketName": "Teoscar Hernandez Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 445,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Teoscar Hernandez",
+          "marketName": "Teoscar Hernandez Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 4800,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Will Smith (LAD)",
+          "marketName": "Will Smith (LAD) Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 415,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Will Smith (LAD)",
+          "marketName": "Will Smith (LAD) Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 4400,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Brayan Rocchio",
+          "marketName": "Brayan Rocchio Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 1220,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Freddie Freeman",
+          "marketName": "Freddie Freeman Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 412,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Freddie Freeman",
+          "marketName": "Freddie Freeman Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 4200,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Jose Ramirez",
+          "marketName": "Jose Ramirez Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 516,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Jose Ramirez",
+          "marketName": "Jose Ramirez Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 5400,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Bo Naylor",
+          "marketName": "Bo Naylor Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 710,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Bo Naylor",
+          "marketName": "Bo Naylor Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 8800,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Alex Freeland",
+          "marketName": "Alex Freeland Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 640,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Alex Freeland",
+          "marketName": "Alex Freeland Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 7900,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Kyle Manzardo",
+          "marketName": "Kyle Manzardo Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 581,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Kyle Manzardo",
+          "marketName": "Kyle Manzardo Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 6000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Mookie Betts",
+          "marketName": "Mookie Betts Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 464,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Mookie Betts",
+          "marketName": "Mookie Betts Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 5000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Andy Pages",
+          "marketName": "Andy Pages Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 556,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Andy Pages",
+          "marketName": "Andy Pages Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 6600,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "HR"
+        },
+        {
+          "player": "Shohei Ohtani",
+          "marketName": "Shohei Ohtani Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 208,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Shohei Ohtani",
+          "marketName": "Shohei Ohtani Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 1720,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Shohei Ohtani",
+          "marketName": "Shohei Ohtani Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 10000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Daniel Schneemann",
+          "marketName": "Daniel Schneemann Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 1040,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Daniel Schneemann",
+          "marketName": "Daniel Schneemann Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 10000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Rhys Hoskins",
+          "marketName": "Rhys Hoskins Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 491,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Rhys Hoskins",
+          "marketName": "Rhys Hoskins Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 5300,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Angel Martinez",
+          "marketName": "Angel Martinez Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 790,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Angel Martinez",
+          "marketName": "Angel Martinez Home Runs",
+          "marketType": "Home Runs Milestones",
+          "subcategoryId": "17319",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 8900,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": null,
+          "lastSeasonLabel": ""
+        },
+        {
+          "player": "Jac Caglianone",
+          "marketName": "Jac Caglianone Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -145,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Jac Caglianone",
+          "marketName": "Jac Caglianone Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 420,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Jac Caglianone",
+          "marketName": "Jac Caglianone Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 2300,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Vinnie Pasquantino",
+          "marketName": "Vinnie Pasquantino Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -237,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Vinnie Pasquantino",
+          "marketName": "Vinnie Pasquantino Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 242,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Vinnie Pasquantino",
+          "marketName": "Vinnie Pasquantino Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1220,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Kyle Isbel",
+          "marketName": "Kyle Isbel Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -130,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Kyle Isbel",
+          "marketName": "Kyle Isbel Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 471,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Kyle Isbel",
+          "marketName": "Kyle Isbel Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 2600,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Byron Buxton",
+          "marketName": "Byron Buxton Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -249,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Byron Buxton",
+          "marketName": "Byron Buxton Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 219,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Byron Buxton",
+          "marketName": "Byron Buxton Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 990,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Byron Buxton",
+          "marketName": "Byron Buxton Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 4,
+          "label": "4+",
+          "overOdds": 4700,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Isaac Collins",
+          "marketName": "Isaac Collins Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -143,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Isaac Collins",
+          "marketName": "Isaac Collins Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 433,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Isaac Collins",
+          "marketName": "Isaac Collins Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 2300,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Austin Martin",
+          "marketName": "Austin Martin Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -229,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Austin Martin",
+          "marketName": "Austin Martin Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 243,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Austin Martin",
+          "marketName": "Austin Martin Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1120,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Austin Martin",
+          "marketName": "Austin Martin Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 4,
+          "label": "4+",
+          "overOdds": 5000,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Matt Wallner",
+          "marketName": "Matt Wallner Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -166,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Matt Wallner",
+          "marketName": "Matt Wallner Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 346,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Matt Wallner",
+          "marketName": "Matt Wallner Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1820,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Carter Jensen",
+          "marketName": "Carter Jensen Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -191,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Carter Jensen",
+          "marketName": "Carter Jensen Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 286,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Carter Jensen",
+          "marketName": "Carter Jensen Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1540,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Luke Keaschall",
+          "marketName": "Luke Keaschall Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -207,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Luke Keaschall",
+          "marketName": "Luke Keaschall Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 274,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Luke Keaschall",
+          "marketName": "Luke Keaschall Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1320,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Jonathan India",
+          "marketName": "Jonathan India Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -148,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Jonathan India",
+          "marketName": "Jonathan India Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 407,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Jonathan India",
+          "marketName": "Jonathan India Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 2100,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Maikel Garcia",
+          "marketName": "Maikel Garcia Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -260,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Maikel Garcia",
+          "marketName": "Maikel Garcia Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 217,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Maikel Garcia",
+          "marketName": "Maikel Garcia Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1020,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Maikel Garcia",
+          "marketName": "Maikel Garcia Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 4,
+          "label": "4+",
+          "overOdds": 4600,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Ryan Jeffers",
+          "marketName": "Ryan Jeffers Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -171,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Ryan Jeffers",
+          "marketName": "Ryan Jeffers Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 334,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Ryan Jeffers",
+          "marketName": "Ryan Jeffers Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1620,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Josh Bell",
+          "marketName": "Josh Bell Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -186,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Josh Bell",
+          "marketName": "Josh Bell Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 306,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Josh Bell",
+          "marketName": "Josh Bell Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1520,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Salvador Perez",
+          "marketName": "Salvador Perez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -195,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Salvador Perez",
+          "marketName": "Salvador Perez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 298,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Salvador Perez",
+          "marketName": "Salvador Perez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1560,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Victor Caratini",
+          "marketName": "Victor Caratini Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -176,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Victor Caratini",
+          "marketName": "Victor Caratini Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 330,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Victor Caratini",
+          "marketName": "Victor Caratini Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1740,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Bobby Witt Jr.",
+          "marketName": "Bobby Witt Jr. Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -320,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Bobby Witt Jr.",
+          "marketName": "Bobby Witt Jr. Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 176,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Bobby Witt Jr.",
+          "marketName": "Bobby Witt Jr. Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 800,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Bobby Witt Jr.",
+          "marketName": "Bobby Witt Jr. Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 4,
+          "label": "4+",
+          "overOdds": 3600,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Brooks Lee",
+          "marketName": "Brooks Lee Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -167,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Brooks Lee",
+          "marketName": "Brooks Lee Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 349,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Brooks Lee",
+          "marketName": "Brooks Lee Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1800,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Royce Lewis",
+          "marketName": "Royce Lewis Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -175,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Royce Lewis",
+          "marketName": "Royce Lewis Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 325,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Royce Lewis",
+          "marketName": "Royce Lewis Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910467",
+          "home": "KC Royals",
+          "away": "MIN Twins",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1620,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Freddie Freeman",
+          "marketName": "Freddie Freeman Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -216,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Freddie Freeman",
+          "marketName": "Freddie Freeman Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 263,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Freddie Freeman",
+          "marketName": "Freddie Freeman Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1320,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Brayan Rocchio",
+          "marketName": "Brayan Rocchio Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -113,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Brayan Rocchio",
+          "marketName": "Brayan Rocchio Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 531,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Brayan Rocchio",
+          "marketName": "Brayan Rocchio Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 2900,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Shohei Ohtani",
+          "marketName": "Shohei Ohtani Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -253,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Shohei Ohtani",
+          "marketName": "Shohei Ohtani Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 211,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Shohei Ohtani",
+          "marketName": "Shohei Ohtani Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 990,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Shohei Ohtani",
+          "marketName": "Shohei Ohtani Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 4,
+          "label": "4+",
+          "overOdds": 4500,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Steven Kwan",
+          "marketName": "Steven Kwan Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -202,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 7,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Steven Kwan",
+          "marketName": "Steven Kwan Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 277,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 7,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Steven Kwan",
+          "marketName": "Steven Kwan Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1300,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 7,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Bo Naylor",
+          "marketName": "Bo Naylor Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -110,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Bo Naylor",
+          "marketName": "Bo Naylor Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 572,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Bo Naylor",
+          "marketName": "Bo Naylor Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 3300,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Will Smith (LAD)",
+          "marketName": "Will Smith (LAD) Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -199,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Will Smith (LAD)",
+          "marketName": "Will Smith (LAD) Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 286,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Will Smith (LAD)",
+          "marketName": "Will Smith (LAD) Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1420,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Andy Pages",
+          "marketName": "Andy Pages Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -165,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 6,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Andy Pages",
+          "marketName": "Andy Pages Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 355,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 6,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Andy Pages",
+          "marketName": "Andy Pages Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1880,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 6,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Jose Ramirez",
+          "marketName": "Jose Ramirez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -189,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Jose Ramirez",
+          "marketName": "Jose Ramirez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 292,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Jose Ramirez",
+          "marketName": "Jose Ramirez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1480,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Gabriel Arias",
+          "marketName": "Gabriel Arias Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -101,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Gabriel Arias",
+          "marketName": "Gabriel Arias Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 620,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Gabriel Arias",
+          "marketName": "Gabriel Arias Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 3400,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 1,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Mookie Betts",
+          "marketName": "Mookie Betts Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -215,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Mookie Betts",
+          "marketName": "Mookie Betts Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 259,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Mookie Betts",
+          "marketName": "Mookie Betts Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1260,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Kyle Manzardo",
+          "marketName": "Kyle Manzardo Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -120,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Kyle Manzardo",
+          "marketName": "Kyle Manzardo Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 499,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Kyle Manzardo",
+          "marketName": "Kyle Manzardo Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 2600,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Alex Freeland",
+          "marketName": "Alex Freeland Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 101,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Alex Freeland",
+          "marketName": "Alex Freeland Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 690,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Alex Freeland",
+          "marketName": "Alex Freeland Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 3800,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 2,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Teoscar Hernandez",
+          "marketName": "Teoscar Hernandez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -174,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Teoscar Hernandez",
+          "marketName": "Teoscar Hernandez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 346,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Teoscar Hernandez",
+          "marketName": "Teoscar Hernandez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1860,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Kyle Tucker",
+          "marketName": "Kyle Tucker Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -197,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Kyle Tucker",
+          "marketName": "Kyle Tucker Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 288,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Kyle Tucker",
+          "marketName": "Kyle Tucker Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1340,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Max Muncy (LAD)",
+          "marketName": "Max Muncy (LAD) Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -139,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Max Muncy (LAD)",
+          "marketName": "Max Muncy (LAD) Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 435,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Max Muncy (LAD)",
+          "marketName": "Max Muncy (LAD) Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 2400,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Daniel Schneemann",
+          "marketName": "Daniel Schneemann Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": 102,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Daniel Schneemann",
+          "marketName": "Daniel Schneemann Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 630,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Daniel Schneemann",
+          "marketName": "Daniel Schneemann Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 3500,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Rhys Hoskins",
+          "marketName": "Rhys Hoskins Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -114,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Rhys Hoskins",
+          "marketName": "Rhys Hoskins Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 523,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Rhys Hoskins",
+          "marketName": "Rhys Hoskins Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 2800,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 4,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Angel Martinez",
+          "marketName": "Angel Martinez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 1,
+          "label": "1+",
+          "overOdds": -160,
+          "underOdds": null,
+          "isMainLine": true,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Angel Martinez",
+          "marketName": "Angel Martinez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 2,
+          "label": "2+",
+          "overOdds": 358,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        },
+        {
+          "player": "Angel Martinez",
+          "marketName": "Angel Martinez Hits",
+          "marketType": "Hits Milestones",
+          "subcategoryId": "17320",
+          "eventId": "33910468",
+          "home": "LA Dodgers",
+          "away": "CLE Guardians",
+          "sport": "MLB",
+          "line": 3,
+          "label": "3+",
+          "overOdds": 1740,
+          "underOdds": null,
+          "isMainLine": false,
+          "format": "milestone",
+          "lastSeasonStat": 3,
+          "lastSeasonLabel": "H"
+        }
+      ],
+      "propsCount": 190
+    },
+    "NBA": {
+      "games": [
+        {
+          "id": "dk_33903270",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-04-01T23:10:00.0000000Z",
+          "home_team": "WAS Wizards",
+          "away_team": "PHI 76ers",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-04-01T21:00:29.264145Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "PHI 76ers",
+                      "price": -1100
+                    },
+                    {
+                      "name": "WAS Wizards",
+                      "price": 700
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "PHI 76ers",
+                      "price": -118,
+                      "point": -13.5
+                    },
+                    {
+                      "name": "WAS Wizards",
+                      "price": -102,
+                      "point": 13.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -115,
+                      "point": 238.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -105,
+                      "point": 238.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33903270",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#002b5c",
+            "awayColor": "#006bb6",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33903275",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-04-01T23:40:00.0000000Z",
+          "home_team": "MIA Heat",
+          "away_team": "BOS Celtics",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-04-01T21:00:29.264179Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "BOS Celtics",
+                      "price": -198
+                    },
+                    {
+                      "name": "MIA Heat",
+                      "price": 164
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "BOS Celtics",
+                      "price": -112,
+                      "point": -4.5
+                    },
+                    {
+                      "name": "MIA Heat",
+                      "price": -108,
+                      "point": 4.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -110,
+                      "point": 230.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -110,
+                      "point": 230.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33903275",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#98002e",
+            "awayColor": "#007a33",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33903368",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-04-02T00:10:00.0000000Z",
+          "home_team": "MEM Grizzlies",
+          "away_team": "NY Knicks",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-04-01T21:00:29.264201Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "NY Knicks",
+                      "price": -950
+                    },
+                    {
+                      "name": "MEM Grizzlies",
+                      "price": 625
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "NY Knicks",
+                      "price": -115,
+                      "point": -14.5
+                    },
+                    {
+                      "name": "MEM Grizzlies",
+                      "price": -105,
+                      "point": 14.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -115,
+                      "point": 225.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -105,
+                      "point": 225.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33903368",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#5d76a9",
+            "awayColor": "#006bb6",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33903367",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-04-02T00:10:00.0000000Z",
+          "home_team": "HOU Rockets",
+          "away_team": "MIL Bucks",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-04-01T21:00:29.264223Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "MIL Bucks",
+                      "price": 1100
+                    },
+                    {
+                      "name": "HOU Rockets",
+                      "price": -2100
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "MIL Bucks",
+                      "price": -110,
+                      "point": 18.5
+                    },
+                    {
+                      "name": "HOU Rockets",
+                      "price": -110,
+                      "point": -18.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -110,
+                      "point": 215.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -110,
+                      "point": 215.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33903367",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#ce1141",
+            "awayColor": "#00471b",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33903369",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-04-02T00:10:00.0000000Z",
+          "home_team": "TOR Raptors",
+          "away_team": "SAC Kings",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-04-01T21:00:29.264242Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "SAC Kings",
+                      "price": 470
+                    },
+                    {
+                      "name": "TOR Raptors",
+                      "price": -650
+                    }
+                  ]
+                },
+                {
+                  "key": "spreads",
+                  "outcomes": [
+                    {
+                      "name": "SAC Kings",
+                      "price": -112,
+                      "point": 12.5
+                    },
+                    {
+                      "name": "TOR Raptors",
+                      "price": -108,
+                      "point": -12.5
+                    }
+                  ]
+                },
+                {
+                  "key": "totals",
+                  "outcomes": [
+                    {
+                      "name": "Over",
+                      "price": -112,
+                      "point": 225.5
+                    },
+                    {
+                      "name": "Under",
+                      "price": -108,
+                      "point": 225.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "_dk": {
+            "eventId": "33903369",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#ce1141",
+            "awayColor": "#5a2d81",
+            "liveState": null,
+            "score": null
+          }
+        },
+        {
+          "id": "dk_33903366",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-04-02T00:10:00.0000000Z",
+          "home_team": "CHI Bulls",
+          "away_team": "IND Pacers",
+          "status": "NOT_STARTED",
+          "bookmakers": [
+            {
+              "key": "draftkings",
+              "title": "DraftKings",
+              "last_update": "2026-04-01T21:00:29.264263Z",
+              "markets": [
+                {
+                  "key": "h2h",
+                  "outcomes": [
+                    {
+                      "name": "IND Pacers",
+                      "price": 145
+                    },
+                    {
+                      "name": "CHI Bulls",
                       "price": -175
                     }
                   ]
@@ -595,14 +4691,14 @@
                   "key": "spreads",
                   "outcomes": [
                     {
-                      "name": "LA Angels",
-                      "price": -136,
-                      "point": 1.5
+                      "name": "IND Pacers",
+                      "price": -102,
+                      "point": 3.5
                     },
                     {
-                      "name": "HOU Astros",
-                      "price": 113,
-                      "point": -1.5
+                      "name": "CHI Bulls",
+                      "price": -118,
+                      "point": -3.5
                     }
                   ]
                 },
@@ -612,12 +4708,12 @@
                     {
                       "name": "Over",
                       "price": -108,
-                      "point": 9
+                      "point": 248.5
                     },
                     {
                       "name": "Under",
                       "price": -112,
-                      "point": 9
+                      "point": 248.5
                     }
                   ]
                 }
@@ -625,39 +4721,39 @@
             }
           ],
           "_dk": {
-            "eventId": "33891186",
-            "homePitcher": "Tatsuya Imai",
-            "awayPitcher": "Jack Kochanowicz",
-            "homeColor": "#002d62",
-            "awayColor": "#003263",
+            "eventId": "33903366",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#ce1141",
+            "awayColor": "#002d62",
             "liveState": null,
             "score": null
           }
         },
         {
-          "id": "dk_33891188",
-          "sport_key": "mlb",
-          "sport_title": "MLB",
-          "commence_time": "2026-03-29T18:15:00.0000000Z",
-          "home_team": "STL Cardinals",
-          "away_team": "TB Rays",
+          "id": "dk_33903370",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-04-02T01:10:00.0000000Z",
+          "home_team": "UTA Jazz",
+          "away_team": "DEN Nuggets",
           "status": "NOT_STARTED",
           "bookmakers": [
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.427205Z",
+              "last_update": "2026-04-01T21:00:29.264284Z",
               "markets": [
                 {
                   "key": "h2h",
                   "outcomes": [
                     {
-                      "name": "TB Rays",
-                      "price": -118
+                      "name": "DEN Nuggets",
+                      "price": -1800
                     },
                     {
-                      "name": "STL Cardinals",
-                      "price": -102
+                      "name": "UTA Jazz",
+                      "price": 1000
                     }
                   ]
                 },
@@ -665,84 +4761,14 @@
                   "key": "spreads",
                   "outcomes": [
                     {
-                      "name": "TB Rays",
-                      "price": 141,
-                      "point": -1.5
-                    },
-                    {
-                      "name": "STL Cardinals",
-                      "price": -171,
-                      "point": 1.5
-                    }
-                  ]
-                },
-                {
-                  "key": "totals",
-                  "outcomes": [
-                    {
-                      "name": "Over",
-                      "price": -118,
-                      "point": 7.5
-                    },
-                    {
-                      "name": "Under",
-                      "price": -102,
-                      "point": 7.5
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "_dk": {
-            "eventId": "33891188",
-            "homePitcher": "Dustin May",
-            "awayPitcher": "Steven Matz",
-            "homeColor": "#c41e3a",
-            "awayColor": "#092c5c",
-            "liveState": null,
-            "score": null
-          }
-        },
-        {
-          "id": "dk_33891189",
-          "sport_key": "mlb",
-          "sport_title": "MLB",
-          "commence_time": "2026-03-29T18:20:00.0000000Z",
-          "home_team": "CHI Cubs",
-          "away_team": "WAS Nationals",
-          "status": "NOT_STARTED",
-          "bookmakers": [
-            {
-              "key": "draftkings",
-              "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.427225Z",
-              "markets": [
-                {
-                  "key": "h2h",
-                  "outcomes": [
-                    {
-                      "name": "WAS Nationals",
-                      "price": 197
-                    },
-                    {
-                      "name": "CHI Cubs",
-                      "price": -243
-                    }
-                  ]
-                },
-                {
-                  "key": "spreads",
-                  "outcomes": [
-                    {
-                      "name": "WAS Nationals",
-                      "price": -105,
-                      "point": 1.5
-                    },
-                    {
-                      "name": "CHI Cubs",
+                      "name": "DEN Nuggets",
                       "price": -115,
-                      "point": -1.5
+                      "point": -16.5
+                    },
+                    {
+                      "name": "UTA Jazz",
+                      "price": -105,
+                      "point": 16.5
                     }
                   ]
                 },
@@ -751,13 +4777,13 @@
                   "outcomes": [
                     {
                       "name": "Over",
-                      "price": -118,
-                      "point": 9
+                      "price": -110,
+                      "point": 249.5
                     },
                     {
                       "name": "Under",
-                      "price": -102,
-                      "point": 9
+                      "price": -110,
+                      "point": 249.5
                     }
                   ]
                 }
@@ -765,39 +4791,39 @@
             }
           ],
           "_dk": {
-            "eventId": "33891189",
-            "homePitcher": "Shota Imanaga",
-            "awayPitcher": "Jake Irvin",
-            "homeColor": "#0e3386",
-            "awayColor": "#ab0003",
+            "eventId": "33903370",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#002b5c",
+            "awayColor": "#0e2240",
             "liveState": null,
             "score": null
           }
         },
         {
-          "id": "dk_33891190",
-          "sport_key": "mlb",
-          "sport_title": "MLB",
-          "commence_time": "2026-03-29T23:20:00.0000000Z",
-          "home_team": "SEA Mariners",
-          "away_team": "CLE Guardians",
+          "id": "dk_33903372",
+          "sport_key": "nba",
+          "sport_title": "NBA",
+          "commence_time": "2026-04-02T02:10:00.0000000Z",
+          "home_team": "GS Warriors",
+          "away_team": "SA Spurs",
           "status": "NOT_STARTED",
           "bookmakers": [
             {
               "key": "draftkings",
               "title": "DraftKings",
-              "last_update": "2026-03-29T17:19:02.427244Z",
+              "last_update": "2026-04-01T21:00:29.264309Z",
               "markets": [
                 {
                   "key": "h2h",
                   "outcomes": [
                     {
-                      "name": "CLE Guardians",
-                      "price": 119
+                      "name": "SA Spurs",
+                      "price": -950
                     },
                     {
-                      "name": "SEA Mariners",
-                      "price": -143
+                      "name": "GS Warriors",
+                      "price": 625
                     }
                   ]
                 },
@@ -805,14 +4831,14 @@
                   "key": "spreads",
                   "outcomes": [
                     {
-                      "name": "CLE Guardians",
-                      "price": -171,
-                      "point": 1.5
+                      "name": "SA Spurs",
+                      "price": -105,
+                      "point": -14.5
                     },
                     {
-                      "name": "SEA Mariners",
-                      "price": 141,
-                      "point": -1.5
+                      "name": "GS Warriors",
+                      "price": -115,
+                      "point": 14.5
                     }
                   ]
                 },
@@ -821,13 +4847,13 @@
                   "outcomes": [
                     {
                       "name": "Over",
-                      "price": -112,
-                      "point": 7.5
+                      "price": -108,
+                      "point": 227.5
                     },
                     {
                       "name": "Under",
-                      "price": -108,
-                      "point": 7.5
+                      "price": -112,
+                      "point": 227.5
                     }
                   ]
                 }
@@ -835,21 +4861,19 @@
             }
           ],
           "_dk": {
-            "eventId": "33891190",
-            "homePitcher": "Emerson Hancock",
-            "awayPitcher": "Slade Cecconi",
-            "homeColor": "#0c2c56",
-            "awayColor": "#00385d",
+            "eventId": "33903372",
+            "homePitcher": null,
+            "awayPitcher": null,
+            "homeColor": "#1d428a",
+            "awayColor": "#c4ced4",
             "liveState": null,
             "score": null
           }
         }
       ],
-      "count": 12
-    },
-    "NBA": {
-      "games": [],
-      "count": 0
+      "count": 8,
+      "props": [],
+      "propsCount": 0
     }
   }
 }

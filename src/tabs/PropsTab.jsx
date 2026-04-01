@@ -5,7 +5,7 @@ import PropSection, { ODDS_API_PROP_MARKETS, PROP_MARKET_LABELS, MARKET_ORDER, M
 import PropsInsightPanel from '../components/PropsInsightPanel.jsx'
 
 
-export default function PropsTab({ todayLock, todayDog, allGames }) {
+export default function PropsTab({ todayLock, todayDog, allGames, onRefresh }) {
   const todayKey = getTodayKey()
 
   const [propPick, setPropPick] = useState({})
@@ -18,6 +18,7 @@ export default function PropsTab({ todayLock, todayDog, allGames }) {
   const [propsError, setPropsError] = useState(null)
   const [renderError, setRenderError] = useState(null)
   const [tooLate, setTooLate] = useState(false)
+  const [liveStats, setLiveStats] = useState({}) // gameId -> { playerName -> currentK }
 
   const todayTeamPicks = propPick[todayKey] || {}
 
@@ -93,6 +94,8 @@ export default function PropsTab({ todayLock, todayDog, allGames }) {
   const lockAway = todayLock?.away || null
 
   const fetchedRef = React.useRef(false)
+  const [propRefreshTick, setPropRefreshTick] = React.useState(0)
+  const [propRefreshed, setPropRefreshed] = React.useState(false)
 
   // Takes explicit args so it never reads stale closure values
   async function fetchAllProps(lockGameId, lockSport, lockGames, lockHomeTeamName, lockAwayTeamName, dogPick) {
@@ -180,6 +183,8 @@ export default function PropsTab({ todayLock, todayDog, allGames }) {
 
     setPropsFetched(true)
     setPropsLoading(false)
+    setPropRefreshed(true)
+    setTimeout(() => setPropRefreshed(false), 2000)
   }
 
   // Wait until BOTH lock and dog are settled before firing — prevents stale dog fetch
@@ -189,7 +194,7 @@ export default function PropsTab({ todayLock, todayDog, allGames }) {
     if (fetchedRef.current) return
     fetchedRef.current = true
     fetchAllProps(espnGameId, sportLabel, allGames, lockHome, lockAway, todayDog)
-  }, [espnGameId, allGames.length, todayDog?.gameId])
+  }, [espnGameId, allGames.length, todayDog?.gameId, propRefreshTick])
 
   function openPropModal(prop, preselectedSide = null) {
     setSelectedSide(preselectedSide)
@@ -213,8 +218,21 @@ export default function PropsTab({ todayLock, todayDog, allGames }) {
           team: propModal.team,
           home: propModal.home || lockHome || null,
           away: propModal.away || lockAway || null,
-          gameId: propModal.isDogGame ? (todayDog?.gameId || null) : (espnGameId || null),
-          isDogGame: propModal.isDogGame || false,
+          // A prop is a dog pick if it was tagged isDogGame OR its home/away match the dog game
+          ...((() => {
+            const dogId = todayDog?.gameId || null
+            const dogH  = (todayDog?.home || '').toLowerCase()
+            const dogA  = (todayDog?.away || '').toLowerCase()
+            const propH = (propModal.home || '').toLowerCase()
+            const propA = (propModal.away || '').toLowerCase()
+            const isDog = propModal.isDogGame ||
+              (dogId && (propH === dogH || propA === dogA ||
+                dogH.includes(propH.split(' ').pop()) || dogA.includes(propA.split(' ').pop())))
+            return {
+              gameId:    isDog ? dogId : (espnGameId || null),
+              isDogGame: !!isDog,
+            }
+          })()),
           result: null,
         }
       }
@@ -248,6 +266,153 @@ export default function PropsTab({ todayLock, todayDog, allGames }) {
     await savePropPick(updated)
     setPropPick(updated)
   }
+
+  // ── ESPN auto-resolve ─────────────────────────────────────────────────────
+  // Fires whenever propPick changes (i.e. after refresh or on mount).
+  // Scans all dates for pending picks, fetches ESPN boxscore for each unique
+  // gameId, resolves W/L from the actual pitching stat line, saves back.
+  useEffect(() => {
+    async function autoResolve() {
+      // Collect all pending picks across all dates
+      const pending = []
+      Object.entries(propPick).forEach(([dateKey, dayPicks]) => {
+        Object.entries(dayPicks || {}).forEach(([teamMKey, pick]) => {
+          if (pick && pick.result === null && pick.gameId && pick.player && pick.line != null) {
+            pending.push({ dateKey, teamMKey, pick })
+          }
+        })
+      })
+      if (!pending.length) return
+
+      // Fetch ESPN boxscore for each unique gameId once
+      const boxscoreCache = {}
+      async function getBoxscore(espnGameId) {
+        if (boxscoreCache[espnGameId] !== undefined) return boxscoreCache[espnGameId]
+        try {
+          const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=${espnGameId}`)
+          const data = res.ok ? await res.json() : null
+          boxscoreCache[espnGameId] = data
+          return data
+        } catch { boxscoreCache[espnGameId] = null; return null }
+      }
+
+      // Extract pitching stat for a player name from ESPN boxscore
+      // Returns { strikeouts, outsRecorded } or null if game not final / player not found
+      function extractPitcherStat(data, playerName) {
+        if (!data) return null
+        // Only resolve if game is final
+        const status = data.header?.competitions?.[0]?.status?.type?.name || ''
+        if (status !== 'STATUS_FINAL') return null
+
+        const playerGroups = data.boxscore?.players || []
+        for (const teamGroup of playerGroups) {
+          for (const statGroup of teamGroup.statistics || []) {
+            const sgType = (statGroup.type || statGroup.name || '').toLowerCase()
+            if (sgType !== 'pitching') continue
+            const labels = statGroup.labels || []
+            for (const a of statGroup.athletes || []) {
+              if (a.athlete?.displayName !== playerName) continue
+              const stats = {}
+              labels.forEach((lbl, i) => { stats[lbl] = a.stats?.[i] })
+              // K = strikeouts column label in ESPN (SO or K)
+              const k = parseInt(stats.SO ?? stats.K ?? '0', 10) || 0
+              // IP as outs: 6.0 IP = 18 outs, 6.1 IP = 19 outs, 6.2 = 20, etc.
+              const ipStr = stats.IP || '0'
+              const ipParts = String(ipStr).split('.')
+              const fullInnings = parseInt(ipParts[0], 10) || 0
+              const partialOuts = parseInt(ipParts[1] || '0', 10) || 0
+              const outsRecorded = fullInnings * 3 + partialOuts
+              return { strikeouts: k, outsRecorded }
+            }
+          }
+        }
+        return null // player not found (may not have pitched yet)
+      }
+
+      let dirty = false
+      const updated = JSON.parse(JSON.stringify(propPick))
+
+      for (const { dateKey, teamMKey, pick } of pending) {
+        const data = await getBoxscore(pick.gameId)
+        const stat = extractPitcherStat(data, pick.player)
+        if (!stat) continue  // game not final or player not found — skip
+
+        let actual = null
+        if (pick.marketKey === 'pitcher_strikeouts') actual = stat.strikeouts
+        else if (pick.marketKey === 'pitcher_outs_recorded') actual = stat.outsRecorded
+        else continue  // unsupported market — skip
+
+        const line = parseFloat(pick.line)
+        let result = null
+        if (pick.side === 'over')  result = actual > line  ? 'W' : actual === line ? 'P' : 'L'
+        if (pick.side === 'under') result = actual < line  ? 'W' : actual === line ? 'P' : 'L'
+        if (!result) continue
+
+        updated[dateKey][teamMKey] = { ...pick, result }
+        dirty = true
+      }
+
+      if (dirty) {
+        await savePropPick(updated)
+        setPropPick(updated)
+      }
+    }
+
+    autoResolve()
+  }, [JSON.stringify(Object.keys(propPick)), propRefreshTick])  // re-run on new picks or manual refresh
+
+  // ── Live K counter — polls ESPN every 60s for in-progress games ───────────
+  useEffect(() => {
+    const todayPicks = propPick[todayKey] || {}
+    const pendingPicks = Object.values(todayPicks).filter(p =>
+      p && p.result === null && p.gameId && p.player &&
+      ['pitcher_strikeouts', 'pitcher_outs_recorded'].includes(p.marketKey)
+    )
+    if (!pendingPicks.length) return
+
+    async function fetchLive() {
+      const updated = {}
+      const seen = new Set()
+      for (const pick of pendingPicks) {
+        if (seen.has(pick.gameId)) continue
+        seen.add(pick.gameId)
+        try {
+          const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=${pick.gameId}`)
+          const data = res.ok ? await res.json() : null
+          if (!data) continue
+          const statusName = data.header?.competitions?.[0]?.status?.type?.name || ''
+          // Only show live counter during in-progress games
+          if (statusName !== 'STATUS_IN_PROGRESS') continue
+          const playerGroups = data.boxscore?.players || []
+          const gameMap = {}
+          for (const teamGroup of playerGroups) {
+            for (const statGroup of teamGroup.statistics || []) {
+              const sgType = (statGroup.type || statGroup.name || '').toLowerCase()
+              if (sgType !== 'pitching') continue
+              const labels = statGroup.labels || []
+              for (const a of statGroup.athletes || []) {
+                const name = a.athlete?.displayName
+                if (!name) continue
+                const stats = {}
+                labels.forEach((lbl, i) => { stats[lbl] = a.stats?.[i] })
+                const k = parseInt(stats.SO ?? stats.K ?? '0', 10) || 0
+                const ipStr = stats.IP || '0'
+                const ipParts = String(ipStr).split('.')
+                const outsRecorded = parseInt(ipParts[0], 10) * 3 + parseInt(ipParts[1] || '0', 10)
+                gameMap[name] = { k, outsRecorded }
+              }
+            }
+          }
+          if (Object.keys(gameMap).length) updated[pick.gameId] = gameMap
+        } catch { /* silently skip */ }
+      }
+      if (Object.keys(updated).length) setLiveStats(updated)
+    }
+
+    fetchLive()
+    const interval = setInterval(fetchLive, 60_000)
+    return () => clearInterval(interval)
+  }, [JSON.stringify(Object.keys(propPick[todayKey] || {})), todayKey])
 
   // Only show pitcher strikeouts for now
   // Exclude props where this player+market is already picked today
@@ -370,21 +535,25 @@ export default function PropsTab({ todayLock, todayDog, allGames }) {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.3rem' }}>
               <button
                 onClick={() => {
-                  fetchedRef.current = true
+                  fetchedRef.current = false
                   setPropsFetched(false)
                   setPropLines([])
                   setDogPropLines([])
-                  fetchAllProps(espnGameId, sportLabel, allGames, lockHome, lockAway, todayDog)
+                  setPropRefreshTick(t => t + 1)
+                  if (onRefresh) onRefresh()
                 }}
                 disabled={propsLoading}
                 style={{
                   fontSize: '0.68rem', padding: '0.3rem 0.75rem',
-                  background: '#111', border: '1px solid #2a2a2a', borderRadius: '6px',
-                  color: propsLoading ? '#333' : '#555',
+                  background: propRefreshed ? '#0a2a1a' : '#111',
+                  border: `1px solid ${propRefreshed ? '#00ff8844' : '#2a2a2a'}`,
+                  borderRadius: '6px',
+                  color: propsLoading ? '#333' : propRefreshed ? '#00ff88' : '#555',
                   cursor: propsLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold',
+                  transition: 'all 0.3s',
                 }}
               >
-                {propsLoading ? '⏳' : '↺'} Refresh
+                {propsLoading ? '⏳' : propRefreshed ? '✓ Updated' : '↺'} {!propsLoading && !propRefreshed && 'Refresh'}
               </button>
               <span style={{ fontSize: '0.6rem', color: '#333' }}>via DraftKings scraper</span>
             </div>
@@ -418,8 +587,7 @@ export default function PropsTab({ todayLock, todayDog, allGames }) {
                         {sportIcon} {categoryLabel}
                       </span>
                       {(() => {
-                        const dogPlayers = new Set(dogPropLines.map(p => p.player))
-                        const isDog = pick.isDogGame || dogPlayers.has(pick.player)
+                        const isDog = pick.isDogGame || (todayDog?.gameId && pick.gameId === todayDog.gameId)
                         return isDog
                           ? <span style={{ fontSize: '0.58rem', color: '#ff994488', background: '#ff994411', border: '1px solid #ff994422', borderRadius: '4px', padding: '0.1rem 0.4rem', fontWeight: 'bold' }}>🐕 DOG</span>
                           : <span style={{ fontSize: '0.58rem', color: '#00ff8888', background: '#00ff8811', border: '1px solid #00ff8822', borderRadius: '4px', padding: '0.1rem 0.4rem', fontWeight: 'bold' }}>🔒 LOCK</span>
@@ -434,11 +602,48 @@ export default function PropsTab({ todayLock, todayDog, allGames }) {
                       </div>
                       <div style={{ fontWeight: 'bold', fontSize: '1rem', color: pick.result === 'W' ? '#00ff88' : pick.result === 'L' ? '#ff4444' : '#8888ff' }}>{formatOdds(pick.odds)}</div>
                     </div>
-                    {pick.result === null && (
-                      <div style={{ marginTop: '0.4rem' }}>
-                        <span style={{ color: '#444', fontSize: '0.68rem' }}>⏳ Pending — auto-resolves after game</span>
-                      </div>
-                    )}
+                    {pick.result === null && (() => {
+                      const gameStats = liveStats[pick.gameId]
+                      const playerStat = gameStats?.[pick.player]
+                      const isLive = !!playerStat
+                      const currentVal = pick.marketKey === 'pitcher_strikeouts'
+                        ? playerStat?.k
+                        : pick.marketKey === 'pitcher_outs_recorded'
+                          ? playerStat?.outsRecorded
+                          : null
+                      const line = parseFloat(pick.line)
+                      const pct = currentVal != null && line > 0 ? Math.min(currentVal / line, 1) : 0
+                      const needsMore = currentVal != null ? line - currentVal : null
+                      const statLabel = pick.marketKey === 'pitcher_strikeouts' ? 'K' : 'Outs'
+                      return (
+                        <div style={{ marginTop: '0.5rem' }}>
+                          {isLive && currentVal != null ? (
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                                <span style={{ fontSize: '0.65rem', color: '#ff9944', fontWeight: 'bold' }}>
+                                  🔴 LIVE · {statLabel}: <span style={{ fontSize: '0.82rem' }}>{currentVal}</span>
+                                  <span style={{ color: '#555', fontWeight: 'normal' }}> / {line}</span>
+                                </span>
+                                <span style={{ fontSize: '0.6rem', color: needsMore > 0 ? '#555' : '#00ff88', fontWeight: needsMore <= 0 ? 'bold' : 'normal' }}>
+                                  {needsMore > 0 ? `needs ${needsMore} more` : `✓ line cleared`}
+                                </span>
+                              </div>
+                              <div style={{ height: '4px', background: '#1a1a1a', borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{
+                                  height: '100%', borderRadius: '2px', transition: 'width 0.4s ease',
+                                  width: `${pct * 100}%`,
+                                  background: pct >= 1
+                                    ? (pick.side === 'over' ? '#00ff88' : '#ff4444')
+                                    : (pick.side === 'under' ? '#00ff88' : '#ff9944'),
+                                }} />
+                              </div>
+                            </div>
+                          ) : (
+                            <span style={{ color: '#444', fontSize: '0.68rem' }}>⏳ Pending — auto-resolves after game</span>
+                          )}
+                        </div>
+                      )
+                    })()}
                     {pick.result === 'W' && <div style={{ marginTop: '0.35rem', color: '#00ff88', fontWeight: 'bold', fontSize: '0.85rem' }}>✅ WIN</div>}
                     {pick.result === 'L' && <div style={{ marginTop: '0.35rem', color: '#ff4444', fontWeight: 'bold', fontSize: '0.85rem' }}>❌ LOSS</div>}
                   </div>

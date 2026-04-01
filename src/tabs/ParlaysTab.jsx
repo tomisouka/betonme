@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { getTodayKey, ensureAmerican, formatOdds, combineParlayOdds, getGameDateLabel, calcPayout, fetchMlbProbablePitchers, getProbablePitcher } from '../utils/odds.js'
-import { loadPredictions, savePredictions, loadLayHistory, saveLayHistory, loadOuPick, saveOuPick, fetchEspnDate, loadState, loadAllData, saveAllData } from '../hooks/useSaveData.js'
+import { loadPredictions, savePredictions, loadLayHistory, saveLayHistory, loadOuPick, saveOuPick, fetchEspnDate, loadState, loadAllData, saveAllData, loadFavPick, loadHatePick, loadSuperDogState } from '../hooks/useSaveData.js'
 import ParlaySection from '../components/ParlaySection.jsx'
 import SportFilter, { filterBySport } from '../components/SportFilter.jsx'
+import { getTeamLogoUrl, LOGO_STYLE } from '../utils/teamLogos.js'
 
-export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onLockChange }) {
+export default function ParlaysTab({ allGames, loading, todayLock, todayDog, todaySuperDog, onLockChange }) {
   const todayKey = getTodayKey()
 
   const [predictionsHistory, setPredictionsHistory] = useState({})
@@ -16,6 +17,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
   const [selectedGames, setSelectedGames] = useState([])
   const [selectedTeams, setSelectedTeams] = useState({})
   const [selectedOdds, setSelectedOdds] = useState({})
+  const [selectedMarkets, setSelectedMarkets] = useState({}) // gameId -> { market, point }
   const [predictionsLocked, setPredictionsLocked] = useState(false)
   const [layRemovedGames, setLayRemovedGames] = useState([])
   const [layLocked, setLayLocked] = useState(false)
@@ -23,6 +25,16 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
   const [mlbPitchers, setMlbPitchers] = useState({})
   const [gamesBrowserOpen, setGamesBrowserOpen] = useState(true)
   const [todayFilter, setTodayFilter] = useState('today')
+
+  // All In state (same as Lay but no leg limit)
+  const [allInHistory, setAllInHistory] = useState({})
+  const [allInRemovedGames, setAllInRemovedGames] = useState([])
+  const [allInLocked, setAllInLocked] = useState(false)
+  const todayAllIn = allInHistory[todayKey] || null
+
+  // Loaded fav/hate picks for auto-including in predictions
+  const [todayFavPick, setTodayFavPick] = useState(null)
+  const [todayHatePick, setTodayHatePick] = useState(null)
 
   // ── F5 / Halftime state ──
   const [f5State, setF5State] = useState({})
@@ -121,6 +133,28 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
     loadParlaySavedState()
   }, [])
 
+  // Load fav and hate picks for auto-inclusion in predictions
+  useEffect(() => {
+    const todayK = getTodayKey()
+    loadFavPick().then(p => {
+      const pick = p?.[todayK] || null
+      if (pick && !pick.noPick) setTodayFavPick(pick)
+    }).catch(() => {})
+    loadHatePick().then(p => {
+      const pick = p?.[todayK] || null
+      if (pick && !pick.noPick) setTodayHatePick(pick)
+    }).catch(() => {})
+    // Load All In history
+    loadAllData().then(d => {
+      const ai = d.allIn || {}
+      setAllInHistory(ai)
+      const todayAi = ai[todayK]
+      if (todayAi) {
+        setAllInLocked(true)
+      }
+    }).catch(() => {})
+  }, [])
+
   const [ouPick, setOuPick] = useState({})
   const [ouModal, setOuModal] = useState(null)
 
@@ -158,6 +192,9 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
 
   const lockGameId = todayLock?.gameId || null
   const dogGameId = todayDog?.gameId || null
+  const superdogGameId = todaySuperDog?.gameId || null
+  const favGameId = (todayFavPick && !todayFavPick.noPick) ? todayFavPick.gameId || null : null
+  const hateGameId = (todayHatePick && !todayHatePick.noPick) ? todayHatePick.gameId || null : null
 
   const predictionsSlip = (() => {
     if (predictionsLocked && todayPredictions) {
@@ -168,31 +205,64 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
       return [...mapped].sort((a, b) => {
         const legA = todayPredictions.legs.find(l => l.gameId === a.id)
         const legB = todayPredictions.legs.find(l => l.gameId === b.id)
-        const rank = l => l?.isLock ? 0 : l?.isDog ? 1 : 2
+        const rank = l => l?.isLock ? 0 : l?.isDog ? 1 : l?.isSuperDog ? 2 : 3
         return rank(legA) - rank(legB)
       })
     }
     const autoIds = []
     if (lockGameId) autoIds.push(lockGameId)
     if (dogGameId && dogGameId !== lockGameId) autoIds.push(dogGameId)
+    if (superdogGameId && !autoIds.includes(superdogGameId)) autoIds.push(superdogGameId)
+    if (favGameId && !autoIds.includes(favGameId)) autoIds.push(favGameId)
+    if (hateGameId && !autoIds.includes(hateGameId)) autoIds.push(hateGameId)
     const ids = [...autoIds, ...selectedGames.filter(id => !autoIds.includes(id))]
     return allGames.filter(g => ids.includes(g.id))
   })()
 
   const laySlip = predictionsSlip.filter(g => !layRemovedGames.includes(g.id))
 
-  const calcSlipOdds = (games) => {
+  const calcSlipOdds = (games, legsData) => {
     if (games.length < 2) return null
-    const favOdds = games.map(game => {
+    const oddsArr = games.map((game, idx) => {
+      // If legsData provided (locked state), use stored odds
+      if (legsData) {
+        const leg = legsData[idx]
+        if (leg?.odds != null) return leg.odds
+      }
+      // Otherwise use selected odds or auto-pick odds
+      const gid = game.id || game.gameId
+      const isLock = gid === lockGameId
+      const isDog  = gid === dogGameId && !isLock
+      const isSuperDog = gid === superdogGameId && !isLock && !isDog
+      const isFav  = gid === favGameId && !isLock && !isDog && !isSuperDog
+      const isHate = gid === hateGameId && !isLock && !isDog && !isSuperDog && !isFav
+      if (isLock && todayLock?.odds != null) return todayLock.odds
+      if (isDog  && todayDog?.odds  != null) return todayDog.odds
+      if (isSuperDog && todaySuperDog?.odds != null) return todaySuperDog.odds
+      if (isFav  && todayFavPick?.odds  != null) return todayFavPick.odds
+      if (isHate && todayHatePick?.odds != null) return todayHatePick.odds
+      if (selectedOdds[gid] != null) return selectedOdds[gid]
+      // Fall back to ML favorite
       const ml = game.bookmakers?.[0]?.markets?.find(m => m.key === 'h2h')
       const fav = ml?.outcomes?.reduce((a, b) => ensureAmerican(a.price) < ensureAmerican(b.price) ? a : b)
       return fav ? ensureAmerican(fav.price) : -110
     })
-    return combineParlayOdds(favOdds)
+    return combineParlayOdds(oddsArr)
   }
 
-  const predictionsOdds = predictionsLocked ? calcSlipOdds(predictionsSlip) : null
-  const layOdds = layLocked ? calcSlipOdds(laySlip) : null
+  const predictionsOdds = predictionsLocked && todayPredictions ? calcSlipOdds(predictionsSlip, todayPredictions.legs) : (!predictionsLocked ? calcSlipOdds(predictionsSlip) : null)
+  const layOdds = layLocked && todayLay ? calcSlipOdds(laySlip, todayLay.legs) : (!layLocked ? calcSlipOdds(laySlip) : null)
+
+  // F5 combined odds — compute from locked picks (skip noGuess / push / null odds)
+  const f5Odds = (() => {
+    const picks = Object.entries(todayF5).filter(([k]) => k !== '_locked')
+    if (!picks.length || !f5Locked) return null
+    const oddsList = picks
+      .map(([, p]) => p?.odds)
+      .filter(o => o != null && !isNaN(o))
+    if (!oddsList.length) return null
+    return combineParlayOdds(oddsList)
+  })()
 
   const [openLay, setOpenLay] = useState(false)
   useEffect(() => { if (predictionsLocked) setOpenLay(true) }, [predictionsLocked])
@@ -201,13 +271,33 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
     const legs = predictionsSlip.map(game => {
       const isLock = game.id === lockGameId
       const isDog = game.id === dogGameId && !isLock
-      const team = isLock ? todayLock?.team : isDog ? todayDog?.team : selectedTeams[game.id]
-      const odds = isLock ? (todayLock?.odds ?? null) : isDog ? (todayDog?.odds ?? null) : (selectedOdds[game.id] ?? null)
-      // Store market + point so the resolver can check spread coverage, not just ML win
-      const market = isLock ? (todayLock?.market ?? 'h2h') : 'h2h'
-      const point  = isLock ? (todayLock?.point  ?? null) : null
-      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, result: null }
-    }).sort((a, b) => { const rank = l => l.isLock ? 0 : l.isDog ? 1 : 2; return rank(a) - rank(b) })
+      const isSuperDog = game.id === superdogGameId && !isLock && !isDog
+      const isFav = game.id === favGameId && !isLock && !isDog && !isSuperDog
+      const isHate = game.id === hateGameId && !isLock && !isDog && !isSuperDog && !isFav
+      const team = isLock ? todayLock?.team
+        : isDog ? todayDog?.team
+        : isSuperDog ? todaySuperDog?.team
+        : isFav ? todayFavPick?.team
+        : isHate ? todayHatePick?.team
+        : selectedTeams[game.id]
+      const odds = isLock ? (todayLock?.odds ?? null)
+        : isDog ? (todayDog?.odds ?? null)
+        : isSuperDog ? (todaySuperDog?.odds ?? null)
+        : isFav ? (todayFavPick?.odds ?? null)
+        : isHate ? (todayHatePick?.odds ?? null)
+        : (selectedOdds[game.id] ?? null)
+      const market = isLock ? (todayLock?.market ?? 'h2h')
+        : isSuperDog ? (todaySuperDog?.market ?? 'h2h')
+        : isFav ? (todayFavPick?.market ?? 'h2h')
+        : isHate ? (todayHatePick?.market ?? 'h2h')
+        : (selectedMarkets[game.id]?.market ?? 'h2h')
+      const point = isLock ? (todayLock?.point ?? null)
+        : isSuperDog ? (todaySuperDog?.point ?? null)
+        : isFav ? (todayFavPick?.point ?? null)
+        : isHate ? (todayHatePick?.point ?? null)
+        : (selectedMarkets[game.id]?.point ?? null)
+      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, isSuperDog, isFav, isHate, result: null }
+    }).sort((a, b) => { const rank = l => l.isLock ? 0 : l.isDog ? 1 : l.isSuperDog ? 2 : l.isFav ? 3 : l.isHate ? 4 : 5; return rank(a) - rank(b) })
     const updated = { ...predictionsHistory, [todayKey]: { legs, lockedAt: Date.now() } }
     await savePredictions(updated)
     setPredictionsHistory(updated)
@@ -220,12 +310,33 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
     const legs = laySlip.map(game => {
       const isLock = game.id === lockGameId
       const isDog = game.id === dogGameId && !isLock
-      const team = isLock ? todayLock?.team : isDog ? todayDog?.team : selectedTeams[game.id]
-      const odds = isLock ? (todayLock?.odds ?? null) : isDog ? (todayDog?.odds ?? null) : (selectedOdds[game.id] ?? null)
-      const market = isLock ? (todayLock?.market ?? 'h2h') : 'h2h'
-      const point  = isLock ? (todayLock?.point  ?? null) : null
-      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, result: null }
-    }).sort((a, b) => { const rank = l => l.isLock ? 0 : l.isDog ? 1 : 2; return rank(a) - rank(b) })
+      const isSuperDog = game.id === superdogGameId && !isLock && !isDog
+      const isFav = game.id === favGameId && !isLock && !isDog && !isSuperDog
+      const isHate = game.id === hateGameId && !isLock && !isDog && !isSuperDog && !isFav
+      const team = isLock ? todayLock?.team
+        : isDog ? todayDog?.team
+        : isSuperDog ? todaySuperDog?.team
+        : isFav ? todayFavPick?.team
+        : isHate ? todayHatePick?.team
+        : selectedTeams[game.id]
+      const odds = isLock ? (todayLock?.odds ?? null)
+        : isDog ? (todayDog?.odds ?? null)
+        : isSuperDog ? (todaySuperDog?.odds ?? null)
+        : isFav ? (todayFavPick?.odds ?? null)
+        : isHate ? (todayHatePick?.odds ?? null)
+        : (selectedOdds[game.id] ?? null)
+      const market = isLock ? (todayLock?.market ?? 'h2h')
+        : isSuperDog ? (todaySuperDog?.market ?? 'h2h')
+        : isFav ? (todayFavPick?.market ?? 'h2h')
+        : isHate ? (todayHatePick?.market ?? 'h2h')
+        : (selectedMarkets[game.id]?.market ?? 'h2h')
+      const point = isLock ? (todayLock?.point ?? null)
+        : isSuperDog ? (todaySuperDog?.point ?? null)
+        : isFav ? (todayFavPick?.point ?? null)
+        : isHate ? (todayHatePick?.point ?? null)
+        : (selectedMarkets[game.id]?.point ?? null)
+      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, isSuperDog, isFav, isHate, result: null }
+    }).sort((a, b) => { const rank = l => l.isLock ? 0 : l.isDog ? 1 : l.isSuperDog ? 2 : l.isFav ? 3 : l.isHate ? 4 : 5; return rank(a) - rank(b) })
     const hist = await loadLayHistory()
     const updated = { ...hist, [todayKey]: { legs, lockedAt: Date.now() } }
     await saveLayHistory(updated)
@@ -483,7 +594,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
       </div>
 
       {/* 1. Double Lock */}
-      <ParlaySection title="Double Lock" emoji="🔒🔒" defaultOpen={true} totalOdds={doubleLockOdds}>
+      <ParlaySection title="Double Lock" emoji="🔒🔒" defaultOpen={false} totalOdds={doubleLockOdds}>
         {!todayLock ? (
           <p style={{ color: '#555', fontSize: '0.85rem', margin: 0 }}>Make your Lock of the Day first — Double Lock will pair it with an O/U on that game.</p>
         ) : (
@@ -521,8 +632,177 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
         )}
       </ParlaySection>
 
-      {/* 2. Predictions */}
-      <ParlaySection title="Predictions" emoji="🔮" defaultOpen={true} totalOdds={predictionsOdds}>
+      {/* 2. F5 / Halftime Slip */}
+      <ParlaySection title="F5 / Halftime" emoji="⚡" defaultOpen={false} totalOdds={f5Odds}>
+        <div style={{ padding: '0.75rem' }}>
+          <p style={{ margin: '0 0 1rem', color: '#444', fontSize: '0.8rem' }}>
+            First 5 innings (MLB) · First half (NBA/NFL) · One pick per sport · Push on tie
+          </p>
+
+          {/* Today's F5 picks — editable until game starts (result === null) */}
+          {Object.keys(todayF5).filter(k => k !== '_locked').length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginBottom: '1rem' }}>
+              {Object.entries(todayF5).filter(([k]) => k !== '_locked').map(([sport, pick]) => {
+                if (!pick) return null
+                const meta = F5_LABELS[sport]
+                const canChange = !f5Locked && pick.result === null
+                const borderColor = pick.result === 'W' ? '#00ff88' : pick.result === 'L' ? '#ff4444' : pick.result === 'P' ? '#aaa' : f5Locked ? (meta?.color || '#555') + '44' : (meta?.color || '#555') + '66'
+                return (
+                  <div key={sport} style={{ background: '#111', border: `1px solid ${borderColor}`, borderRadius: '8px', padding: '0.75rem 1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ fontSize: '0.62rem', color: meta?.color, fontWeight: 'bold', marginBottom: '0.2rem' }}>
+                        {meta?.emoji} {sport} {meta?.short} · TODAY
+                      </div>
+                      {canChange && (
+                        <button
+                          onClick={async () => {
+                            const updated = { ...f5State, [todayKey]: { ...todayF5 } }
+                            delete updated[todayKey][sport]
+                            await saveF5(updated)
+                          }}
+                          style={{ background: 'transparent', border: '1px solid #333', borderRadius: '5px', color: '#555', cursor: 'pointer', fontSize: '0.68rem', padding: '0.15rem 0.55rem', fontWeight: 'bold' }}
+                        >
+                          ✏️ Change
+                        </button>
+                      )}
+                    </div>
+                    {pick.noGuess
+                      ? <div style={{ color: '#555', fontSize: '0.85rem', fontStyle: 'italic' }}>No guess — sitting out</div>
+                      : <>
+                          <div style={{ fontWeight: 'bold', fontSize: '0.92rem' }}>{pick.team}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#555', marginTop: '0.1rem' }}>
+                            {pick.marketType === 'moneyline' ? 'Moneyline' : `Spread ${pick.point > 0 ? '+' : ''}${pick.point}`}
+                            {' · '}{formatOdds(pick.odds)} · {pick.away} @ {pick.home}
+                          </div>
+                        </>
+                    }
+                    {!pick.noGuess && pick.result === null && <div style={{ fontSize: '0.7rem', color: '#555', marginTop: '0.3rem' }}>⏳ Pending...</div>}
+                    {pick.result === 'W' && <div style={{ fontSize: '0.78rem', color: '#00ff88', fontWeight: 'bold', marginTop: '0.3rem' }}>✅ WIN</div>}
+                    {pick.result === 'L' && <div style={{ fontSize: '0.78rem', color: '#ff4444', fontWeight: 'bold', marginTop: '0.3rem' }}>❌ LOSS</div>}
+                    {pick.result === 'P' && <div style={{ fontSize: '0.78rem', color: '#aaa', fontWeight: 'bold', marginTop: '0.3rem' }}>🤝 PUSH</div>}
+                  </div>
+                )
+              })}
+              {/* Lock button — only show if not locked yet */}
+              {!f5Locked ? (
+                <button
+                  onClick={lockF5}
+                  style={{
+                    width: '100%', padding: '0.75rem', borderRadius: '8px', fontWeight: 'bold',
+                    fontSize: '0.85rem', border: 'none', cursor: 'pointer',
+                    background: '#ff9944', color: '#000', marginTop: '0.25rem',
+                  }}
+                >
+                  ⚡ Lock F5 Picks 🔒
+                </button>
+              ) : (
+                <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#ff9944', fontWeight: 'bold', marginTop: '0.25rem' }}>
+                  ⚡ F5 picks locked in
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* No-guess + game picker — per sport, only show unpicked sports */}
+          {(() => {
+            const sportsInGames = new Set(allGames.map(g => g.sportLabel))
+            const unpicked = Object.keys(F5_LABELS).filter(s => sportsInGames.has(s) && !todayF5[s])
+            if (!unpicked.length || f5Locked) return null
+            const now = new Date()
+            const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+            const tomorrowMidnight = new Date(todayMidnight.getTime() + 86400000)
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {/* Date filter tabs */}
+                <div style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.25rem' }}>
+                  {['today', 'future'].map(f => (
+                    <button key={f} onClick={() => setF5DateFilter(f)} style={{
+                      fontSize: '0.62rem', padding: '0.15rem 0.6rem',
+                      background: f5DateFilter === f ? '#1a1a1a' : 'none',
+                      border: `1px solid ${f5DateFilter === f ? '#333' : '#1a1a1a'}`,
+                      borderRadius: '4px', color: f5DateFilter === f ? '#aaa' : '#444',
+                      cursor: 'pointer', fontWeight: f5DateFilter === f ? 'bold' : 'normal',
+                    }}>
+                      {f === 'today' ? '📅 Today' : '🌅 Future'}
+                    </button>
+                  ))}
+                </div>
+                {unpicked.map(sport => {
+                  const meta = F5_LABELS[sport]
+                  const sportGames = allGames.filter(g => {
+                    if (g.sportLabel !== sport) return false
+                    const state = g.espnStatus?.type?.state
+                    const completed = g.espnStatus?.type?.completed
+                    if (completed || state === 'post' || state === 'in') return false
+                    const gd = new Date(g.commence_time)
+                    if (f5DateFilter === 'today') return gd >= todayMidnight && gd < tomorrowMidnight
+                    if (f5DateFilter === 'future') return gd >= tomorrowMidnight
+                    return true
+                  })
+                  if (!sportGames.length) return (
+                    <div key={sport} style={{ fontSize: '0.7rem', color: '#333', padding: '0.5rem 0' }}>
+                      {meta.emoji} No {sport} games {f5DateFilter === 'today' ? 'today' : 'upcoming'}
+                    </div>
+                  )
+                  return (
+                    <div key={sport}>
+                      <div style={{ fontSize: '0.68rem', color: meta.color, fontWeight: 'bold', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>
+                        {meta.emoji} {sport} · {meta.title}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                        {sportGames.map(game => {
+                          const espnState = game.espnStatus?.type?.state
+                          const isLive = espnState === 'in'
+                          const isFinal = espnState === 'post' || game.espnStatus?.type?.completed
+                          const isUnavailable = isLive || isFinal
+                          const score = game.espnScores
+                          const scoreStr = score ? `${game.away_team.split(' ').pop()} ${score.away} – ${game.home_team.split(' ').pop()} ${score.home}` : ''
+                          return (
+                            <div
+                              key={game.id}
+                              onClick={() => !isUnavailable && openF5Game(game)}
+                              style={{
+                                background: isUnavailable ? '#111' : '#1a1a1a',
+                                border: `1px solid ${isLive ? '#ff994433' : isFinal ? '#1e1e1e' : '#2a2a2a'}`,
+                                borderRadius: '8px', padding: '0.8rem 1rem',
+                                cursor: isUnavailable ? 'default' : 'pointer',
+                                opacity: isFinal ? 0.45 : 1,
+                                transition: 'border-color 0.15s',
+                              }}
+                              onMouseEnter={e => { if (!isUnavailable) e.currentTarget.style.borderColor = meta.color + '88' }}
+                              onMouseLeave={e => { if (!isUnavailable) e.currentTarget.style.borderColor = isLive ? '#ff994433' : '#2a2a2a' }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '0.88rem', color: isFinal ? '#555' : '#fff' }}>
+                                  {game.away_team} <span style={{ color: '#333' }}>@</span> {game.home_team}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: '#555', textAlign: 'right' }}>
+                                  {isLive && <span style={{ color: '#ff9944', fontWeight: 'bold', display: 'block' }}>🔴 LIVE{scoreStr ? ` · ${scoreStr}` : ''}</span>}
+                                  {isFinal && <span style={{ color: '#444', display: 'block' }}>✓ Final{scoreStr ? ` · ${scoreStr}` : ''}</span>}
+                                  {!isUnavailable && getGameDateLabel(game.commence_time)}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <button onClick={() => f5NoGuess(sport)} style={{
+                        width: '100%', padding: '0.45rem', background: 'transparent', border: '1px solid #1e1e1e',
+                        borderRadius: '6px', color: '#333', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 'bold',
+                      }}>
+                        No Guess for {sport}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })()}
+        </div>
+      </ParlaySection>
+
+      {/* 3. Predictions */}
+      <ParlaySection title="Predictions" emoji="🔮" defaultOpen={false} totalOdds={predictionsOdds}>
 
         {showYesterdayCard && (
           <div style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
@@ -583,27 +863,161 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
               {predictionsLocked && todayPredictions ? (
-                todayPredictions.legs.reduce((acc, leg) => {
-                  if (!leg.isLock && !leg.isDog) acc.n++
-                  const n = acc.n
-                  acc.els.push(
-                    <div key={leg.gameId} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1a1a1a',
-                      border: `1px solid ${leg.result === 'W' ? '#00ff8844' : leg.result === 'L' ? '#ff444444' : leg.isLock ? '#00ff8844' : leg.isDog ? '#ff994444' : '#2a2a2a'}`,
-                      borderRadius: '8px', padding: '0.75rem 1rem',
+                (() => {
+                  const legs = todayPredictions.legs
+                  const allResolved = legs.every(l => l.result !== null)
+                  const allWon = allResolved && legs.every(l => l.result === 'W')
+                  const anyLost = legs.some(l => l.result === 'L')
+                  const pending = legs.some(l => l.result === null)
+
+                  // Status colors
+                  const slipBorderColor = allWon ? '#00ff88' : anyLost ? '#ff4444' : '#00d4ff'
+                  const slipGlowColor = allWon ? 'rgba(0,255,136,0.12)' : anyLost ? 'rgba(255,68,68,0.08)' : 'rgba(0,212,255,0.08)'
+                  const statusLabel = allWon ? '🎉 ALL LEGS HIT' : anyLost ? '❌ PARLAY LOST' : '⏳ LIVE'
+                  const statusColor = allWon ? '#00ff88' : anyLost ? '#ff4444' : '#00d4ff'
+
+                  let legCounter = 0
+                  return (
+                    <div style={{
+                      margin: '0 auto',
+                      maxWidth: '420px',
+                      background: 'linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 100%)',
+                      border: `1px solid ${slipBorderColor}44`,
+                      borderRadius: '16px',
+                      overflow: 'hidden',
+                      boxShadow: `0 0 40px ${slipGlowColor}, 0 8px 32px rgba(0,0,0,0.6)`,
                     }}>
-                      <div>
-                        <div style={{ fontSize: '0.65rem', color: leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff', fontWeight: 'bold', marginBottom: '0.15rem' }}>
-                          {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${n}`} · {leg.sport}
+                      {/* Slip Header — DK style */}
+                      <div style={{
+                        background: `linear-gradient(135deg, #111 0%, #141414 100%)`,
+                        borderBottom: `1px solid ${slipBorderColor}33`,
+                        padding: '1.25rem 1.5rem 1rem',
+                        textAlign: 'center',
+                        position: 'relative',
+                      }}>
+                        <div style={{ fontSize: '0.6rem', color: '#444', letterSpacing: '0.15em', fontWeight: 'bold', marginBottom: '0.3rem' }}>
+                          PARLAY BET SLIP
                         </div>
-                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{leg.team || '—'}</div>
-                        <div style={{ color: '#555', fontSize: '0.72rem' }}>{leg.away} vs {leg.home}</div>
+                        <div style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.5rem' }}>
+                          🔮 Predictions · {legs.length}-Leg Parlay
+                        </div>
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                          background: `${statusColor}18`,
+                          border: `1px solid ${statusColor}44`,
+                          borderRadius: '20px', padding: '0.2rem 0.75rem',
+                          fontSize: '0.72rem', fontWeight: 'bold', color: statusColor,
+                        }}>
+                          {statusLabel}
+                        </div>
                       </div>
-                      <div style={{ fontSize: '1.2rem' }}>{leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'}</div>
+
+                      {/* Legs */}
+                      <div style={{ padding: '0 1.25rem' }}>
+                        {legs.map((leg, idx) => {
+                          if (!leg.isLock && !leg.isDog && !leg.isSuperDog && !leg.isFav && !leg.isHate) legCounter++
+                          const n = legCounter
+                          const legColor = leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : leg.isSuperDog ? '#b44fff' : leg.isFav ? '#4c9be8' : leg.isHate ? '#ff4466' : '#8888ff'
+                          const resultIcon = leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'
+                          const isLast = idx === legs.length - 1
+                          // Live game status from allGames
+                          const liveGame = allGames.find(g => g.id === leg.gameId)
+                          const espnState = liveGame?.espnStatus?.type?.state
+                          const isLegLive = espnState === 'in'
+                          const isLegFinal = espnState === 'post' || liveGame?.espnStatus?.type?.completed
+                          const marketLabel = leg.market === 'spreads' && leg.point != null
+                            ? `Spread ${leg.point > 0 ? '+' : ''}${leg.point}`
+                            : 'Moneyline'
+                          return (
+                            <div key={leg.gameId} style={{
+                              padding: '1rem 0',
+                              borderBottom: isLast ? 'none' : '1px solid #1a1a1a',
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem',
+                            }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
+                                  <span style={{
+                                    fontSize: '0.58rem', fontWeight: 'bold', letterSpacing: '0.08em',
+                                    color: legColor, background: `${legColor}15`,
+                                    border: `1px solid ${legColor}30`,
+                                    padding: '0.1rem 0.4rem', borderRadius: '3px',
+                                  }}>
+                                    {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`}
+                                  </span>
+                                  <span style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.06em' }}>{leg.sport}</span>
+                                  {isLegLive && leg.result === null && (
+                                    <span style={{ fontSize: '0.56rem', fontWeight: 'bold', color: '#ff4444', background: '#ff444420', border: '1px solid #ff444440', borderRadius: '3px', padding: '0.08rem 0.35rem', animation: 'pulse 1.5s infinite' }}>🔴 LIVE</span>
+                                  )}
+                                  {isLegFinal && leg.result === null && (
+                                    <span style={{ fontSize: '0.56rem', fontWeight: 'bold', color: '#aaa', background: '#aaa10', border: '1px solid #aaa30', borderRadius: '3px', padding: '0.08rem 0.35rem' }}>✓ FINAL</span>
+                                  )}
+                                </div>
+                                <div style={{ fontWeight: 'bold', fontSize: '0.92rem', color: '#fff', marginBottom: '0.1rem', lineHeight: 1.2 }}>
+                                  {leg.team || '—'}
+                                </div>
+                                <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: '0.1rem' }}>{marketLabel}</div>
+                                <div style={{ fontSize: '0.68rem', color: '#444', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {leg.away} vs {leg.home}
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                {leg.odds != null && (
+                                  <div style={{
+                                    fontSize: '0.88rem', fontWeight: 'bold',
+                                    color: leg.odds > 0 ? '#ff9944' : '#00ff88',
+                                    marginBottom: '0.2rem',
+                                  }}>
+                                    {leg.odds > 0 ? '+' : ''}{leg.odds}
+                                  </div>
+                                )}
+                                <div style={{ fontSize: '1.15rem' }}>{resultIcon}</div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Dashed separator — classic ticket perforation */}
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 0,
+                        margin: '0 -1px',
+                        position: 'relative',
+                      }}>
+                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#000', flexShrink: 0, marginLeft: '-9px' }} />
+                        <div style={{ flex: 1, borderTop: `2px dashed #1e1e1e` }} />
+                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#000', flexShrink: 0, marginRight: '-9px' }} />
+                      </div>
+
+                      {/* Odds & Payout footer */}
+                      <div style={{ padding: '1rem 1.5rem 1.25rem', background: '#0a0a0a' }}>
+                        {predictionsOdds && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                            <div>
+                              <div style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.2rem' }}>PARLAY ODDS</div>
+                              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: predictionsOdds > 0 ? '#ff9944' : '#00ff88', lineHeight: 1 }}>
+                                {predictionsOdds > 0 ? '+' : ''}{predictionsOdds}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.2rem' }}>🪙1 WINS</div>
+                              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fff', lineHeight: 1 }}>
+                                {calcPayout(predictionsOdds, 1).toFixed(2)}x
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <div style={{
+                          display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem',
+                          fontSize: '0.65rem', color: '#333', letterSpacing: '0.06em',
+                        }}>
+                          <span>●●●</span>
+                          <span>LOCKED IN</span>
+                          <span>●●●</span>
+                        </div>
+                      </div>
                     </div>
                   )
-                  return acc
-                }, { n: 0, els: [] }).els
+                })()
               ) : (
                 <>
                   {/* ── GAME BROWSER — tap to add to slip ── */}
@@ -709,8 +1123,11 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                               {isLockGame ? '🔒 ' : isDogGame ? '🐕 ' : ''}{game.sportLabel}
                               {isLive && <span style={{ color: '#ff9944', marginLeft: '0.4rem' }}>· 🔴 LIVE</span>}
                             </div>
-                            <div style={{ fontWeight: 'bold', fontSize: '0.88rem' }}>
-                              {game.away_team} <span style={{ color: '#333', fontWeight: 'normal' }}>@</span> {game.home_team}
+                            <div style={{ fontWeight: 'bold', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                              {getTeamLogoUrl(game.away_team, game.sportLabel) && <img src={getTeamLogoUrl(game.away_team, game.sportLabel)} style={{ ...LOGO_STYLE, width: '18px', height: '18px' }} alt="" />}
+                              {game.away_team} <span style={{ color: '#333', fontWeight: 'normal' }}>@</span>
+                              {getTeamLogoUrl(game.home_team, game.sportLabel) && <img src={getTeamLogoUrl(game.home_team, game.sportLabel)} style={{ ...LOGO_STYLE, width: '18px', height: '18px' }} alt="" />}
+                              {game.home_team}
                             </div>
                             <div style={{ fontSize: '0.62rem', color: '#444', marginTop: '0.1rem' }}>{getGameDateLabel(game.commence_time)}</div>
                             {game.sportLabel === 'MLB' && (() => {
@@ -754,72 +1171,168 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                           const ml = bm?.markets?.find(m => m.key === 'h2h')
                           const isLockLeg = gid === lockGameId
                           const isDogLeg = gid === dogGameId && !isLockLeg
-                          const isAutoLeg = isLockLeg || isDogLeg
+                          const isSuperDogLeg = gid === superdogGameId && !isLockLeg && !isDogLeg
+                          const isFavLeg = gid === favGameId && !isLockLeg && !isDogLeg && !isSuperDogLeg
+                          const isHateLeg = gid === hateGameId && !isLockLeg && !isDogLeg && !isSuperDogLeg && !isFavLeg
+                          const isAutoLeg = isLockLeg || isDogLeg || isSuperDogLeg || isFavLeg || isHateLeg
                           // Pre-lock: team comes from selectedTeams; post-lock: from leg.team
-                          const chosenTeam = leg.team || selectedTeams[gid]
-                          const chosenOdds = leg.odds || selectedOdds[gid]
+                          // Resolve team/odds for all leg types (auto and manual)
+                          const chosenTeam = isLockLeg ? todayLock?.team
+                            : isDogLeg ? todayDog?.team
+                            : isSuperDogLeg ? todaySuperDog?.team
+                            : isFavLeg ? todayFavPick?.team
+                            : isHateLeg ? todayHatePick?.team
+                            : (leg.team || selectedTeams[gid])
+                          const chosenOdds = isLockLeg ? todayLock?.odds
+                            : isDogLeg ? todayDog?.odds
+                            : isSuperDogLeg ? todaySuperDog?.odds
+                            : isFavLeg ? todayFavPick?.odds
+                            : isHateLeg ? todayHatePick?.odds
+                            : (leg.odds || selectedOdds[gid])
                           const awayName = leg.away_team || leg.away
                           const homeName = leg.home_team || leg.home
                           const sportName = leg.sportLabel || leg.sport
+                          const legColor = isLockLeg ? '#00ff88' : isDogLeg ? '#ff9944' : isSuperDogLeg ? '#b44fff' : isFavLeg ? '#4c9be8' : isHateLeg ? '#ff4466' : '#555'
+                          const legBorder = isLockLeg ? '#00ff8833' : isDogLeg ? '#ff994433' : isSuperDogLeg ? '#b44fff33' : isFavLeg ? '#4c9be833' : isHateLeg ? '#ff446633' : '#222'
+                          const legLabel = isLockLeg ? '🔒 LOCK · ' : isDogLeg ? '🐕 DOG · ' : isSuperDogLeg ? '⚡ SUPER DOG · ' : isFavLeg ? '⭐ FAV · ' : isHateLeg ? '😤 HATE · ' : `LEG ${predictionsSlip.slice(0, i).filter(l => { const g = l.id || l.gameId; return ![lockGameId, dogGameId, superdogGameId, favGameId, hateGameId].includes(g) }).length + 1} · `
+                          // Resolve market key — normalize SuperDog's 'spread'/'ml' to 'spreads'/'h2h'
+                          const normalizeMarket = (m) => m === 'spread' ? 'spreads' : m === 'ml' ? 'h2h' : (m ?? 'h2h')
+                          const rawAutoMarket = isLockLeg ? todayLock?.market : isDogLeg ? (todayDog?.market ?? 'h2h') : isSuperDogLeg ? todaySuperDog?.market : isFavLeg ? todayFavPick?.market : isHateLeg ? todayHatePick?.market : null
+                          const autoMarket = normalizeMarket(rawAutoMarket)
+                          const autoPoint  = isLockLeg ? todayLock?.point  : isDogLeg ? todayDog?.point  : isSuperDogLeg ? todaySuperDog?.point  : isFavLeg ? todayFavPick?.point  : isHateLeg ? todayHatePick?.point  : null
+                          const manualMarket = selectedMarkets[gid]?.market
+                          const manualPoint  = selectedMarkets[gid]?.point
+                          const resolvedMarket = isAutoLeg ? autoMarket : normalizeMarket(manualMarket)
+                          const resolvedPoint  = isAutoLeg ? autoPoint : manualPoint
+                          const marketLabel = resolvedMarket === 'spreads' && resolvedPoint != null
+                            ? `Spread ${resolvedPoint > 0 ? '+' : ''}${resolvedPoint}`
+                            : 'Moneyline'
                           return (
-                            <div key={gid || i} style={{ background: '#111', border: `1px solid ${isLockLeg ? '#00ff8833' : isDogLeg ? '#ff994433' : '#222'}`, borderRadius: '8px', overflow: 'hidden' }}>
-                              <div style={{ padding: '0.6rem 0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                  <div style={{ fontSize: '0.6rem', color: isLockLeg ? '#00ff88' : isDogLeg ? '#ff9944' : '#555', marginBottom: '0.1rem' }}>
-                                    {isLockLeg ? '🔒 LOCK · ' : isDogLeg ? '🐕 DOG · ' : `LEG ${predictionsSlip.slice(0, i).filter(l => { const g = l.id || l.gameId; return g !== lockGameId && g !== dogGameId }).length + 1} · `}{sportName}
-                                  </div>
-                                  <div style={{ fontWeight: 'bold', fontSize: '0.82rem' }}>
-                                    {awayName} <span style={{ color: '#333' }}>@</span> {homeName}
-                                  </div>
-                                  {sportName === 'MLB' && (() => {
-                                    const awayP = getProbablePitcher(awayName, mlbPitchers)
-                                    const homeP = getProbablePitcher(homeName, mlbPitchers)
-                                    if (!awayP && !homeP) return null
-                                    return (
-                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem', background: '#0d1a2a', border: '1px solid #1a3a5a', borderRadius: '5px', padding: '0.18rem 0.5rem' }}>
-                                        <span style={{ fontSize: '0.58rem', color: '#4c9be8' }}>⚾</span>
-                                        <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{(awayName || '').split(' ').pop()}:</span>
-                                        <span style={{ fontSize: '0.6rem', color: awayP ? '#7ab8e8' : '#2a4a6a', fontWeight: awayP ? 'bold' : 'normal' }}>{awayP || 'TBA'}</span>
-                                        <span style={{ fontSize: '0.55rem', color: '#1a3a5a' }}>·</span>
-                                        <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{(homeName || '').split(' ').pop()}:</span>
-                                        <span style={{ fontSize: '0.6rem', color: homeP ? '#7ab8e8' : '#2a4a6a', fontWeight: homeP ? 'bold' : 'normal' }}>{homeP || 'TBA'}</span>
-                                      </div>
-                                    )
-                                  })()}
+                            <div key={gid || i} style={{ background: '#111', border: `1px solid ${legBorder}`, borderRadius: '8px', overflow: 'hidden' }}>
+                              {/* Game info row */}
+                              <div style={{ padding: '0.6rem 0.8rem 0.5rem' }}>
+                                <div style={{ fontSize: '0.6rem', color: legColor, marginBottom: '0.15rem', fontWeight: 'bold', letterSpacing: '0.05em' }}>
+                                  {legLabel}{sportName}
                                 </div>
-                                {chosenTeam && (
-                                  <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: isLockLeg ? '#00ff88' : isDogLeg ? '#ff9944' : '#fff' }}>{chosenTeam}</div>
-                                    {chosenOdds && <div style={{ fontSize: '0.68rem', color: '#555' }}>{formatOdds(chosenOdds)}</div>}
-                                  </div>
-                                )}
+                                <div style={{ fontWeight: 'bold', fontSize: '0.82rem' }}>
+                                  {awayName} <span style={{ color: '#333' }}>@</span> {homeName}
+                                </div>
+                                {sportName === 'MLB' && (() => {
+                                  const awayP = getProbablePitcher(awayName, mlbPitchers)
+                                  const homeP = getProbablePitcher(homeName, mlbPitchers)
+                                  if (!awayP && !homeP) return null
+                                  return (
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem', background: '#0d1a2a', border: '1px solid #1a3a5a', borderRadius: '5px', padding: '0.18rem 0.5rem' }}>
+                                      <span style={{ fontSize: '0.58rem', color: '#4c9be8' }}>⚾</span>
+                                      <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{(awayName || '').split(' ').pop()}:</span>
+                                      <span style={{ fontSize: '0.6rem', color: awayP ? '#7ab8e8' : '#2a4a6a', fontWeight: awayP ? 'bold' : 'normal' }}>{awayP || 'TBA'}</span>
+                                      <span style={{ fontSize: '0.55rem', color: '#1a3a5a' }}>·</span>
+                                      <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{(homeName || '').split(' ').pop()}:</span>
+                                      <span style={{ fontSize: '0.6rem', color: homeP ? '#7ab8e8' : '#2a4a6a', fontWeight: homeP ? 'bold' : 'normal' }}>{homeP || 'TBA'}</span>
+                                    </div>
+                                  )
+                                })()}
                               </div>
-                              {!isAutoLeg && ml && (
-                                <div style={{ display: 'flex', borderTop: '1px solid #1a1a1a' }}>
-                                  {ml.outcomes.map(o => {
-                                    const odds = ensureAmerican(o.price)
-                                    const isChosen = chosenTeam === o.name
-                                    return (
-                                      <button key={o.name}
-                                        onClick={() => { setSelectedTeams(t => ({ ...t, [gid]: o.name })); setSelectedOdds(t => ({ ...t, [gid]: odds })) }}
-                                        style={{
-                                          flex: 1, padding: '0.55rem 0.4rem', border: 'none',
-                                          background: isChosen ? '#0a2a1a' : '#141414',
-                                          color: isChosen ? '#00ff88' : '#555',
-                                          cursor: 'pointer', fontSize: '0.76rem', fontWeight: isChosen ? 'bold' : 'normal',
-                                          borderRight: '1px solid #1a1a1a', transition: 'all 0.12s',
-                                        }}>
-                                        {o.name.split(' ').pop()} <span style={{ opacity: 0.6 }}>{formatOdds(odds)}</span>
-                                      </button>
-                                    )
-                                  })}
-                                  {!ml && (
-                                    <div style={{ flex: 1, padding: '0.55rem', textAlign: 'center', color: '#333', fontSize: '0.72rem' }}>
-                                      No odds — pick team manually
+                              {/* Pick banner — always shown for auto-legs, shown when picked for manual legs */}
+                              {chosenTeam && (
+                                <div style={{
+                                  margin: '0 0.5rem 0.5rem',
+                                  background: `${legColor}12`,
+                                  border: `1px solid ${legColor}40`,
+                                  borderRadius: '6px',
+                                  padding: '0.45rem 0.75rem',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                }}>
+                                  <div>
+                                    <div style={{ fontSize: '0.58rem', color: `${legColor}99`, fontWeight: 'bold', letterSpacing: '0.05em', marginBottom: '0.15rem' }}>
+                                      PICK
+                                    </div>
+                                    <div style={{ fontSize: '0.88rem', fontWeight: 'bold', color: legColor }}>
+                                      {chosenTeam}
+                                    </div>
+                                    <div style={{ fontSize: '0.62rem', color: '#666', marginTop: '0.1rem' }}>
+                                      {marketLabel}
+                                    </div>
+                                  </div>
+                                  {chosenOdds && (
+                                    <div style={{
+                                      fontSize: '1rem', fontWeight: 'bold',
+                                      color: chosenOdds > 0 ? '#ff9944' : legColor,
+                                      background: chosenOdds > 0 ? '#ff994415' : `${legColor}15`,
+                                      border: `1px solid ${chosenOdds > 0 ? '#ff994430' : `${legColor}30`}`,
+                                      borderRadius: '5px',
+                                      padding: '0.25rem 0.6rem',
+                                    }}>
+                                      {formatOdds(chosenOdds)}
                                     </div>
                                   )}
                                 </div>
                               )}
+                              
+                              {!isAutoLeg && (() => {
+                                const bm2 = game?.bookmakers?.[0]
+                                const mlMarket = bm2?.markets?.find(m => m.key === 'h2h')
+                                const spMarket = bm2?.markets?.find(m => m.key === 'spreads')
+                                const curMarket = selectedMarkets[gid]?.market || 'h2h'
+                                const activeMarket = curMarket === 'spreads' && spMarket ? spMarket : mlMarket
+                                if (!activeMarket) return (
+                                  <div style={{ flex: 1, padding: '0.55rem', textAlign: 'center', color: '#333', fontSize: '0.72rem', borderTop: '1px solid #1a1a1a' }}>
+                                    No odds available
+                                  </div>
+                                )
+                                return (
+                                  <div style={{ borderTop: '1px solid #1a1a1a' }}>
+                                    {spMarket && (
+                                      <div style={{ display: 'flex', borderBottom: '1px solid #111' }}>
+                                        {['h2h', 'spreads'].map(mk => (
+                                          <button key={mk} onClick={() => {
+                                            setSelectedMarkets(m => ({ ...m, [gid]: { market: mk } }))
+                                            setSelectedTeams(t => { const n = {...t}; delete n[gid]; return n })
+                                            setSelectedOdds(t => { const n = {...t}; delete n[gid]; return n })
+                                          }} style={{
+                                            flex: 1, padding: '0.3rem 0.4rem', border: 'none',
+                                            background: curMarket === mk ? '#1a1a2a' : '#0d0d0d',
+                                            color: curMarket === mk ? '#8888ff' : '#333',
+                                            cursor: 'pointer', fontSize: '0.6rem', fontWeight: curMarket === mk ? 'bold' : 'normal',
+                                            borderRight: mk === 'h2h' ? '1px solid #111' : 'none',
+                                            letterSpacing: '0.04em',
+                                          }}>
+                                            {mk === 'h2h' ? 'ML' : 'SPREAD / RUNLINE'}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <div style={{ display: 'flex' }}>
+                                      {activeMarket.outcomes.map(o => {
+                                        const odds = ensureAmerican(o.price)
+                                        const isChosen = chosenTeam === o.name && (selectedMarkets[gid]?.market || 'h2h') === curMarket
+                                        const label = curMarket === 'spreads'
+                                          ? `${o.name.split(' ').pop()} ${o.point > 0 ? '+' : ''}${o.point}`
+                                          : o.name.split(' ').pop()
+                                        return (
+                                          <button key={o.name}
+                                            onClick={() => {
+                                              setSelectedTeams(t => ({ ...t, [gid]: o.name }))
+                                              setSelectedOdds(t => ({ ...t, [gid]: odds }))
+                                              setSelectedMarkets(m => ({ ...m, [gid]: { market: curMarket, point: o.point ?? null } }))
+                                            }}
+                                            style={{
+                                              flex: 1, padding: '0.55rem 0.4rem', border: 'none',
+                                              background: isChosen ? '#0a2a1a' : '#141414',
+                                              color: isChosen ? '#00ff88' : '#555',
+                                              cursor: 'pointer', fontSize: '0.73rem', fontWeight: isChosen ? 'bold' : 'normal',
+                                              borderRight: '1px solid #1a1a1a', transition: 'all 0.12s',
+                                            }}>
+                                            {label} <span style={{ opacity: 0.6 }}>{formatOdds(odds)}</span>
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                )
+                              })()}
                             </div>
                           )
                         })}
@@ -829,7 +1342,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                         const slipOdds = calcSlipOdds(predictionsSlip)
                         const allPicked = predictionsSlip.every(l => {
                           const gid = l.id || l.gameId
-                          const isAuto = gid === lockGameId || gid === dogGameId
+                          const isAuto = gid === lockGameId || gid === dogGameId || gid === superdogGameId || gid === favGameId || gid === hateGameId
                           return isAuto || l.team || selectedTeams[gid]
                         })
                         return slipOdds ? (
@@ -846,10 +1359,10 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                         ) : null
                       })()}
                       <button
-                        disabled={predictionsSlip.length < 2 || !predictionsSlip.every(l => { const gid = l.id || l.gameId; return gid === lockGameId || gid === dogGameId || l.team || selectedTeams[gid] })}
+                        disabled={predictionsSlip.length < 2 || !predictionsSlip.every(l => { const gid = l.id || l.gameId; return gid === lockGameId || gid === dogGameId || gid === superdogGameId || gid === favGameId || gid === hateGameId || l.team || selectedTeams[gid] })}
                         onClick={lockPredictions}
                         style={(() => {
-                          const ready = predictionsSlip.length >= 2 && predictionsSlip.every(l => { const gid = l.id || l.gameId; return gid === lockGameId || gid === dogGameId || l.team || selectedTeams[gid] })
+                          const ready = predictionsSlip.length >= 2 && predictionsSlip.every(l => { const gid = l.id || l.gameId; return gid === lockGameId || gid === dogGameId || gid === superdogGameId || gid === favGameId || gid === hateGameId || l.team || selectedTeams[gid] })
                           return {
                             width: '100%', padding: '0.85rem', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.9rem', border: 'none',
                             background: ready ? '#00ff88' : '#1a2a1a',
@@ -858,7 +1371,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                             transition: 'all 0.15s',
                           }
                         })()}>
-                        {predictionsSlip.length < 2 ? 'Add at least 2 games' : !predictionsSlip.every(l => { const gid = l.id || l.gameId; return gid === lockGameId || gid === dogGameId || l.team || selectedTeams[gid] }) ? 'Pick a team for each leg' : `Lock Parlay (${predictionsSlip.length} legs) 🔒`}
+                        {predictionsSlip.length < 2 ? 'Add at least 2 games' : !predictionsSlip.every(l => { const gid = l.id || l.gameId; return gid === lockGameId || gid === dogGameId || gid === superdogGameId || gid === favGameId || gid === hateGameId || l.team || selectedTeams[gid] }) ? 'Pick a team for each leg' : `Lock Parlay (${predictionsSlip.length} legs) 🔒`}
                       </button>
                     </div>
                   )}
@@ -889,10 +1402,180 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
         )}
       </ParlaySection>
 
-      {/* 3. Lay of the Day */}
+
+      {/* 4. All In */}
+      {(() => {
+        const allInSlip = predictionsSlip.filter(g => !allInRemovedGames.includes(g.id))
+        const allInOdds = allInLocked && todayAllIn ? calcSlipOdds(todayAllIn.legs.map(l => allGames.find(g => g.id === l.gameId) || l)) : (!allInLocked ? calcSlipOdds(allInSlip) : null)
+
+        async function lockAllIn() {
+          const legs = allInSlip.map(game => {
+            const isLock = game.id === lockGameId
+            const isDog = game.id === dogGameId && !isLock
+            const isSuperDog = game.id === superdogGameId && !isLock && !isDog
+            const isFav = game.id === favGameId && !isLock && !isDog && !isSuperDog
+            const isHate = game.id === hateGameId && !isLock && !isDog && !isSuperDog && !isFav
+            const team = isLock ? todayLock?.team : isDog ? todayDog?.team : isSuperDog ? todaySuperDog?.team : isFav ? todayFavPick?.team : isHate ? todayHatePick?.team : selectedTeams[game.id]
+            const odds = isLock ? (todayLock?.odds ?? null) : isDog ? (todayDog?.odds ?? null) : isSuperDog ? (todaySuperDog?.odds ?? null) : isFav ? (todayFavPick?.odds ?? null) : isHate ? (todayHatePick?.odds ?? null) : (selectedOdds[game.id] ?? null)
+            const market = isLock ? (todayLock?.market ?? 'h2h') : isSuperDog ? (todaySuperDog?.market ?? 'h2h') : isFav ? (todayFavPick?.market ?? 'h2h') : isHate ? (todayHatePick?.market ?? 'h2h') : (selectedMarkets[game.id]?.market ?? 'h2h')
+            const point = isLock ? (todayLock?.point ?? null) : isSuperDog ? (todaySuperDog?.point ?? null) : isFav ? (todayFavPick?.point ?? null) : isHate ? (todayHatePick?.point ?? null) : (selectedMarkets[game.id]?.point ?? null)
+            return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, isSuperDog, isFav, isHate, result: null }
+          })
+          const current = await loadAllData()
+          const updated = { ...current, allIn: { ...(current.allIn || {}), [todayKey]: { legs, lockedAt: Date.now() } } }
+          await saveAllData(updated)
+          setAllInHistory(updated.allIn)
+          setAllInLocked(true)
+        }
+
+        return (
+          <ParlaySection title="All In" emoji="🚀" defaultOpen={false} totalOdds={allInLocked && todayAllIn ? calcSlipOdds((todayAllIn.legs || []).map(l => ({ bookmakers: [{ markets: [{ key: 'h2h', outcomes: [{ name: l.team, price: l.odds }] }] }] }))) : null}>
+            {!predictionsLocked ? (
+              <p style={{ color: '#555', fontSize: '0.85rem', margin: 0 }}>Lock your Predictions first — All In uses all your picks with no leg limit.</p>
+            ) : (
+              <div>
+                {!allInLocked && (
+                  <p style={{ color: '#555', fontSize: '0.8rem', margin: '0 0 1rem' }}>
+                    All your prediction picks, no limit — the full swing. Tap ✕ to remove any leg.
+                  </p>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                  {allInLocked && todayAllIn ? (
+                    (() => {
+                      const legs = todayAllIn.legs
+                      const allResolved = legs.every(l => l.result !== null)
+                      const allWon = allResolved && legs.every(l => l.result === 'W')
+                      const anyLost = legs.some(l => l.result === 'L')
+                      const statusColor = allWon ? '#ff9944' : anyLost ? '#ff4444' : '#ff9944'
+                      const statusLabel = allWon ? '🎉 ALL LEGS HIT' : anyLost ? '❌ PARLAY LOST' : '⏳ IN PROGRESS'
+                      let legCounter = 0
+                      const oddsArr = legs.map(l => l.odds).filter(o => o != null && !isNaN(o))
+                      return (
+                        <div style={{ margin: '0 auto', maxWidth: '420px', background: 'linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 100%)', border: `1px solid ${statusColor}44`, borderRadius: '16px', overflow: 'hidden', boxShadow: '0 0 40px rgba(255,153,68,0.1), 0 8px 32px rgba(0,0,0,0.6)' }}>
+                          <div style={{ background: 'linear-gradient(135deg, #111 0%, #141414 100%)', borderBottom: `1px solid ${statusColor}33`, padding: '1.25rem 1.5rem 1rem', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.6rem', color: '#444', letterSpacing: '0.15em', fontWeight: 'bold', marginBottom: '0.3rem' }}>ALL IN · BET SLIP</div>
+                            <div style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.5rem' }}>🚀 All In · {legs.length}-Leg Parlay</div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: `${statusColor}18`, border: `1px solid ${statusColor}44`, borderRadius: '20px', padding: '0.2rem 0.75rem', fontSize: '0.72rem', fontWeight: 'bold', color: statusColor }}>{statusLabel}</div>
+                          </div>
+                          <div style={{ padding: '0 1.25rem' }}>
+                            {legs.map((leg, idx) => {
+                              if (!leg.isLock && !leg.isDog && !leg.isSuperDog) legCounter++
+                              const n = legCounter
+                              const legColor = leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : leg.isSuperDog ? '#b44fff' : leg.isFav ? '#4c9be8' : leg.isHate ? '#ff4466' : '#ff9944'
+                              const resultIcon = leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'
+                              const liveGame = allGames.find(g => g.id === leg.gameId)
+                              const espnState = liveGame?.espnStatus?.type?.state
+                              const isLegLive = espnState === 'in'
+                              const isLegFinal = espnState === 'post' || liveGame?.espnStatus?.type?.completed
+                              const marketLabel = leg.market === 'spreads' && leg.point != null ? `Spread ${leg.point > 0 ? '+' : ''}${leg.point}` : 'Moneyline'
+                              return (
+                                <div key={leg.gameId} style={{ padding: '0.85rem 0', borderBottom: idx === legs.length - 1 ? 'none' : '1px solid #1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
+                                      <span style={{ fontSize: '0.56rem', fontWeight: 'bold', color: legColor, background: `${legColor}15`, border: `1px solid ${legColor}30`, padding: '0.08rem 0.35rem', borderRadius: '3px' }}>
+                                        {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`}
+                                      </span>
+                                      <span style={{ fontSize: '0.56rem', color: '#333' }}>{leg.sport}</span>
+                                      {isLegLive && leg.result === null && <span style={{ fontSize: '0.54rem', fontWeight: 'bold', color: '#ff4444', background: '#ff444420', border: '1px solid #ff444440', borderRadius: '3px', padding: '0.06rem 0.3rem' }}>🔴 LIVE</span>}
+                                      {isLegFinal && leg.result === null && <span style={{ fontSize: '0.54rem', fontWeight: 'bold', color: '#aaa', background: '#ffffff10', border: '1px solid #aaa30', borderRadius: '3px', padding: '0.06rem 0.3rem' }}>✓ FINAL</span>}
+                                    </div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff', marginBottom: '0.08rem' }}>{leg.team || '—'}</div>
+                                    <div style={{ fontSize: '0.63rem', color: '#555', marginBottom: '0.05rem' }}>{marketLabel}</div>
+                                    <div style={{ fontSize: '0.65rem', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{leg.away} vs {leg.home}</div>
+                                  </div>
+                                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                    {leg.odds != null && <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: leg.odds > 0 ? '#ff9944' : '#00ff88', marginBottom: '0.15rem' }}>{leg.odds > 0 ? '+' : ''}{leg.odds}</div>}
+                                    <div style={{ fontSize: '1.1rem' }}>{resultIcon}</div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', margin: '0 -1px' }}>
+                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#000', flexShrink: 0, marginLeft: '-9px' }} />
+                            <div style={{ flex: 1, borderTop: '2px dashed #1e1e1e' }} />
+                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#000', flexShrink: 0, marginRight: '-9px' }} />
+                          </div>
+                          <div style={{ padding: '1rem 1.5rem 1.25rem', background: '#0a0a0a' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', fontSize: '0.65rem', color: '#333', letterSpacing: '0.06em' }}>
+                              <span>●●●</span><span>LOCKED IN</span><span>●●●</span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()
+                  ) : (
+                    allInSlip.map((game) => {
+                      const bm = game.bookmakers?.[0]
+                      const ml = bm?.markets?.find(m => m.key === 'h2h')
+                      const isLockGame = game.id === lockGameId
+                      const isDogGame = game.id === dogGameId && !isLockGame
+                      const isSuperDogGame = game.id === superdogGameId && !isLockGame && !isDogGame
+                      const isFavGame = game.id === favGameId && !isLockGame && !isDogGame && !isSuperDogGame
+                      const isHateGame = game.id === hateGameId && !isLockGame && !isDogGame && !isSuperDogGame && !isFavGame
+                      const isAutoGame = isLockGame || isDogGame || isSuperDogGame || isFavGame || isHateGame
+                      const isRequired = isLockGame || isDogGame  // only Lock+Dog cannot be removed
+                      const isRemoved = allInRemovedGames.includes(game.id)
+                      const chosenTeam = isLockGame ? todayLock?.team : isDogGame ? todayDog?.team : isSuperDogGame ? todaySuperDog?.team : isFavGame ? todayFavPick?.team : isHateGame ? todayHatePick?.team : selectedTeams[game.id]
+                      const pickedOutcome = ml?.outcomes?.find(o => o.name === chosenTeam) || ml?.outcomes?.reduce((a, b) => ensureAmerican(a.price) < ensureAmerican(b.price) ? a : b)
+                      const canRemove = !isRequired && allInSlip.length > 2
+                      const canAdd = isRemoved && true
+                      const gameColor = isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : isSuperDogGame ? '#b44fff' : isFavGame ? '#4c9be8' : isHateGame ? '#ff4466' : '#ff9944'
+                      const gameLabel = isLockGame ? '🔒 LOCK' : isDogGame ? '🐕 DOG' : isSuperDogGame ? '⚡ SUPER DOG' : isFavGame ? '⭐ FAV' : isHateGame ? '😤 HATE' : isRemoved ? 'REMOVED' : 'LEG'
+                      return (
+                        <div key={game.id} onClick={() => {
+                          if (allInLocked || isRequired) return
+                          if (isRemoved && canAdd) setAllInRemovedGames(r => r.filter(id => id !== game.id))
+                          else if (!isRemoved && canRemove) setAllInRemovedGames(r => [...r, game.id])
+                        }} style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          background: isRemoved ? '#111' : '#1a1a1a',
+                          border: `1px solid ${isRemoved ? '#1a1a1a' : `${gameColor}44`}`,
+                          borderRadius: '8px', padding: '0.75rem 1rem',
+                          opacity: isRemoved ? 0.3 : 1,
+                          cursor: (isRequired || (!canRemove && !isRemoved) || (!canAdd && isRemoved)) ? 'default' : 'pointer',
+                          transition: 'all 0.15s',
+                        }}>
+                          <div>
+                            <div style={{ fontSize: '0.65rem', color: gameColor, fontWeight: 'bold', marginBottom: '0.2rem' }}>{gameLabel}</div>
+                            <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{chosenTeam || pickedOutcome?.name || '—'}</div>
+                            <div style={{ color: '#333', fontSize: '0.72rem' }}>{game.away_team} vs {game.home_team}</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ fontWeight: 'bold', color: pickedOutcome && ensureAmerican(pickedOutcome.price) < 0 ? '#00ff88' : '#ff9944', fontSize: '0.95rem' }}>
+                              {pickedOutcome ? formatOdds(ensureAmerican(pickedOutcome.price)) : '—'}
+                            </div>
+                            <div style={{ fontSize: '1rem' }}>
+                              {isRemoved ? (canAdd ? '➕' : '—') : isRequired ? '🔒' : (canRemove ? '✕' : '—')}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+                {!allInLocked && allInSlip.length >= 2 && (
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#555' }}>{allInSlip.length} leg{allInSlip.length !== 1 ? 's' : ''} · no limit ✓</span>
+                    <button onClick={lockAllIn} style={{
+                      padding: '0.6rem 1.25rem', borderRadius: '7px', fontWeight: 'bold', fontSize: '0.85rem',
+                      background: '#ff9944', color: '#000', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                    }}>Lock All In 🚀</button>
+                  </div>
+                )}
+                {allInLocked && (
+                  <div style={{ textAlign: 'center', fontSize: '0.8rem', color: '#ff9944', fontWeight: 'bold', marginTop: '0.5rem' }}>🚀 All In locked</div>
+                )}
+              </div>
+            )}
+          </ParlaySection>
+        )
+      })()}
+
+      {/* 5. Lay of the Day */}
       <ParlaySection title="Lay of the Day" emoji="🎯" defaultOpen={false} totalOdds={layOdds} forceOpen={openLay}>
-        {!predictionsLocked ? (
-          <p style={{ color: '#555', fontSize: '0.85rem', margin: 0 }}>Lock in your Predictions first — then trim down to your 2–4 most confident picks.</p>
+        {!allInLocked ? (
+          <p style={{ color: '#555', fontSize: '0.85rem', margin: 0 }}>Lock in your All In first — then trim down to your 2–4 most confident picks for Lay of the Day.</p>
         ) : (
           <div>
             {!layLocked && (
@@ -902,32 +1585,82 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
               {layLocked && todayLay ? (
-                todayLay.legs.reduce((acc, leg) => {
-                  if (!leg.isLock && !leg.isDog) acc.n++
-                  const legNum = acc.n
-                  acc.els.push(
-                    <div key={leg.gameId} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1a1a1a',
-                      border: `1px solid ${leg.result === 'W' ? '#00ff8844' : leg.result === 'L' ? '#ff444444' : leg.isLock ? '#00ff8844' : leg.isDog ? '#ff994444' : '#8888ff44'}`,
-                      borderRadius: '8px', padding: '0.75rem 1rem',
-                    }}>
-                      <div>
-                        <div style={{ fontSize: '0.65rem', color: leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : '#8888ff', fontWeight: 'bold', marginBottom: '0.2rem' }}>
-                          {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : `LEG ${legNum}`}
-                        </div>
-                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{leg.team || '—'}</div>
-                        <div style={{ color: '#555', fontSize: '0.72rem' }}>{leg.away} vs {leg.home}</div>
-                        {leg.odds != null && (
-                          <div style={{ fontSize: '0.72rem', color: leg.odds < 0 ? '#00ff88' : '#ff9944', fontWeight: 'bold', marginTop: '0.15rem' }}>
-                            {formatOdds(leg.odds)}
+                (() => {
+                  const legs = todayLay.legs
+                  const allResolved = legs.every(l => l.result !== null)
+                  const allWon = allResolved && legs.every(l => l.result === 'W')
+                  const anyLost = legs.some(l => l.result === 'L')
+                  const slipBorderColor = allWon ? '#8888ff' : anyLost ? '#ff4444' : '#8888ff'
+                  const slipGlowColor = allWon ? 'rgba(136,136,255,0.12)' : anyLost ? 'rgba(255,68,68,0.08)' : 'rgba(136,136,255,0.08)'
+                  const statusLabel = allWon ? '🎉 ALL LEGS HIT' : anyLost ? '❌ PARLAY LOST' : '⏳ LIVE'
+                  const statusColor = allWon ? '#8888ff' : anyLost ? '#ff4444' : '#8888ff'
+                  let legCounter = 0
+                  return (
+                    <div style={{ margin: '0 auto', maxWidth: '420px', background: 'linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 100%)', border: `1px solid ${slipBorderColor}44`, borderRadius: '16px', overflow: 'hidden', boxShadow: `0 0 40px ${slipGlowColor}, 0 8px 32px rgba(0,0,0,0.6)` }}>
+                      <div style={{ background: 'linear-gradient(135deg, #111 0%, #141414 100%)', borderBottom: `1px solid ${slipBorderColor}33`, padding: '1.25rem 1.5rem 1rem', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.6rem', color: '#444', letterSpacing: '0.15em', fontWeight: 'bold', marginBottom: '0.3rem' }}>LAY OF THE DAY · BET SLIP</div>
+                        <div style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.5rem' }}>🎯 Lay · {legs.length}-Leg Parlay</div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: `${statusColor}18`, border: `1px solid ${statusColor}44`, borderRadius: '20px', padding: '0.2rem 0.75rem', fontSize: '0.72rem', fontWeight: 'bold', color: statusColor }}>{statusLabel}</div>
+                      </div>
+                      <div style={{ padding: '0 1.25rem' }}>
+                        {legs.map((leg, idx) => {
+                          if (!leg.isLock && !leg.isDog && !leg.isSuperDog) legCounter++
+                          const n = legCounter
+                          const legColor = leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : leg.isSuperDog ? '#b44fff' : leg.isFav ? '#4c9be8' : leg.isHate ? '#ff4466' : '#8888ff'
+                          const resultIcon = leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'
+                          const liveGame = allGames.find(g => g.id === leg.gameId)
+                          const espnState = liveGame?.espnStatus?.type?.state
+                          const isLegLive = espnState === 'in'
+                          const isLegFinal = espnState === 'post' || liveGame?.espnStatus?.type?.completed
+                          const marketLabel = leg.market === 'spreads' && leg.point != null ? `Spread ${leg.point > 0 ? '+' : ''}${leg.point}` : 'Moneyline'
+                          return (
+                            <div key={leg.gameId} style={{ padding: '1rem 0', borderBottom: idx === legs.length - 1 ? 'none' : '1px solid #1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
+                                  <span style={{ fontSize: '0.58rem', fontWeight: 'bold', letterSpacing: '0.08em', color: legColor, background: `${legColor}15`, border: `1px solid ${legColor}30`, padding: '0.1rem 0.4rem', borderRadius: '3px' }}>
+                                    {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`}
+                                  </span>
+                                  <span style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.06em' }}>{leg.sport}</span>
+                                  {isLegLive && leg.result === null && <span style={{ fontSize: '0.56rem', fontWeight: 'bold', color: '#ff4444', background: '#ff444420', border: '1px solid #ff444440', borderRadius: '3px', padding: '0.08rem 0.35rem' }}>🔴 LIVE</span>}
+                                  {isLegFinal && leg.result === null && <span style={{ fontSize: '0.56rem', fontWeight: 'bold', color: '#aaa', background: '#ffffff10', border: '1px solid #aaa30', borderRadius: '3px', padding: '0.08rem 0.35rem' }}>✓ FINAL</span>}
+                                </div>
+                                <div style={{ fontWeight: 'bold', fontSize: '0.92rem', color: '#fff', marginBottom: '0.1rem' }}>{leg.team || '—'}</div>
+                                <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: '0.1rem' }}>{marketLabel}</div>
+                                <div style={{ fontSize: '0.68rem', color: '#444', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{leg.away} vs {leg.home}</div>
+                              </div>
+                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                {leg.odds != null && <div style={{ fontSize: '0.88rem', fontWeight: 'bold', color: leg.odds > 0 ? '#ff9944' : '#00ff88', marginBottom: '0.2rem' }}>{leg.odds > 0 ? '+' : ''}{leg.odds}</div>}
+                                <div style={{ fontSize: '1.15rem' }}>{resultIcon}</div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', margin: '0 -1px' }}>
+                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#000', flexShrink: 0, marginLeft: '-9px' }} />
+                        <div style={{ flex: 1, borderTop: '2px dashed #1e1e1e' }} />
+                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#000', flexShrink: 0, marginRight: '-9px' }} />
+                      </div>
+                      <div style={{ padding: '1rem 1.5rem 1.25rem', background: '#0a0a0a' }}>
+                        {layOdds && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                            <div>
+                              <div style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.2rem' }}>PARLAY ODDS</div>
+                              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: layOdds > 0 ? '#ff9944' : '#8888ff', lineHeight: 1 }}>{layOdds > 0 ? '+' : ''}{layOdds}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.2rem' }}>🪙1 WINS</div>
+                              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fff', lineHeight: 1 }}>{calcPayout(layOdds, 1).toFixed(2)}x</div>
+                            </div>
                           </div>
                         )}
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', fontSize: '0.65rem', color: '#333', letterSpacing: '0.06em' }}>
+                          <span>●●●</span><span>LOCKED IN</span><span>●●●</span>
+                        </div>
                       </div>
-                      <div style={{ fontSize: '1.2rem' }}>{leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'}</div>
                     </div>
                   )
-                  return acc
-                }, { n: 0, els: [] }).els
+                })()
               ) : (
                 predictionsSlip.map((game) => {
                   const bm = game.bookmakers?.[0]
@@ -935,56 +1668,45 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
                   const isRemoved = layRemovedGames.includes(game.id)
                   const isLockGame = game.id === lockGameId
                   const isDogGame = game.id === dogGameId && !isLockGame
-                  const chosenTeam = isLockGame ? todayLock?.team : isDogGame ? todayDog?.team : selectedTeams[game.id]
+                  const isSuperDogGame = game.id === superdogGameId && !isLockGame && !isDogGame
+                  const isFavGame = game.id === favGameId && !isLockGame && !isDogGame && !isSuperDogGame
+                  const isHateGame = game.id === hateGameId && !isLockGame && !isDogGame && !isSuperDogGame && !isFavGame
+                  const isAutoGame = isLockGame || isDogGame || isSuperDogGame || isFavGame || isHateGame
+                  const isRequired = isLockGame || isDogGame  // only Lock+Dog cannot be removed
+                  const chosenTeam = isLockGame ? todayLock?.team : isDogGame ? todayDog?.team : isSuperDogGame ? todaySuperDog?.team : isFavGame ? todayFavPick?.team : isHateGame ? todayHatePick?.team : selectedTeams[game.id]
                   const pickedOutcome = ml?.outcomes?.find(o => o.name === chosenTeam) || ml?.outcomes?.reduce((a, b) => ensureAmerican(a.price) < ensureAmerican(b.price) ? a : b)
-                  const canRemove = !isLockGame && !isDogGame && laySlip.length > 2
+                  const canRemove = !isRequired && laySlip.length > 2
                   const canAdd = isRemoved && laySlip.length < 4
+                  const gameColor = isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : isSuperDogGame ? '#b44fff' : isFavGame ? '#4c9be8' : isHateGame ? '#ff4466' : '#8888ff'
                   const legNum = laySlip.filter(g => !layRemovedGames.includes(g.id)).indexOf(game) + 1
                   return (
                     <div key={game.id} onClick={() => {
-                      if (layLocked || isLockGame || isDogGame) return
+                      if (layLocked || isRequired) return
                       if (isRemoved && canAdd) setLayRemovedGames(r => r.filter(id => id !== game.id))
                       else if (!isRemoved && canRemove) setLayRemovedGames(r => [...r, game.id])
                     }} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      background: isRemoved ? '#111' : isLockGame ? '#0d0d0d' : '#1a1a1a',
-                      border: `1px solid ${isRemoved ? '#1a1a1a' : isLockGame ? '#1e1e1e' : isDogGame ? '#ff994444' : '#2a2a2a'}`,
+                      background: isRemoved ? '#111' : '#1a1a1a',
+                      border: `1px solid ${isRemoved ? '#1a1a1a' : `${gameColor}44`}`,
                       borderRadius: '8px', padding: '0.75rem 1rem',
-                      opacity: isRemoved ? 0.3 : isLockGame ? 0.45 : 1,
-                      cursor: (isLockGame || isDogGame || (!canRemove && !isRemoved) || (!canAdd && isRemoved)) ? 'default' : 'pointer',
+                      opacity: isRemoved ? 0.3 : 1,
+                      cursor: (isRequired || (!canRemove && !isRemoved) || (!canAdd && isRemoved)) ? 'default' : 'pointer',
                       transition: 'all 0.15s',
                     }}>
                       <div>
-                        <div style={{ fontSize: '0.65rem', color: isLockGame ? '#333' : isDogGame ? '#ff9944' : '#8888ff', fontWeight: 'bold', marginBottom: '0.2rem' }}>
-                          {isLockGame ? '🔒 LOCK — fixed' : isDogGame ? '🐕 DOG' : isRemoved ? 'REMOVED' : `LEG ${legNum}`}
+                        <div style={{ fontSize: '0.65rem', color: gameColor, fontWeight: 'bold', marginBottom: '0.2rem' }}>
+                          {isLockGame ? '🔒 LOCK — fixed' : isDogGame ? '🐕 DOG' : isSuperDogGame ? '⚡ SUPER DOG' : isFavGame ? '⭐ FAV' : isHateGame ? '😤 HATE' : isRemoved ? 'REMOVED' : `LEG ${legNum}`}
                         </div>
-                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: isLockGame ? '#555' : '#fff' }}>{pickedOutcome?.name || '—'}</div>
+                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{chosenTeam || pickedOutcome?.name || '—'}</div>
                         <div style={{ color: '#333', fontSize: '0.72rem' }}>{game.away_team} vs {game.home_team}</div>
-                        <div style={{ fontSize: '0.65rem', color: isLockGame ? '#2a2a2a' : '#444', marginTop: '0.2rem' }}>
-                          {getGameDateLabel(game.commence_time)}
-                        </div>
-                        {game.sportLabel === 'MLB' && (() => {
-                          const awayP = getProbablePitcher(game.away_team, mlbPitchers)
-                          const homeP = getProbablePitcher(game.home_team, mlbPitchers)
-                          if (!awayP && !homeP) return null
-                          return (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem', background: '#0d1a2a', border: '1px solid #1a3a5a', borderRadius: '5px', padding: '0.18rem 0.5rem' }}>
-                              <span style={{ fontSize: '0.58rem', color: '#4c9be8' }}>⚾</span>
-                              <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{game.away_team.split(' ').pop()}:</span>
-                              <span style={{ fontSize: '0.6rem', color: awayP ? '#7ab8e8' : '#2a4a6a', fontWeight: awayP ? 'bold' : 'normal' }}>{awayP || 'TBA'}</span>
-                              <span style={{ fontSize: '0.55rem', color: '#1a3a5a' }}>·</span>
-                              <span style={{ fontSize: '0.6rem', color: '#4c9be855' }}>{game.home_team.split(' ').pop()}:</span>
-                              <span style={{ fontSize: '0.6rem', color: homeP ? '#7ab8e8' : '#2a4a6a', fontWeight: homeP ? 'bold' : 'normal' }}>{homeP || 'TBA'}</span>
-                            </div>
-                          )
-                        })()}
+                        <div style={{ fontSize: '0.65rem', color: '#444', marginTop: '0.2rem' }}>{getGameDateLabel(game.commence_time)}</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ fontWeight: 'bold', color: isLockGame ? '#333' : pickedOutcome && ensureAmerican(pickedOutcome.price) < 0 ? '#00ff88' : '#ff9944', fontSize: '1rem' }}>
+                        <div style={{ fontWeight: 'bold', color: pickedOutcome && ensureAmerican(pickedOutcome.price) < 0 ? '#00ff88' : '#ff9944', fontSize: '1rem' }}>
                           {pickedOutcome ? formatOdds(ensureAmerican(pickedOutcome.price)) : '—'}
                         </div>
-                        <div style={{ fontSize: '1.1rem', opacity: isLockGame ? 0.3 : 1 }}>
-                          {isRemoved ? (canAdd ? '➕' : '—') : isLockGame ? '🔒' : isDogGame ? '🐕' : (canRemove ? '✕' : '—')}
+                        <div style={{ fontSize: '1.1rem', opacity: isRequired ? 0.3 : 1 }}>
+                          {isRemoved ? (canAdd ? '➕' : '—') : isRequired ? '🔒' : (canRemove ? '✕' : '—')}
                         </div>
                       </div>
                     </div>
@@ -1036,182 +1758,9 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, onL
         )}
       </ParlaySection>
 
-      {/* ── 4. F5 / Halftime Slip ── */}
-      <ParlaySection title="F5 / Halftime" emoji="⚡" defaultOpen={false}>
-        <div style={{ padding: '0.75rem' }}>
-          <p style={{ margin: '0 0 1rem', color: '#444', fontSize: '0.8rem' }}>
-            First 5 innings (MLB) · First half (NBA/NFL) · One pick per sport · Push on tie
-          </p>
-
-          {/* Today's F5 picks */}
-          {/* Today's F5 picks — editable until game starts (result === null) */}
-          {Object.keys(todayF5).filter(k => k !== '_locked').length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginBottom: '1rem' }}>
-              {Object.entries(todayF5).filter(([k]) => k !== '_locked').map(([sport, pick]) => {
-                if (!pick) return null
-                const meta = F5_LABELS[sport]
-                const canChange = !f5Locked && pick.result === null
-                const borderColor = pick.result === 'W' ? '#00ff88' : pick.result === 'L' ? '#ff4444' : pick.result === 'P' ? '#aaa' : f5Locked ? (meta?.color || '#555') + '44' : (meta?.color || '#555') + '66'
-                return (
-                  <div key={sport} style={{ background: '#111', border: `1px solid ${borderColor}`, borderRadius: '8px', padding: '0.75rem 1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ fontSize: '0.62rem', color: meta?.color, fontWeight: 'bold', marginBottom: '0.2rem' }}>
-                        {meta?.emoji} {sport} {meta?.short} · TODAY
-                      </div>
-                      {canChange && (
-                        <button
-                          onClick={async () => {
-                            const updated = { ...f5State, [todayKey]: { ...todayF5 } }
-                            delete updated[todayKey][sport]
-                            await saveF5(updated)
-                          }}
-                          style={{ background: 'transparent', border: '1px solid #333', borderRadius: '5px', color: '#555', cursor: 'pointer', fontSize: '0.68rem', padding: '0.15rem 0.55rem', fontWeight: 'bold' }}
-                        >
-                          ✏️ Change
-                        </button>
-                      )}
-                    </div>
-                    {pick.noGuess
-                      ? <div style={{ color: '#555', fontSize: '0.85rem', fontStyle: 'italic' }}>No guess — sitting out</div>
-                      : <>
-                          <div style={{ fontWeight: 'bold', fontSize: '0.92rem' }}>{pick.team}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#555', marginTop: '0.1rem' }}>
-                            {pick.marketType === 'moneyline' ? 'Moneyline' : `Spread ${pick.point > 0 ? '+' : ''}${pick.point}`}
-                            {' · '}{formatOdds(pick.odds)} · {pick.away} @ {pick.home}
-                          </div>
-                        </>
-                    }
-                    {!pick.noGuess && pick.result === null && <div style={{ fontSize: '0.7rem', color: '#555', marginTop: '0.3rem' }}>⏳ Pending...</div>}
-                    {pick.result === 'W' && <div style={{ fontSize: '0.78rem', color: '#00ff88', fontWeight: 'bold', marginTop: '0.3rem' }}>✅ WIN</div>}
-                    {pick.result === 'L' && <div style={{ fontSize: '0.78rem', color: '#ff4444', fontWeight: 'bold', marginTop: '0.3rem' }}>❌ LOSS</div>}
-                    {pick.result === 'P' && <div style={{ fontSize: '0.78rem', color: '#aaa', fontWeight: 'bold', marginTop: '0.3rem' }}>🤝 PUSH</div>}
-                  </div>
-                )
-              })}
-              {/* Lock button — only show if not locked yet */}
-              {!f5Locked ? (
-                <button
-                  onClick={lockF5}
-                  style={{
-                    width: '100%', padding: '0.75rem', borderRadius: '8px', fontWeight: 'bold',
-                    fontSize: '0.85rem', border: 'none', cursor: 'pointer',
-                    background: '#ff9944', color: '#000', marginTop: '0.25rem',
-                  }}
-                >
-                  ⚡ Lock F5 Picks 🔒
-                </button>
-              ) : (
-                <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#ff9944', fontWeight: 'bold', marginTop: '0.25rem' }}>
-                  ⚡ F5 picks locked in
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* No-guess + game picker — per sport, only show unpicked sports */}
-          {(() => {
-            const sportsInGames = new Set(allGames.map(g => g.sportLabel))
-            const unpicked = Object.keys(F5_LABELS).filter(s => sportsInGames.has(s) && !todayF5[s])
-            if (!unpicked.length || f5Locked) return null
-            const now = new Date()
-            const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-            const tomorrowMidnight = new Date(todayMidnight.getTime() + 86400000)
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {/* Date filter tabs */}
-                <div style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.25rem' }}>
-                  {['today', 'future'].map(f => (
-                    <button key={f} onClick={() => setF5DateFilter(f)} style={{
-                      fontSize: '0.62rem', padding: '0.15rem 0.6rem',
-                      background: f5DateFilter === f ? '#1a1a1a' : 'none',
-                      border: `1px solid ${f5DateFilter === f ? '#333' : '#1a1a1a'}`,
-                      borderRadius: '4px', color: f5DateFilter === f ? '#aaa' : '#444',
-                      cursor: 'pointer', fontWeight: f5DateFilter === f ? 'bold' : 'normal',
-                    }}>
-                      {f === 'today' ? '📅 Today' : '🌅 Future'}
-                    </button>
-                  ))}
-                </div>
-                {unpicked.map(sport => {
-                  const meta = F5_LABELS[sport]
-                  // Filter by date tab and game state
-                  const sportGames = allGames.filter(g => {
-                    if (g.sportLabel !== sport) return false
-                    const state = g.espnStatus?.type?.state
-                    const completed = g.espnStatus?.type?.completed
-                    if (completed || state === 'post' || state === 'in') return false
-                    const gd = new Date(g.commence_time)
-                    if (f5DateFilter === 'today') return gd >= todayMidnight && gd < tomorrowMidnight
-                    if (f5DateFilter === 'future') return gd >= tomorrowMidnight
-                    return true
-                  })
-                  if (!sportGames.length) return (
-                    <div key={sport} style={{ fontSize: '0.7rem', color: '#333', padding: '0.5rem 0' }}>
-                      {meta.emoji} No {sport} games {f5DateFilter === 'today' ? 'today' : 'upcoming'}
-                    </div>
-                  )
-                  return (
-                    <div key={sport}>
-                      <div style={{ fontSize: '0.68rem', color: meta.color, fontWeight: 'bold', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>
-                        {meta.emoji} {sport} · {meta.title}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.4rem' }}>
-                        {sportGames.map(game => {
-                          const espnState = game.espnStatus?.type?.state
-                          const isLive = espnState === 'in'
-                          const isFinal = espnState === 'post' || game.espnStatus?.type?.completed
-                          const isUnavailable = isLive || isFinal
-                          const score = game.espnScores
-                          const scoreStr = score ? `${game.away_team.split(' ').pop()} ${score.away} – ${game.home_team.split(' ').pop()} ${score.home}` : ''
-                          return (
-                            <div
-                              key={game.id}
-                              onClick={() => !isUnavailable && openF5Game(game)}
-                              style={{
-                                background: isUnavailable ? '#111' : '#1a1a1a',
-                                border: `1px solid ${isLive ? '#ff994433' : isFinal ? '#1e1e1e' : '#2a2a2a'}`,
-                                borderRadius: '8px', padding: '0.8rem 1rem',
-                                cursor: isUnavailable ? 'default' : 'pointer',
-                                opacity: isFinal ? 0.45 : 1,
-                                transition: 'border-color 0.15s',
-                              }}
-                              onMouseEnter={e => { if (!isUnavailable) e.currentTarget.style.borderColor = meta.color + '88' }}
-                              onMouseLeave={e => { if (!isUnavailable) e.currentTarget.style.borderColor = isLive ? '#ff994433' : '#2a2a2a' }}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '0.88rem', color: isFinal ? '#555' : '#fff' }}>
-                                  {game.away_team} <span style={{ color: '#333' }}>@</span> {game.home_team}
-                                </div>
-                                <div style={{ fontSize: '0.72rem', color: '#555', textAlign: 'right' }}>
-                                  {isLive && <span style={{ color: '#ff9944', fontWeight: 'bold', display: 'block' }}>🔴 LIVE{scoreStr ? ` · ${scoreStr}` : ''}</span>}
-                                  {isFinal && <span style={{ color: '#444', display: 'block' }}>✓ Final{scoreStr ? ` · ${scoreStr}` : ''}</span>}
-                                  {!isUnavailable && getGameDateLabel(game.commence_time)}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                      <button onClick={() => f5NoGuess(sport)} style={{
-                        width: '100%', padding: '0.45rem', background: 'transparent', border: '1px solid #1e1e1e',
-                        borderRadius: '6px', color: '#333', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 'bold',
-                      }}>
-                        No Guess for {sport}
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          })()}
-        </div>
-      </ParlaySection>
-
-      {/* F5 Pick Modal */}
       {f5Modal && (() => {
         const { game, sport, linesData } = f5Modal
         const meta = F5_LABELS[sport]
-        // linesData is now { h2h, runline, total } from /dk-f5 (scraper format)
         const options = []
         if (linesData?.h2h) {
           const { homeName, awayName, homeOdds, awayOdds } = linesData.h2h

@@ -143,6 +143,19 @@ export async function saveFavPick(picks) {
   return enqueueWrite('favPick', picks)
 }
 
+// ─── SUPER DOG PICKS ──────────────────────────────────────────────────────────
+
+export async function loadSuperDogState() {
+  try {
+    const data = await loadAllData()
+    return data.superdog || {}
+  } catch { return {} }
+}
+
+export async function saveSuperDogState(state) {
+  return enqueueWrite('superdog', state)
+}
+
 // ─── HATE PICK (per-day pick made from HateWatchTab) ─────────────────────────
 
 export async function loadHatePick() {

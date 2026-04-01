@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { formatOdds, getSportsInSeason, getGameDateLabel } from '../utils/odds.js'
+import { getTeamLogoUrl, LOGO_STYLE } from '../utils/teamLogos.js'
 
 function getGameStatus(game) {
   const status = game.espnStatus
@@ -91,6 +92,9 @@ function FinalsCard({ game }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {awayWon && <span style={{ fontSize: '0.55rem', color: '#00cc66', fontWeight: 'bold', letterSpacing: '0.08em' }}>W</span>}
+          {getTeamLogoUrl(game.away_team, game.sportLabel) && (
+            <img src={getTeamLogoUrl(game.away_team, game.sportLabel)} style={{ ...LOGO_STYLE, width: '22px', height: '22px', opacity: awayWon ? 1 : 0.4 }} alt="" />
+          )}
           <span style={{ fontSize: '0.92rem', fontWeight: awayWon ? '700' : '400', color: awayWon ? '#fff' : '#666' }}>
             {game.away_team}
           </span>
@@ -110,6 +114,9 @@ function FinalsCard({ game }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {homeWon && <span style={{ fontSize: '0.55rem', color: '#00cc66', fontWeight: 'bold', letterSpacing: '0.08em' }}>W</span>}
+          {getTeamLogoUrl(game.home_team, game.sportLabel) && (
+            <img src={getTeamLogoUrl(game.home_team, game.sportLabel)} style={{ ...LOGO_STYLE, width: '22px', height: '22px', opacity: homeWon ? 1 : 0.4 }} alt="" />
+          )}
           <span style={{ fontSize: '0.92rem', fontWeight: homeWon ? '700' : '400', color: homeWon ? '#fff' : '#666' }}>
             {game.home_team}
           </span>
@@ -568,19 +575,31 @@ export default function GamesTab({ allGames, loading, onRefresh, cacheAge }) {
               {isMlb ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <div style={{ textAlign: 'center' }}>
+                    {getTeamLogoUrl(game.away_team, 'MLB') && (
+                      <img src={getTeamLogoUrl(game.away_team, 'MLB')} style={{ ...LOGO_STYLE, width: '24px', height: '24px', display: 'block', margin: '0 auto 2px' }} alt="" />
+                    )}
                     <div><strong>{game.away_team}</strong></div>
                     <div style={{ fontSize: '0.65rem', color: awayPitcher ? '#4c9be8' : '#333', marginTop: '0.1rem' }}>{'⚾'} {awayPitcher || 'TBA'}</div>
                   </div>
                   <span style={{ color: '#444', fontSize: '0.8rem' }}>@</span>
                   <div style={{ textAlign: 'center' }}>
+                    {getTeamLogoUrl(game.home_team, 'MLB') && (
+                      <img src={getTeamLogoUrl(game.home_team, 'MLB')} style={{ ...LOGO_STYLE, width: '24px', height: '24px', display: 'block', margin: '0 auto 2px' }} alt="" />
+                    )}
                     <div><strong>{game.home_team}</strong></div>
                     <div style={{ fontSize: '0.65rem', color: homePitcher ? '#4c9be8' : '#333', marginTop: '0.1rem' }}>{'⚾'} {homePitcher || 'TBA'}</div>
                   </div>
                 </div>
               ) : (
                 <>
+                  {getTeamLogoUrl(game.home_team, game.sportLabel) && (
+                    <img src={getTeamLogoUrl(game.home_team, game.sportLabel)} style={{ ...LOGO_STYLE, width: '22px', height: '22px' }} alt="" />
+                  )}
                   <strong>{game.home_team}</strong>
                   <span style={{ color: '#555', margin: '0 0.25rem' }}>vs</span>
+                  {getTeamLogoUrl(game.away_team, game.sportLabel) && (
+                    <img src={getTeamLogoUrl(game.away_team, game.sportLabel)} style={{ ...LOGO_STYLE, width: '22px', height: '22px' }} alt="" />
+                  )}
                   <strong>{game.away_team}</strong>
                 </>
               )}

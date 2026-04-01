@@ -7,6 +7,47 @@ Status: 🔴 Broken · 🟡 Incomplete · 🟢 Works but needs improvement · �
 
 ## 🚨 URGENT — Priority #1
 
+### TICKET-MEDIA003 · Media tab — pitcher/batter refresh still broken
+**Tab:** Media  
+**Status:** 🔴 Broken — Priority #1  
+**What's wrong:** The refresh button on the Today sub-tab is not reliably correcting the lineup. Two separate problems:
+
+1. **Lineup source** — `fetchMlbLineup` now hits `/schedule?gamePk={pk}&hydrate=lineups` which is correct, but this endpoint only returns lineups once the home team has officially submitted them (typically ~30–60 min before first pitch). Before that window, `lineups` is null and we fall back to the ESPN box score, which only contains batters who have already come to the plate. This means early refreshes still show an incomplete/wrong lineup.
+
+2. **Merge correctness** — even when both sources are available, the last-name match used to merge ESPN stats onto MLB lineup slots is fragile (e.g. "Yordan Alvarez" matched against ESPN's "Y. Alvarez" can fail). Any mismatch silently drops that player's live stats (H, RBI, etc.).
+
+**Intended fix:**
+- On refresh, always prefer MLB `/schedule?hydrate=lineups` if available
+- If `lineups` is null (pre-submission), fall back to ESPN box-score batting order — but flag the lineup as "not yet confirmed" in the UI
+- Improve merge: match on full name first, then last name, then ESPN `batOrder` slot as final fallback so no stats are silently lost
+- Add a visible "📋 Lineup confirmed" vs "⏳ Lineup TBD" badge on each BatterCard header
+
+**Files:** `src/tabs/MediaTab.jsx` — `fetchMlbLineup`, lineup merge block in `usePitcherData`  
+**Effort:** Medium  
+**Priority:** 🚨 Fix before next game day
+
+---
+
+### TICKET-MEDIA004 · Media tab — Outs panel and Highlights reel are not cleanly split
+**Tab:** Media  
+**Status:** 🔴 Broken  
+**What's wrong:** The Outs & Strikeouts panel and the full Highlights reel both pull from the same `fetchGameHighlights` pool but apply different (and incomplete) filters:
+
+- **`filterHighlightsByPlayer`** (Highlights reel) — only checks `player_id` match; does NOT exclude recap reels, so compiled recap packages (e.g. `highlight-reel-starting-pitching`) appear in both panels.
+- **`filterOutClips`** (Outs panel) — excludes `highlight-reel-starting-pitching` but misses other recap reel keyword values (e.g. `highlight-reel`, `condensed-game`, `daily-recap`). Individual out/K clips that happen to also match the pitcher's `player_id` correctly appear here, but recap reels tagged with multiple player IDs can still slip through.
+- No deduplication between panels — the same clip can appear in both Outs and Highlights.
+
+**Intended fix:**
+- Define one authoritative "is this a recap reel" predicate: exclude any item where `keywordsAll` contains `type === "slug"` values of `highlight-reel-starting-pitching`, `highlight-reel`, `condensed-game`, or `daily-recap`
+- **Outs panel**: individual out/K clips only — `player_id` match + NOT recap reel + short duration (< 60s is a good proxy for individual play clips)
+- **Highlights reel**: all pitcher clips — `player_id` match + NOT recap reel (any duration)
+- Deduplicate: if a clip ID already appears in Outs, exclude it from Highlights
+- Validate against the verified clip IDs in TICKET-007 (Tatsuya Imai, gamePk 824215)
+
+**Files:** `src/tabs/MediaTab.jsx` — `filterOutClips`, `filterHighlightsByPlayer`, `OutsPanel`, `PitcherHighlights`  
+**Effort:** Small  
+**Priority:** High — fix alongside TICKET-MEDIA003
+
 ### TICKET-FLOW001 · Pick flow order enforcement
 **Status:** ✅ Fixed  
 **What was wrong:** HateWatch and Favs tabs were reported to have `goLock()` / `saveState()` calls that could overwrite the Lock of the Day. On inspection both tabs were already read-only with no pick buttons. Sequential gating added in App.jsx.  
@@ -90,11 +131,48 @@ Status: 🔴 Broken · 🟡 Incomplete · 🟢 Works but needs improvement · �
 
 ---
 
-### TICKET-007 · Media tab not built
+### TICKET-007 · Media tab — split layout (Outs panel + existing content)
 **Tab:** Media  
-**What's wrong:** Tab exists but has no real content — just placeholder text.  
-**Intended fix:** Discord webhook (post pick on lock, update on result), Twitter/X embed. Pull from discord channel and upload to media tab and make video playable within tab. WITHIN TAB.  
-**Effort:** Large
+**Status:** ✅ Done  
+**Effort:** Medium
+
+**What's built:**
+- Pitcher card: today stats (K, IP, ERA, BB, HR), season stats (K/9, K%, WHIP, K/BB), pitch totals
+- Batter lineup cards with ESPN live box score stats
+- Highlight clip player — fetches from `statsapi.mlb.com/api/v1/game/{gamePk}/content`, plays mp4 inline
+- **Outs & Strikeouts panel** — collapsible, sits above the game line in each PitcherCard. Compact rows: thumbnail → title → duration → tap to play inline.
+- **All highlight sections collapsed by default** — both the Outs panel and the full Highlights reel require a tap to open.
+- **Stat layout reorganized** — game line highlighted (bright accent pills, pitch count first), season stats separated by a full-width divider line, plain unhighlighted pills.
+
+**Filter rule implemented (revised from spec):**
+1. ~~`keywordsAll` contains `{ "type": "taxonomy", "value": "pitching" }`~~ — **DROPPED**: this tag is absent on most individual out/K clips; using it reduced the feed to recap reels only
+2. `keywordsAll` does NOT contain `{ "value": "highlight-reel-starting-pitching" }` — still in use, correctly drops compiled recap reels
+3. `keywordsAll` contains a `player_id` entry matching the pitcher's MLB personId — still in use, is the correct primary filter
+
+The `player_id` match alone correctly identifies all clips attributed to our pitcher. The recap reel exclusion drops the compiled highlight packages. This was validated against the verified clip IDs in the ticket spec (Tatsuya Imai, gamePk 824215) — individual K clips lack `taxonomy:pitching` but do have the `player_id` tag.
+
+**🔬 Verified clip IDs (Angels @ Astros, 2026-03-29, gamePk 824215, pitcher Tatsuya Imai personId 837227)**
+
+Individual out clips confirmed in the feed:
+
+| slug | title | duration |
+|---|---|---|
+| `angels-challenged-pitch-result-mike-trout-called-out-on-strikes-capture-review` | Tatsuya Imai fans Mike Trout for first MLB strikeout | 0:29 |
+| `travis-d-arnaud-strikes-out-swinging-eetvtq` | Travis d'Arnaud strikes out swinging | 0:06 |
+| `tatsuya-imai-strikes-out-four-in-major-league-debut` | Tatsuya Imai strikes out four in Major League debut | 0:46 |
+
+Clips to exclude from the outs panel (no pitcher player_id tag, or recap reel):
+- `jose-altuve-called-out-on-strikes-04fb30` — this K was by Angels pitcher Kochanowicz, not our pick
+- Any clip tagged `highlight-reel-starting-pitching`
+
+**Playback URL** — use `mp4Avc` from each item's `playbacks` array:
+```
+// bdata (short clips):
+https://bdata-producedclips.mlb.com/{mediaPlaybackId}.mp4
+
+// diamond (longer produced clips):
+https://mlb-cuts-diamond.mlb.com/FORGE/{yyyy}/{yyyy-mm}/{dd}/{mediaPlaybackId}_1280x720_59_4000K.mp4
+```
 
 ### TICKET-009 · Game card 7-day team records
 **Tab:** Games  
@@ -146,6 +224,36 @@ Status: 🔴 Broken · 🟡 Incomplete · 🟢 Works but needs improvement · �
 ---
 
 ## ⬜ Planned
+
+### TICKET-LOGO001 · Team logos — incomplete coverage + logo quality
+**Tab:** All tabs  
+**Status:** ⬜ Planned  
+**What's needed:** Current logos use ESPN CDN via a hand-maintained ID map. Several teams are missing or mapped to wrong IDs. Need to audit all 30 MLB + 30 NBA + 32 NFL entries against the ESPN CDN, fix wrong IDs, and add any gaps. Some logos also render too small or with wrong aspect ratio on certain cards — a UI pass is needed once IDs are verified.  
+**Files:** `src/utils/teamLogos.js`  
+**Effort:** Small
+
+---
+
+### TICKET-PLAYERIMG001 · Player pictures — coming soon
+**Tab:** Media, Props, Dogs  
+**Status:** ⬜ Coming Soon  
+**What's needed:** Show player headshots next to pitcher cards and batter rows in MediaTab, and next to prop picks. ESPN CDN player images are available at `https://a.espncdn.com/i/headshots/mlb/players/full/{espnId}.png`. Need to wire in espnId from the existing fetch pipeline and add fallback avatar for missing shots.  
+**Effort:** Small–Medium
+
+---
+
+### TICKET-UI001 · UI overhaul — coming soon
+**Tab:** All tabs  
+**Status:** ⬜ Coming Soon  
+**What's needed:** Full visual refresh across the app. Current UI is functional dark-mode but lacks polish and brand identity. Planned improvements:
+- Consistent card system with elevation, shadows, and proper spacing scale
+- Typography system (size scale, weight hierarchy)
+- Color system — accent palette beyond the current green/orange/blue trio
+- Animated transitions between tabs and state changes
+- Better empty states and loading skeletons
+- Mobile-first layout audit — some cards break on narrow screens
+- Logo / splash screen for the Tauri app  
+**Effort:** Large · Do after core feature set is stable
 
 ### TICKET-020 · Always-on free server for live odds + props
 **Tab:** Infrastructure  
@@ -219,5 +327,11 @@ Status: 🔴 Broken · 🟡 Incomplete · 🟢 Works but needs improvement · �
 | TICKET-PASTLAY002 | PastLayTab — no total odds or payout shown | Added `calcTotalOdds()` + `TotalOddsRow` component. Parlay math for all slips (Lock, Dog, Double Lock, Predictions, Lay). `🪙1 wins → 🪙X,XXX.XX` sub-row with comma formatting. |
 | TICKET-PASTLAY003 | PastLayTab — no final scores or prop results shown | Added `fetchGameScore()` hitting ESPN summary endpoint per gameId on day select. Final scores shown per leg as italic sub-line. Props show `Player: 7 K · line 6.5 · HIT`. |
 | TICKET-LIVE001 | Live tab showing 3 dogs when only 1 picked | `isDog` matched on home/away team presence in game, not on actual picked team. Fixed: `matchesPick()` now prefers `gameId` comparison, falls back to matching the picked team name only (not any team in that game). |
+| TICKET-007 | Media tab Outs panel + highlight reorganization | Outs & Strikeouts panel added to PitcherCard (collapsed by default). Filter: `player_id` match + exclude `highlight-reel-starting-pitching` (taxonomy:pitching rule dropped — absent on individual clips). All highlight sections collapsed by default. Game line highlighted (bright pills, pitch count first), season stats separated by divider, plain pills. |
+| TICKET-MEDIA001 | Media tab — game pitch count missing | ESPN `PC-ST` label (e.g. `"94-62"`) parsed into P + S. Fallback handles `PC` and `#P` label variants. P / STR / S% now appear first in the game line row. |
 | TICKET-PITCHER001 | Pitcher line in ParlaysTab hard to read | Restyled all 3 pitcher spots (game browser, slip legs, Lay section) as a compact navy pill (`#0d1a2a` bg, `#1a3a5a` border, `#7ab8e8` name text). |
-| TICKET-DOG001 | DogTab had no pick history | Added `📋 History NW–NL` button in header. Opens bottom-sheet modal with all past picks sorted newest-first — date, team, matchup, odds in tier color, W/L/⏳. Only shows once results exist. |
+| TICKET-LOGO001-PARTIAL | Team logos added to all tabs (GamesTab, LockTab, ParlaysTab, DogTab, LiveTab, MediaTab) via shared `teamLogos.js` helper. Logo ID coverage incomplete — see TICKET-LOGO001 for remaining work. | ✅ Partial |
+| TICKET-MEDIA002 | MediaTab lineup missing players (Yordan etc.) after refresh — `fetchMlbLineup` was using `/game/boxscore` (only players who batted). Fixed to use `/schedule?hydrate=lineups` for confirmed pre-game lineup. Merge logic also fixed to preserve ESPN live stats on all matched players. | ✅ Fixed |
+| TICKET-PARLAYS001 | All parlay nav sections were open by default — changed Double Lock and Predictions `defaultOpen` to `false`. All sections now collapsed on load. | ✅ Fixed |
+| TICKET-LIVE002 | Live tab odds refresh interval was 30 minutes — reduced to 5 minutes for timelier updates. | ✅ Fixed |
+| TICKET-DOG002 | DogTab pick result not updating when parlay already graded — resolve loop now first syncs from `predictions` data before hitting ESPN. | ✅ Fixed |

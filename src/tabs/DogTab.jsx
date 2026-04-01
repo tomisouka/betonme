@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { getTodayKey, ensureAmerican, formatOdds, calcProfit, getGameDateLabel, fetchEspnDate } from '../utils/odds.js'
-import { loadDogState, saveDogStateServer } from '../hooks/useSaveData.js'
+import { loadDogState, saveDogStateServer, loadPredictions } from '../hooks/useSaveData.js'
 import SportFilter, { filterBySport } from '../components/SportFilter.jsx'
+import { getTeamLogoUrl, LOGO_STYLE } from '../utils/teamLogos.js'
 
 export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
   const [dogState, setDogState] = useState({})
@@ -18,7 +19,7 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
   const todayPick = dogState.picks?.[todayKey]
 
   // If lock exists and is +150 or better, it IS the dog — auto-set if not already set
-  const lockIsTheDog = todayLock && todayLock.odds >= 150
+  const lockIsTheDog = todayLock && todayLock.odds >= 120
   const lockOdds = todayLock?.odds ?? null
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
       setDogState(s)
 
       // if lock is +150 or better and no dog picked yet, auto-set dog = lock
-      if (todayLock && todayLock.odds >= 150 && !s.picks?.[getTodayKey()]) {
+      if (todayLock && todayLock.odds >= 120 && !s.picks?.[getTodayKey()]) {
         const updated = { ...s, picks: { ...(s.picks || {}) } }
         updated.picks[getTodayKey()] = {
           team: todayLock.team, odds: todayLock.odds,
@@ -50,7 +51,33 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
       const pending = Object.entries(s.picks).filter(([, p]) => p.result === null)
       if (!pending.length) return
 
-      for (const [date, pick] of pending) {
+      // First pass: try to sync result from already-graded parlay legs (fast, no network)
+      try {
+        const predictions = await loadPredictions()
+        for (const [date, pick] of pending) {
+          if (s.picks[date].result !== null) continue
+          // Find a parlay entry for this date that has a graded dog leg matching this pick
+          const parlayEntry = predictions[date]
+          if (!parlayEntry?.legs) continue
+          const dogLeg = parlayEntry.legs.find(l =>
+            l.isDog && l.result !== null &&
+            l.home === pick.home && l.away === pick.away &&
+            l.team === pick.team
+          )
+          if (!dogLeg) continue
+          s.picks[date].result = dogLeg.result
+          const prev = s.dogStreak || { type: null, count: 0, since: null }
+          if (prev.type === dogLeg.result) {
+            s.dogStreak = { type: dogLeg.result, count: prev.count + 1, since: prev.since }
+          } else {
+            s.dogStreak = { type: dogLeg.result, count: 1, since: date }
+          }
+        }
+      } catch(e) { console.error('Dog parlay sync error', e) }
+
+      // Second pass: resolve any still-pending picks via ESPN
+      const stillPending = Object.entries(s.picks).filter(([, p]) => p.result === null)
+      for (const [date, pick] of stillPending) {
         if (!pick.sport) continue
         try {
           const events = await fetchEspnDate(pick.sport, date.replace(/-/g,''))
@@ -128,7 +155,7 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
 
     ml.outcomes.forEach(outcome => {
       const odds = ensureAmerican(outcome.price)
-      if (odds >= 150) {
+      if (odds >= 120) {
         const opponent = ml.outcomes.find(o => o.name !== outcome.name)
         const spread = sp?.outcomes.find(o => o.name === outcome.name)
         underdogs.push({
@@ -164,7 +191,7 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
 
   const getTier = (odds) => {
     if (odds >= 300) return { label: 'MASSIVE DOG', color: '#ff4444', bg: '#2a0a0a', border: '#ff444466' }
-    if (odds >= 150) return { label: 'BIG DOG', color: '#ff9944', bg: '#2a1a0a', border: '#ff994466' }
+    if (odds >= 120) return { label: 'BIG DOG', color: '#ff9944', bg: '#2a1a0a', border: '#ff994466' }
     return { label: 'SLIGHT DOG', color: '#ffdd44', bg: '#1f1f0a', border: '#ffdd4466' }
   }
 
@@ -328,9 +355,12 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
         }}>
           <div style={{ fontSize: '0.7rem', color: '#ff9944', fontWeight: 'bold', marginBottom: '0.35rem' }}>🐕 TODAY'S DOG PICK</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{todayPick.team}</div>
-              <div style={{ color: '#555', fontSize: '0.78rem' }}>{todayPick.home} vs {todayPick.away} · {todayPick.sport}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {getTeamLogoUrl(todayPick.team, todayPick.sport) && <img src={getTeamLogoUrl(todayPick.team, todayPick.sport)} style={{ ...LOGO_STYLE, width: '30px', height: '30px' }} alt="" />}
+              <div>
+                <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{todayPick.team}</div>
+                <div style={{ color: '#555', fontSize: '0.78rem' }}>{todayPick.home} vs {todayPick.away} · {todayPick.sport}</div>
+              </div>
             </div>
             <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#ff9944' }}>{formatOdds(todayPick.odds)}</div>
           </div>
@@ -437,13 +467,19 @@ export default function DogTab({ allGames, loading, onDogChange, todayLock }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '0.68rem', color: tier.color, fontWeight: 'bold', marginBottom: '0.2rem' }}>UNDERDOG · {isHome ? 'HOME' : 'AWAY'}</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{dog.team}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    {getTeamLogoUrl(dog.team, dog.sport) && <img src={getTeamLogoUrl(dog.team, dog.sport)} style={{ ...LOGO_STYLE, width: '26px', height: '26px' }} alt="" />}
+                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{dog.team}</div>
+                  </div>
                   <div style={{ fontSize: '1.35rem', fontWeight: 'bold', color: tier.color }}>{formatOdds(dog.mlOdds)}</div>
                 </div>
                 <div style={{ color: '#333', fontWeight: 'bold', fontSize: '0.85rem' }}>VS</div>
                 <div style={{ flex: 1, textAlign: 'right' }}>
                   <div style={{ fontSize: '0.68rem', color: '#555', fontWeight: 'bold', marginBottom: '0.2rem' }}>FAVORITE · {isHome ? 'AWAY' : 'HOME'}</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#777' }}>{dog.opponent}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#777' }}>{dog.opponent}</div>
+                    {getTeamLogoUrl(dog.opponent, dog.sport) && <img src={getTeamLogoUrl(dog.opponent, dog.sport)} style={{ ...LOGO_STYLE, width: '26px', height: '26px' }} alt="" />}
+                  </div>
                   {dog.opponentOdds && <div style={{ fontSize: '1.35rem', fontWeight: 'bold', color: '#00ff88' }}>{formatOdds(dog.opponentOdds)}</div>}
                 </div>
               </div>
