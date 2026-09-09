@@ -6,7 +6,7 @@
   "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/USER/betonme.git"
+    "url": "git+https://github.com/tomisouka/betonme.git"
   },
   "scripts": {
     "dev": "concurrently --prefix \"[{name}]\" --names \"server,vite\" \"USE_DB=true DB_FILE=betonme.db node server.js\" \"vite\"",
