@@ -9,9 +9,13 @@ A local daily sports betting tracker — lock of the day, dogs, props, parlays, 
 <!-- Drop demo gifs/screenshots in docs/media/ and reference them below, e.g.: -->
 <!-- ![Lock of the day tab](docs/media/lock-tab.gif) -->
 
-| | |
-|---|---|
-| ![Games tab](docs/media/games.gif) | ![Parlays Slip](assets/parlays.png) |
+**Games**
+
+![Games tab](docs/media/games.gif)
+
+**Parlays Slip**
+
+<img src="assets/parlays.png" alt="Parlays tab" width="300"/>
 
 ---
 
