@@ -11,7 +11,7 @@ A local daily sports betting tracker — lock of the day, dogs, props, parlays, 
 
 | | |
 |---|---|
-| ![Games tab](docs/media/games.gif) | ![Parlays tab](docs/media/parlays.png) |
+| ![Games tab](docs/media/games.gif) | ![Parlays Slip](assets/parlays.png) |
 
 ---
 
