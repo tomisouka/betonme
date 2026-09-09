@@ -79,10 +79,25 @@ sqlite3 db/betonme.db "SELECT coins, last_coin_date, json_array_length(streak) F
 # Export data
 curl http://localhost:3001/export -o betonme-export.json
 
+<<<<<<< HEAD
+=======
 ```
 
+<<<<<<< HEAD
+# Check scraper service
+systemctl --user status dk-scraper
+journalctl --user -u dk-scraper -f
+>>>>>>> fd58fb7 (Fixed check bug)
+```
+
+=======
+>>>>>>> 5bee667 (Fixed check bug)
 ---
 
 ## License
 
+<<<<<<< HEAD
 AGPL-3.0-only. See [LICENSE](LICENSE) for the full text.
+=======
+AGPL-3.0-only. See [LICENSE](LICENSE) for the full text.
+>>>>>>> 5bee667 (Fixed check bug)
