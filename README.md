@@ -79,12 +79,6 @@ sqlite3 db/betonme.db "SELECT coins, last_coin_date, json_array_length(streak) F
 # Export data
 curl http://localhost:3001/export -o betonme-export.json
 
-# Manual scrape
-curl -X POST http://localhost:3001/scrape-now
-
-# Check scraper service
-systemctl --user status dk-scraper
-journalctl --user -u dk-scraper -f
 ```
 
 ---
