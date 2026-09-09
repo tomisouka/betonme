@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb'
 const MLB_API   = 'https://statsapi.mlb.com/api/v1'
-const SERVER    = 'http://127.0.0.1:3001'
+const SERVER    = import.meta.env.VITE_SERVER_HOST || 'http://127.0.0.1:3001'
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -402,7 +402,7 @@ function HighlightClip({ item, dateLabel }) {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem',
         borderBottom: '1px solid #222',
       }}>
-        <div style={{ fontSize: '0.75rem', color: '#eee', lineHeight: 1.4, flex: 1, fontWeight: '500' }}>{title}</div>
+        <div style={{ fontSize: '0.75rem', color: '#fff', lineHeight: 1.4, flex: 1, fontWeight: '500' }}>{title}</div>
         {dateLabel && (
           <div style={{
             fontSize: '0.55rem', color: '#fff', fontWeight: 'bold',
@@ -504,9 +504,9 @@ function PitcherHighlights({ personId, gamePk, accent, dateLabel }) {
   }, [gamePk, personId])
 
   if (!gamePk || !personId) return null
-  if (error) return <div style={{ fontSize: '0.58rem', color: '#bbb', marginBottom: '0.5rem' }}>Highlights unavailable</div>
+  if (error) return <div style={{ fontSize: '0.58rem', color: '#ccc', marginBottom: '0.5rem' }}>Highlights unavailable</div>
   if (clips === null) return (
-    <div style={{ fontSize: '0.58rem', color: '#bbb', marginBottom: '0.5rem', animation: 'pulse 1s infinite' }}>
+    <div style={{ fontSize: '0.58rem', color: '#ccc', marginBottom: '0.5rem', animation: 'pulse 1s infinite' }}>
       Loading highlights…
     </div>
   )
@@ -551,7 +551,7 @@ function StatPill({ label, value, accent = '#aaa', bright = false }) {
       borderRadius: '8px', padding: '0.5rem 0.65rem', minWidth: '48px',
     }}>
       <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: bright ? '#fff' : '#e8e8e8', lineHeight: 1 }}>{value ?? '—'}</span>
-      <span style={{ fontSize: '0.5rem', color: bright ? accent : '#888', letterSpacing: '0.07em', marginTop: '0.22rem', textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ fontSize: '0.5rem', color: bright ? accent : '#aaa', letterSpacing: '0.07em', marginTop: '0.22rem', textTransform: 'uppercase' }}>{label}</span>
     </div>
   )
 }
@@ -559,7 +559,7 @@ function StatPill({ label, value, accent = '#aaa', bright = false }) {
 function StatRow({ label, children, highlight = false }) {
   return (
     <div style={{ marginBottom: '0.75rem' }}>
-      <div style={{ fontSize: '0.5rem', color: highlight ? '#fff' : '#aaa', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.35rem', fontWeight: 'bold' }}>{label}</div>
+      <div style={{ fontSize: '0.5rem', color: highlight ? '#fff' : '#ccc', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.35rem', fontWeight: 'bold' }}>{label}</div>
       <div style={{ display: 'flex', gap: '0.32rem', flexWrap: 'wrap' }}>{children}</div>
     </div>
   )
@@ -569,7 +569,7 @@ function SectionDivider({ label, accent }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '1rem 0 0.8rem' }}>
       <div style={{ flex: 1, height: '1px', background: '#333' }} />
-      <div style={{ fontSize: '0.48rem', color: accent || '#aaa', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{label}</div>
+      <div style={{ fontSize: '0.48rem', color: accent || '#ccc', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{label}</div>
       <div style={{ flex: 1, height: '1px', background: '#333' }} />
     </div>
   )
@@ -599,12 +599,12 @@ function PitcherCard({ pitcher, teamLabel, teamColor, isLock, compact = false, g
             <span style={{ background: `${teamColor}22`, border: `1px solid ${teamColor}44`, borderRadius: '4px', padding: '0.08rem 0.45rem' }}>
               {isLock ? '🔒' : '🐕'} {teamLabel.toUpperCase()}
             </span>
-            <span style={{ color: '#777', fontWeight: 'normal' }}>{isReliever ? 'RP' : 'SP'}</span>
-            {dateLabel && <span style={{ color: '#666' }}>· {dateLabel}</span>}
+            <span style={{ color: '#aaa', fontWeight: 'normal' }}>{isReliever ? 'RP' : 'SP'}</span>
+            {dateLabel && <span style={{ color: '#888' }}>· {dateLabel}</span>}
           </div>
           <div style={{ fontSize: compact ? '1rem' : '1.15rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.15rem' }}>{name}</div>
           {s && (
-            <div style={{ fontSize: '0.62rem', color: '#777', marginTop: '0.1rem' }}>
+            <div style={{ fontSize: '0.62rem', color: '#999', marginTop: '0.1rem' }}>
               {s.gamesStarted != null ? `${s.gamesPlayed}G · ${s.gamesStarted}GS` : `${s.gamesPlayed ?? '—'}G`}
               {s.battersFaced != null ? ` · ${s.battersFaced} BF` : ''}
             </div>
@@ -634,7 +634,7 @@ function PitcherCard({ pitcher, teamLabel, teamColor, isLock, compact = false, g
         </div>
       )}
       {!todayStats && !loading && (
-        <div style={{ fontSize: '0.65rem', color: '#777', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+        <div style={{ fontSize: '0.65rem', color: '#999', marginBottom: '0.75rem', fontStyle: 'italic' }}>
           Live line appears once game starts
         </div>
       )}
@@ -731,8 +731,8 @@ function BatterRow({ batter, teamColor, gamePk, dateLabel }) {
         padding: '0.6rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', textAlign: 'left',
       }}>
         <span style={{ fontSize: '0.65rem', color: '#777', minWidth: '18px', textAlign: 'right' }}>{orderStr}</span>
-        <span style={{ fontSize: '0.65rem', color: '#888', minWidth: '24px' }}>{posStr}</span>
-        <span style={{ flex: 1, fontSize: '0.82rem', color: '#e8e8e8', fontWeight: '500' }}>{batter.name}</span>
+        <span style={{ fontSize: '0.65rem', color: '#aaa', minWidth: '24px' }}>{posStr}</span>
+        <span style={{ flex: 1, fontSize: '0.82rem', color: '#fff', fontWeight: '600' }}>{batter.name}</span>
         {hasGame && (
           <span style={{ fontSize: '0.7rem', color: teamColor, fontWeight: 'bold', whiteSpace: 'nowrap' }}>
             {s['H-AB']}
@@ -1130,7 +1130,7 @@ function TodayTab({ todayLock, allGames }) {
           background: btnState === 'ok' ? '#0a2a1a' : btnState === 'err' ? '#2a0a0a' : 'transparent',
           border: `1px solid ${btnState === 'ok' ? '#00ff8844' : btnState === 'err' ? '#ff444433' : '#252525'}`,
           borderRadius: '5px',
-          color: fetchState === 'loading' ? '#333' : btnState === 'ok' ? '#00ff88' : btnState === 'err' ? '#ff4444' : '#444',
+          color: fetchState === 'loading' ? '#555' : btnState === 'ok' ? '#00ff88' : btnState === 'err' ? '#ff4444' : '#bbb',
           cursor: fetchState === 'loading' ? 'not-allowed' : 'pointer',
           transition: 'all 0.3s',
         }}>
@@ -1322,11 +1322,11 @@ function HistoryRow({ date, pick }) {
         padding: '0.75rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.68rem', color: '#777' }}>{fmtDateLabel(date)}</span>
+          <span style={{ fontSize: '0.68rem', color: '#aaa' }}>{fmtDateLabel(date)}</span>
           <span style={{ fontSize: '0.8rem', color: '#888' }}>
-            <span style={{ color: isLockHome ? '#666' : '#ccc' }}>{awayShort}</span>
+            <span style={{ color: isLockHome ? '#888' : '#fff' }}>{awayShort}</span>
             <span style={{ color: '#888', margin: '0 0.25rem' }}>@</span>
-            <span style={{ color: isLockHome ? '#ccc' : '#666' }}>{homeShort}</span>
+            <span style={{ color: isLockHome ? '#fff' : '#888' }}>{homeShort}</span>
           </span>
         </div>
         <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
@@ -1335,7 +1335,7 @@ function HistoryRow({ date, pick }) {
               {pick.result === 'W' ? '✅' : '❌'}
             </span>
           )}
-          <span style={{ fontSize: '0.62rem', color: '#aaa' }}>{expanded ? '▲' : '▼'}</span>
+          <span style={{ fontSize: '0.62rem', color: '#ccc' }}>{expanded ? '▲' : '▼'}</span>
         </div>
       </button>
 
@@ -1431,12 +1431,12 @@ export default function MediaTab({ todayLock, allGames }) {
       <div style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 style={{ margin: '0 0 0.25rem', fontSize: '1rem', color: '#aaa' }}>📺 MEDIA</h2>
-            <div style={{ fontSize: '0.78rem', color: '#555' }}>Pitcher matchup · lineups · highlights</div>
+            <h2 style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', color: '#fff', fontWeight: 700 }}>📺 MEDIA</h2>
+            <div style={{ fontSize: '0.78rem', color: '#888' }}>Pitcher matchup · lineups · highlights</div>
           </div>
           <button onClick={() => setOpen(o => !o)} style={{
             background: 'transparent', border: '1px solid #333', borderRadius: '6px',
-            color: '#777', cursor: 'pointer', fontSize: '0.65rem', padding: '0.3rem 0.65rem',
+            color: '#ccc', cursor: 'pointer', fontSize: '0.65rem', padding: '0.3rem 0.65rem',
             transition: 'all 0.15s',
           }}>{open ? '▲ Hide' : '▼ Show'}</button>
         </div>
@@ -1447,7 +1447,7 @@ export default function MediaTab({ todayLock, allGames }) {
           {/* Sub-tab nav */}
           <div style={{
             display: 'flex', gap: '0.4rem', marginBottom: '1.5rem',
-            background: '#111', border: '1px solid #2a2a2a',
+            background: '#1a1a1a', border: '1px solid #333',
             borderRadius: '10px', padding: '0.3rem',
           }}>
             {subTabs.map(({ id }) => (
@@ -1456,7 +1456,7 @@ export default function MediaTab({ todayLock, allGames }) {
                 fontSize: '0.75rem', fontWeight: subTab === id ? 'bold' : 'normal',
                 background: subTab === id ? '#fff' : 'transparent',
                 border: 'none',
-                color: subTab === id ? '#000' : '#666',
+                color: subTab === id ? '#000' : '#aaa',
                 transition: 'all 0.15s',
               }}>
                 {id === 'today' ? '⚡ Today' : id === 'yesterday' ? '📅 Yesterday' : '📋 History'}

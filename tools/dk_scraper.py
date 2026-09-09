@@ -7,7 +7,7 @@ Writes dk_odds.json to the betonme directory.
 Usage:
   python3 dk_scraper.py              # fetch once and save
   python3 dk_scraper.py --test       # print JSON to stdout, don't save
-  python3 dk_scraper.py --watch      # fetch every 4 hours
+  python3 dk_scraper.py --watch      # fetch every 15 minutes
 
 pip install requests  (only dependency)
 """
@@ -16,7 +16,7 @@ import requests, json, time, sys, os
 from datetime import datetime
 
 OUTPUT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dk_odds.json')
-WATCH_INTERVAL_HOURS = 0.5  # 30 minutes
+WATCH_INTERVAL_HOURS = 0.25  # 15 minutes
 
 # Exact headers from browser capture
 HEADERS = {
@@ -69,7 +69,6 @@ BASE = 'https://sportsbook-nash.draftkings.com'
 
 def build_url(league_id, subcategory_id):
     """Build the markets endpoint URL exactly as the browser sends it."""
-    # Partial encoding matches what browser sends — do NOT use quote() here
     events_query = (
         f"$filter=leagueId%20eq%20%27{league_id}%27%20AND%20"
         f"clientMetadata%2FSubcategories%2Fany(s%3A%20s%2FId%20eq%20%27{subcategory_id}%27)"
@@ -106,7 +105,6 @@ def parse_odds(american_str):
     """Parse DK american odds string like '+149' or '\\u2212281' (minus sign) to int."""
     if not american_str:
         return None
-    # DK uses unicode minus (\u2212) instead of hyphen-minus
     s = american_str.replace('\u2212', '-').replace('+', '')
     try:
         val = int(s)
@@ -133,13 +131,11 @@ def normalize(data, sport):
             print(f'  [DEBUG] First market name: {m0.get("name")} id: {m0.get("id")} eventId: {m0.get("eventId")}')
         if data.get('selections'):
             print(f'  [DEBUG] First sel marketId: {data["selections"][0].get("marketId")}')
-        # Check if eventIds match between events and markets
         event_ids = set(events.keys())
         market_event_ids = set(m['eventId'] for m in data.get('markets', []))
         print(f'  [DEBUG] Event IDs sample: {list(event_ids)[:2]}')
         print(f'  [DEBUG] Market eventId sample: {list(market_event_ids)[:2]}')
         print(f'  [DEBUG] Overlap: {len(event_ids & market_event_ids)}')
-        # Check one event's markets and selections directly
         eid0 = list(event_ids)[0]
         ev_markets = markets.get(eid0, [])
         print(f'  [DEBUG] Markets for event {eid0}: {[(m["name"], m["id"]) for m in ev_markets]}')
@@ -147,9 +143,6 @@ def normalize(data, sport):
             sels = selections.get(m['id'], [])
             print(f'  [DEBUG]   market "{m["name"]}" -> {len(sels)} selections, first odds: {sels[0]["displayOdds"]["american"] if sels else "NONE"}')
 
-    # Statuses DK uses for games that have started — pre-game markets are pulled
-    # when a game goes live, so we'd get 0 markets and show "Lines not yet posted".
-    # Instead, skip these gracefully so the frontend can show a live/final badge.
     IN_PROGRESS_STATUSES = {'IN_PROGRESS', 'LIVE', 'HALFTIME', 'INTERMISSION'}
 
     games = []
@@ -164,8 +157,6 @@ def normalize(data, sport):
         if not home or not away:
             continue
 
-        # Game is live — DK pulls pre-game markets, so skip market building
-        # but still include the game with its live score so the UI can show it
         if event_status in IN_PROGRESS_STATUSES:
             games.append({
                 'id': f'dk_{eid}',
@@ -188,7 +179,6 @@ def normalize(data, sport):
             })
             continue
 
-        # Build bookmaker markets in the-odds-api format
         outcomes_by_type = {'h2h': [], 'spreads': [], 'totals': []}
         for m in markets.get(eid, []):
             mname = m.get('name', '')
@@ -233,7 +223,7 @@ def normalize(data, sport):
             print(f'  [DEBUG] markets for this event: {[m.get("name") for m in markets.get(eid, [])]}')
 
         game = {
-            'id': f'dk_{eid}',  # prefix to distinguish from odds-api IDs
+            'id': f'dk_{eid}',
             'sport_key': sport.lower(),
             'sport_title': sport,
             'commence_time': event.get('startEventDate', ''),
@@ -246,7 +236,6 @@ def normalize(data, sport):
                 'last_update': datetime.utcnow().isoformat() + 'Z',
                 'markets': bm_markets,
             }] if bm_markets else [],
-            # Extra DK data
             '_dk': {
                 'eventId': eid,
                 'homePitcher': home.get('metadata', {}).get('startingPitcherPlayerName'),
@@ -277,7 +266,6 @@ def normalize_f5(data):
         sels = sels_by_market.get(market_id, [])
         entry = f5_by_event.setdefault(eid, {'h2h': None, 'runline': None, 'total': None})
 
-        # F5 Moneyline
         if market.get('marketType', {}).get('name') == '1st 5 Innings':
             home = next((s for s in sels if s.get('outcomeType') == 'Home'), None)
             away = next((s for s in sels if s.get('outcomeType') == 'Away'), None)
@@ -289,7 +277,6 @@ def normalize_f5(data):
                     'awayName': (away.get('participants') or [{}])[0].get('name', ''),
                 }
 
-        # F5 Run Line — pick the MainPointLine selections
         elif 'Run Line' in mname and '5 Innings' in mname:
             main_sels = [s for s in sels if 'MainPointLine' in s.get('tags', [])]
             home = next((s for s in main_sels if s.get('outcomeType') == 'Home'), None)
@@ -304,7 +291,6 @@ def normalize_f5(data):
                     'awayName': (away.get('participants') or [{}])[0].get('name', ''),
                 }
 
-        # F5 Total — pick the MainPointLine Over/Under
         elif 'Total Runs' in mname and '5 Innings' in mname and 'Team' not in mname:
             main_sels = [s for s in sels if 'MainPointLine' in s.get('tags', [])]
             over = next((s for s in main_sels if s.get('outcomeType') == 'Over'), None)
@@ -319,6 +305,159 @@ def normalize_f5(data):
     return f5_by_event
 
 
+# ── ESPN resolver ─────────────────────────────────────────────────────────────
+# Called after each scrape to fill in final scores for any game DK has dropped.
+# Matches by home + away team name + date since DK and ESPN use different IDs.
+
+ESPN_ENDPOINTS = {
+    'MLB': 'baseball/mlb',
+    'NBA': 'basketball/nba',
+    'NFL': 'football/nfl',
+}
+
+def fetch_espn_scores(sport, date_str):
+    """Fetch ESPN scoreboard for a sport+date. date_str = YYYYMMDD."""
+    endpoint = ESPN_ENDPOINTS.get(sport)
+    if not endpoint:
+        return []
+    url = f'https://site.api.espn.com/apis/site/v2/sports/{endpoint}/scoreboard?dates={date_str}'
+    try:
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        return r.json().get('events', [])
+    except Exception as e:
+        print(f'  [ESPN] {sport} {date_str} failed: {e}')
+        return []
+
+def last_word(name):
+    """Last word of team name for fuzzy matching (e.g. 'SF Giants' -> 'Giants')."""
+    return name.strip().split()[-1].lower() if name else ''
+
+def resolve_finals_via_espn(pending):
+    """
+    pending = list of { game_id, sport, home, away, date } rows from game_results
+    where status != 'final'. Hits ESPN, returns list of resolved dicts.
+    """
+    # Group by sport+date to minimize ESPN calls
+    by_sport_date = {}
+    for row in pending:
+        key = (row['sport'], row['date'].replace('-', ''))  # YYYYMMDD
+        by_sport_date.setdefault(key, []).append(row)
+
+    resolved = []
+    for (sport, date_str), rows in by_sport_date.items():
+        events = fetch_espn_scores(sport, date_str)
+        for event in events:
+            status = event.get('status', {})
+            state = status.get('type', {}).get('state', '')  # 'pre'|'in'|'post'
+            if state != 'post':
+                continue  # not final yet
+
+            competitors = event.get('competitions', [{}])[0].get('competitors', [])
+            home_comp = next((c for c in competitors if c.get('homeAway') == 'home'), None)
+            away_comp = next((c for c in competitors if c.get('homeAway') == 'away'), None)
+            if not home_comp or not away_comp:
+                continue
+
+            espn_home = home_comp.get('team', {}).get('displayName', '')
+            espn_away = away_comp.get('team', {}).get('displayName', '')
+            home_score = int(home_comp.get('score', 0))
+            away_score = int(away_comp.get('score', 0))
+            winner = espn_home if home_score > away_score else espn_away
+
+            # Match against our pending rows by last word of team name
+            for row in rows:
+                if (last_word(row['home']) == last_word(espn_home) and
+                        last_word(row['away']) == last_word(espn_away)):
+                    resolved.append({
+                        'game_id':    row['game_id'],
+                        'home_score': home_score,
+                        'away_score': away_score,
+                        'winner':     winner,
+                        'status':     'final',
+                    })
+                    break
+
+    return resolved
+
+
+# ── Sync game_results to server ───────────────────────────────────────────────
+
+def sync_game_results(data):
+    """
+    After each scrape:
+    1. POST all games DK currently sees → /game-results/sync (upsert scheduled/live)
+    2. GET /game-results/pending from server (rows not yet final)
+    3. Resolve via ESPN
+    4. POST resolved finals back → /game-results/resolve
+    """
+    games_payload = []
+    for sport, sd in data.get('sports', {}).items():
+        for game in sd.get('games', []):
+            dk_status = game.get('status', '')
+            if dk_status in ('IN_PROGRESS', 'LIVE', 'HALFTIME', 'INTERMISSION'):
+                status = 'live'
+            else:
+                status = 'scheduled'
+
+            # Parse live score if available
+            score = game.get('_dk', {}).get('score')
+            home_score = None
+            away_score = None
+            if score and isinstance(score, dict):
+                home_score = score.get('homeScore') or score.get('home')
+                away_score = score.get('awayScore') or score.get('away')
+
+            games_payload.append({
+                'game_id':      game['id'],           # dk_{eventId}
+                'sport':        sport,
+                'home':         game['home_team'],
+                'away':         game['away_team'],
+                'home_score':   home_score,
+                'away_score':   away_score,
+                'status':       status,
+                'winner':       None,
+                'commence_time': game.get('commence_time', ''),
+                'date':         game.get('commence_time', '')[:10],
+            })
+
+    # 1. Upsert what DK sees
+    try:
+        r = requests.post(f'{SERVER}/game-results/sync', json=games_payload, timeout=10)
+        print(f'[dk_scraper] game-results sync: {r.json()}')
+    except Exception as e:
+        print(f'[dk_scraper] game-results/sync failed: {e}')
+        return
+
+    # 2. Get rows that still need resolution (not final, date <= today)
+    try:
+        r = requests.get(f'{SERVER}/game-results/pending', timeout=10)
+        pending = r.json()
+    except Exception as e:
+        print(f'[dk_scraper] game-results/pending failed: {e}')
+        return
+
+    if not pending:
+        print('[dk_scraper] No pending games to resolve')
+        return
+
+    print(f'[dk_scraper] {len(pending)} games pending ESPN resolution')
+
+    # 3. Resolve via ESPN
+    resolved = resolve_finals_via_espn(pending)
+    print(f'[dk_scraper] ESPN resolved {len(resolved)} finals')
+
+    if not resolved:
+        return
+
+    # 4. POST resolved finals back
+    try:
+        r = requests.post(f'{SERVER}/game-results/resolve', json=resolved, timeout=10)
+        print(f'[dk_scraper] game-results resolve: {r.json()}')
+    except Exception as e:
+        print(f'[dk_scraper] game-results/resolve failed: {e}')
+
+
 def scrape():
     print(f'\n[dk_scraper] {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     result = {
@@ -327,7 +466,6 @@ def scrape():
         'sports': {}
     }
 
-    # MLB is always in season Mar-Oct; add others as needed
     month = datetime.now().month
     want = ['MLB']
     if month >= 10 or month <= 6:
@@ -342,14 +480,12 @@ def scrape():
             continue
         games = normalize(data, sport)
 
-        # Fetch F5 markets if available for this sport
         f5_subcat = F5_SUBCATEGORIES.get(sport)
         if f5_subcat:
             print(f'  Fetching {sport} F5 markets (subcategory {f5_subcat})...')
             f5_data = fetch_league(sport, cfg['leagueId'], f5_subcat)
             if f5_data:
                 f5_by_event = normalize_f5(f5_data)
-                # Attach f5 data to each game using DK eventId
                 for game in games:
                     eid = game.get('_dk', {}).get('eventId')
                     if eid and eid in f5_by_event:
@@ -371,7 +507,6 @@ def parse_props(data, sport):
     markets_by_id = {m['id']: m for m in data.get('markets', [])}
     events_by_id  = {e['id']: e for e in data.get('events', [])}
 
-    # Group selections by marketId for O/U pairing
     sels_by_market = {}
     for sel in data.get('selections', []):
         mid = sel.get('marketId', '')
@@ -389,12 +524,10 @@ def parse_props(data, sport):
                 if p['venueRole'] == 'Home': home = p['name']
                 if p['venueRole'] == 'Away': away = p['name']
 
-        # Detect format: O/U pairs vs milestone singles
         outcome_types = {s.get('outcomeType') for s in sels}
         is_ou = 'Over' in outcome_types and 'Under' in outcome_types
 
         if is_ou:
-            # Group by line (points) — each line has an Over and Under
             by_line = {}
             for sel in sels:
                 line = sel.get('points')
@@ -437,7 +570,6 @@ def parse_props(data, sport):
                     'lastSeasonLabel': last_stat.get('prefix', ''),
                 })
         else:
-            # Milestone format (single selections, no under)
             for sel in sels:
                 participants = sel.get('participants', [])
                 if not participants:
@@ -502,7 +634,7 @@ def log_odds_history(data, force=False):
             to = mkts.get('totals', {}).get('outcomes', [])
             home = game['home_team']
             away = game['away_team']
-            game_date = game.get('commence_time', '')[:10]  # YYYY-MM-DD
+            game_date = game.get('commence_time', '')[:10]
             game_key = f"{away.split()[-1]}@{home.split()[-1]}_{game_date}"
             snapshot = {
                 'home': home, 'away': away, 'sport': sport,
@@ -537,13 +669,24 @@ def log_odds_history(data, force=False):
                 print(f'[dk_scraper] POST failed for {game_key}: {e}')
     print(f'[dk_scraper] Logged {logged} snapshots to server (force={force})')
 
+def trigger_resolve():
+    """Tell server to run ESPN resolution against DB."""
+    try:
+        r = requests.post(f'{SERVER}/resolve', timeout=30)
+        rj = r.json()
+        count = rj.get('resolved', 0)
+        if count:
+            print(f'[dk_scraper] Resolved {count} pending picks/parlays')
+    except Exception as e:
+        print(f'[dk_scraper] resolve failed: {e}')
+
 if __name__ == '__main__':
     test_mode = '--test' in sys.argv
     watch_mode = '--watch' in sys.argv
     force_mode = '--force' in sys.argv
 
     if watch_mode:
-        print(f'[dk_scraper] Watch mode — every {WATCH_INTERVAL_HOURS}h')
+        print(f'[dk_scraper] Watch mode — every {WATCH_INTERVAL_HOURS * 60:.0f} minutes')
         while True:
             try:
                 data = scrape()
@@ -552,11 +695,12 @@ if __name__ == '__main__':
                         json.dump(data, f, indent=2)
                     print(f'[dk_scraper] Saved to {OUTPUT_PATH}')
                     log_odds_history(data, force=force_mode)
+                    sync_game_results(data)
                 else:
                     print(json.dumps(data, indent=2))
             except Exception as e:
                 print(f'[ERROR] {e}')
-            print(f'Sleeping 30min...')
+            print(f'[dk_scraper] Sleeping 15 minutes...')
             time.sleep(WATCH_INTERVAL_HOURS * 3600)
     else:
         data = scrape()
@@ -569,3 +713,5 @@ if __name__ == '__main__':
             for sport, d in data['sports'].items():
                 print(f'  {sport}: {d["count"]} games')
             log_odds_history(data, force=force_mode)
+            trigger_resolve()
+            sync_game_results(data)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-results.py — Checks ESPN for final scores and marks picks W/L in savedata.json.
+results.py — Checks ESPN for final scores and marks picks W/L in betonme.db.
 Wired into /scrape-now in server.js so it runs automatically on every refresh.
 
 Handles all bet types:
@@ -10,17 +10,29 @@ Handles all bet types:
   - Props      (marketKey == 'pitcher_strikeouts' | 'player_points') — needs player, line, side
 
 Only processes picks with result == null or result == "" (never overwrites W/L).
+Reads and writes ONLY to betonme.db — savedata.json is never touched.
 """
 
 import json
 import os
 import sys
+import sqlite3
 from datetime import datetime, timedelta, timezone
 from urllib.request import urlopen
 from urllib.error import URLError
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-SAVE_PATH   = os.path.join(SCRIPT_DIR, 'savedata.json')
+DB_PATH     = os.path.join(SCRIPT_DIR, 'db', 'betonme.db')
+
+# Fallback: check .env for DB_FILE override
+_env_path = os.path.join(SCRIPT_DIR, '.env')
+if os.path.exists(_env_path):
+    for line in open(_env_path):
+        line = line.strip()
+        if line.startswith('DB_FILE='):
+            val = line.split('=', 1)[1].strip().strip('"').strip("'")
+            if val:
+                DB_PATH = os.path.join(SCRIPT_DIR, 'db', val)
 
 ESPN_SCOREBOARD = {
     'NBA': 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',
@@ -57,17 +69,106 @@ PROP_STAT_MAP = {
     '17320': {'sport': 'MLB', 'espn_stat_name': 'hits',      'group': 'batter'},
 }
 
-# ─────────────────────────── I/O ────────────────────────────────────────────
+# ─────────────────────────── DB I/O ─────────────────────────────────────────
+
+def get_db():
+    if not os.path.exists(DB_PATH):
+        raise FileNotFoundError(f'DB not found: {DB_PATH} — run node db/migrate.js first')
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def load_savedata():
-    if not os.path.exists(SAVE_PATH):
-        return {}
-    with open(SAVE_PATH) as f:
-        return json.load(f)
+    """Load predictions and propPick from DB in the same shape results.py expects."""
+    conn = get_db()
+    c = conn.cursor()
+
+    # Load parlays (predictions only — that's what results.py grades)
+    c.execute("SELECT id, date, type, result FROM parlays WHERE type IN ('prediction','lay','allin')")
+    parlays = c.fetchall()
+
+    c.execute("SELECT * FROM parlay_legs")
+    all_legs = c.fetchall()
+    legs_by_parlay = {}
+    for leg in all_legs:
+        pid = leg['parlay_id']
+        if pid not in legs_by_parlay:
+            legs_by_parlay[pid] = []
+        legs_by_parlay[pid].append({
+            'gameId': leg['game_id'], 'sport': leg['sport'],
+            'home': leg['home'], 'away': leg['away'],
+            'team': leg['team'], 'odds': leg['odds'],
+            'market': leg['market'], 'point': leg['point'],
+            'isLock': bool(leg['is_lock']), 'isDog': bool(leg['is_dog']),
+            'result': leg['result'],
+        })
+
+    predictions = {}
+    for p in parlays:
+        entry = {'legs': legs_by_parlay.get(p['id'], []), 'result': p['result']}
+        if p['type'] == 'prediction':
+            predictions[p['date']] = entry
+
+    # Load propPick from props table
+    c.execute("SELECT * FROM props WHERE result IS NULL OR result = ''")
+    prop_rows = c.fetchall()
+    prop_pick = {}
+    for row in prop_rows:
+        date = row['date']
+        if date not in prop_pick:
+            prop_pick[date] = {}
+        key = f"{row['team']}||{row['market_key']}"
+        prop_pick[date][key] = {
+            'gameId': row['game_id'], 'sport': row['sport'],
+            'team': row['team'], 'player': row['player'],
+            'marketKey': row['market_key'], 'label': row['label'],
+            'line': row['line'], 'side': row['side'],
+            'odds': row['odds'], 'result': row['result'],
+        }
+
+    conn.close()
+    return {'predictions': predictions, 'propPick': prop_pick}
 
 def save_savedata(data):
-    with open(SAVE_PATH, 'w') as f:
-        json.dump(data, f, indent=2)
+    """Write graded results back to DB — never touches savedata.json."""
+    conn = get_db()
+    c = conn.cursor()
+
+    # Update parlay leg results
+    predictions = data.get('predictions', {})
+    for date, parlay in predictions.items():
+        # Find the parlay row id
+        c.execute("SELECT id FROM parlays WHERE date=? AND type='prediction'", (date,))
+        row = c.fetchone()
+        if not row:
+            continue
+        parlay_id = row['id']
+        # Update overall parlay result if set
+        if parlay.get('result') is not None:
+            c.execute("UPDATE parlays SET result=? WHERE id=?", (parlay['result'], parlay_id))
+        # Update individual leg results
+        for leg in parlay.get('legs', []):
+            if leg.get('result') is not None and leg.get('gameId'):
+                c.execute(
+                    "UPDATE parlay_legs SET result=? WHERE parlay_id=? AND game_id=?",
+                    (leg['result'], parlay_id, leg['gameId'])
+                )
+
+    # Update prop results
+    prop_pick = data.get('propPick', {})
+    for date, picks in prop_pick.items():
+        for key, pick in picks.items():
+            if pick.get('result') is not None:
+                team = pick.get('team')
+                mk = pick.get('marketKey')
+                c.execute(
+                    "UPDATE props SET result=? WHERE date=? AND team=? AND market_key=?",
+                    (pick['result'], date, team, mk)
+                )
+
+    conn.commit()
+    conn.close()
+    print(f'[results] DB updated — savedata.json not touched')
 
 def fetch_json(url):
     try:
@@ -595,7 +696,7 @@ def run():
         data['predictions'] = predictions
         data['propPick']    = prop_picks
         save_savedata(data)
-        print(f'[results] Updated {updated} pick(s) and saved savedata.json')
+        print(f'[results] Updated {updated} pick(s) in DB')
     else:
         print('[results] No new results to update.')
 

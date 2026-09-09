@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { loadLayHistory, saveLayHistory, loadPredictions, savePredictions, loadState, saveState, loadDogState, saveDogStateServer, loadOuPick, saveOuPick, loadPropPick, fetchEspnDate, loadAllData } from '../hooks/useSaveData.js'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
+import { loadLayHistory, saveLayHistory, loadPredictions, savePredictions, loadState, saveState, loadDogState, saveDogStateServer, loadOuPick, saveOuPick, loadPropPick, fetchEspnDate, SERVER, saveSuperDogState } from '../hooks/useSaveData.js'
 import { formatOdds, calcProfit } from '../utils/odds.js'
 
 function fmtDateLabel(key) {
@@ -26,14 +26,20 @@ const _scoreCache = {}
 
 async function fetchGameScore(sport, gameId) {
   const cacheKey = `${sport}_${gameId}`
-  if (_scoreCache[cacheKey]) return _scoreCache[cacheKey]
   const endpoints = { MLB: 'baseball/mlb', NFL: 'football/nfl', NBA: 'basketball/nba' }
   const ep = endpoints[sport]
   if (!ep || !gameId) return null
   try {
     const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${ep}/summary?event=${gameId}`)
     const data = await res.json()
-    const competitors = data.header?.competitions?.[0]?.competitors || []
+    const comp = data.header?.competitions?.[0]
+    const competitors = comp?.competitors || []
+    const statusType = comp?.status?.type
+    const espnState = statusType?.state || 'pre'
+    const completed = statusType?.completed || false
+    const displayClock = comp?.status?.displayClock || ''
+    const period = comp?.status?.period || null
+    const shortDetail = statusType?.shortDetail || ''
     const score = {}
     competitors.forEach(c => {
       const name = c.team?.displayName || c.team?.shortDisplayName || ''
@@ -55,10 +61,33 @@ async function fetchGameScore(sport, gameId) {
         })
       })
     })
-    const result = { score, playerStats, competitors }
-    _scoreCache[cacheKey] = result
+    const result = { score, playerStats, competitors, espnState, completed, displayClock, period, shortDetail }
+    // Only cache completed games — live/pre games must re-fetch for live updates
+    if (completed) _scoreCache[cacheKey] = result
     return result
   } catch { return null }
+}
+
+// ── Game start time fetching ──────────────────────────────────────────────────
+const _startTimeCache = {}
+
+async function fetchGameStartTime(sport, gameId) {
+  if (!gameId || !sport) return null
+  const cacheKey = `${sport}_${gameId}`
+  if (_startTimeCache[cacheKey] !== undefined) return _startTimeCache[cacheKey]
+  const endpoints = { MLB: 'baseball/mlb', NFL: 'football/nfl', NBA: 'basketball/nba' }
+  const ep = endpoints[sport]
+  if (!ep) { _startTimeCache[cacheKey] = null; return null }
+  try {
+    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${ep}/summary?event=${gameId}`)
+    const data = await res.json()
+    const dateStr = data.header?.competitions?.[0]?.date
+    if (!dateStr) { _startTimeCache[cacheKey] = null; return null }
+    const d = new Date(dateStr)
+    const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+    _startTimeCache[cacheKey] = timeStr
+    return timeStr
+  } catch { _startTimeCache[cacheKey] = null; return null }
 }
 
 const PROP_STAT_MAP = {
@@ -74,10 +103,59 @@ const PROP_STAT_MAP = {
 
 
 
+function LiveBadge() {
+  return (
+    <>
+      <style>{`
+        @keyframes pulse-live {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+        .live-dot { animation: pulse-live 1s ease-in-out infinite; }
+      `}</style>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        color: '#ff4444', fontSize: '0.6rem', fontWeight: '700', letterSpacing: '0.08em',
+      }}>
+        <span className="live-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff4444', display: 'inline-block', flexShrink: 0 }} />
+        LIVE
+      </span>
+    </>
+  )
+}
+
+function SoonBadge() {
+  return (
+    <>
+      <style>{`
+        @keyframes pulse-soon {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.35; }
+        }
+        .soon-badge { animation: pulse-soon 3.5s ease-in-out infinite; }
+      `}</style>
+      <span className="soon-badge" style={{
+        display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+        padding: '0.15rem 0.55rem', borderRadius: '4px', fontSize: '0.65rem',
+        fontWeight: 'bold', letterSpacing: '0.06em',
+        background: '#1a1a1a', border: '1px solid #44444455', color: '#999999',
+      }}>SOON</span>
+    </>
+  )
+}
+
+function StatusBadge({ result, espnState }) {
+  if (result === 'W') return <span style={{ color: W_COLOR }}>✅</span>
+  if (result === 'L') return <span style={{ color: L_COLOR }}>❌</span>
+  if (espnState === 'in') return <LiveBadge />
+  if (espnState === 'pre') return <SoonBadge />
+  return <SoonBadge />
+}
+
 function resultDot(result) {
   if (result === 'W') return <span style={{ color: W_COLOR }}>✅</span>
   if (result === 'L') return <span style={{ color: L_COLOR }}>❌</span>
-  return <span style={{ color: '#555' }}>⏳</span>
+  return <SoonBadge />
 }
 
 function resultBadge(result, hitCount, totalCount) {
@@ -119,7 +197,7 @@ function Section({ emoji, title, accent, children, badge, defaultOpen = false })
   )
 }
 
-function LegRow({ label, labelColor, team, sub, result, odds, scoreInfo }) {
+function LegRow({ label, labelColor, team, sub, result, odds, scoreInfo, liveScore }) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -132,6 +210,22 @@ function LegRow({ label, labelColor, team, sub, result, odds, scoreInfo }) {
         <div style={{ fontSize: '0.6rem', color: labelColor || '#555', fontWeight: 'bold', marginBottom: '0.15rem', letterSpacing: '0.04em' }}>{label}</div>
         <div style={{ fontWeight: 'bold', fontSize: '0.88rem' }}>{team || '—'}</div>
         {sub && <div style={{ color: '#444', fontSize: '0.7rem', marginTop: '0.1rem' }}>{sub}</div>}
+        {liveScore && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem',
+            background: liveScore.state === 'in' ? '#1a1200' : '#111',
+            border: `1px solid ${liveScore.state === 'in' ? '#ffcc0033' : '#222'}`,
+            borderRadius: '5px', padding: '0.15rem 0.5rem' }}>
+            {liveScore.state === 'in' && (
+              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#ffcc00', display: 'inline-block', flexShrink: 0,
+                animation: 'pulse-live 1s ease-in-out infinite' }} />
+            )}
+            <span style={{ fontSize: '0.72rem', fontWeight: 'bold', color: liveScore.state === 'in' ? '#ffcc00' : '#666',
+              letterSpacing: '0.04em' }}>{liveScore.score}</span>
+            {liveScore.clock && (
+              <span style={{ fontSize: '0.6rem', color: '#444', borderLeft: '1px solid #222', paddingLeft: '0.4rem' }}>{liveScore.clock}</span>
+            )}
+          </div>
+        )}
         {scoreInfo && (
           <div style={{ fontSize: '0.68rem', color: result === 'W' ? '#00ff8899' : result === 'L' ? '#ff444499' : '#555', marginTop: '0.2rem', fontStyle: 'italic' }}>
             {scoreInfo}
@@ -197,13 +291,61 @@ function TotalOddsRow({ legs, label = 'TOTAL ODDS' }) {
   )
 }
 
-export default function PastLayTab({ todayLock, onRefresh }) {
+// ── Score display helpers ───────────────────────────────────────────────────────
+function buildScoreDisplay(gs, homeTeam) {
+  if (!gs?.score) return { scoreInfo: null, liveScore: null }
+  const entries = Object.entries(gs.score)
+  if (entries.length < 2) return { scoreInfo: null, liveScore: null }
+  const homeLast = (homeTeam || '').toLowerCase().split(' ').pop()
+  const home = entries.find(([n]) => n.toLowerCase().includes(homeLast)) || entries[0]
+  const away = entries.find(([n]) => n !== home?.[0]) || entries[1]
+  const awayName = away?.[0]?.split(' ').pop() || '?'
+  const homeName = home?.[0]?.split(' ').pop() || '?'
+  const awayScore = away?.[1] ?? '?'
+  const homeScore = home?.[1] ?? '?'
+  if (gs.espnState === 'post' || gs.completed) {
+    return {
+      scoreInfo: `Final: ${awayName} ${awayScore} – ${homeName} ${homeScore}`,
+      liveScore: null,
+    }
+  }
+  if (gs.espnState === 'in') {
+    return {
+      scoreInfo: null,
+      liveScore: {
+        state: 'in',
+        score: `${awayName} ${awayScore} – ${homeName} ${homeScore}`,
+        clock: gs.shortDetail || (gs.displayClock ? gs.displayClock : null),
+      },
+    }
+  }
+  return { scoreInfo: null, liveScore: null }
+}
+
+export default function PastLayTab({ todayLock, allGames = [], onRefresh }) {
   const [allData, setAllData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [refreshed, setRefreshed] = useState(false)
   const [selectedKey, setSelectedKey] = useState(null)
   const [gameScores, setGameScores] = useState({}) // gameId -> { score, playerStats }
+  const [gameStartTimes, setGameStartTimes] = useState({}) // gameId -> "7:08 PM CT"
+
+  // Build a fast gameId -> formatted time lookup from allGames (already loaded in App)
+  const allGamesTimeMap = useMemo(() => {
+    const map = {}
+    for (const g of allGames) {
+      const history = g.history || []
+      const last = history[history.length - 1] || {}
+      const gameId = last.gameId || g.gameId
+      const ct = last.commence_time || g.commence_time
+      if (gameId && ct) {
+        map[gameId] = new Date(ct).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+      }
+    }
+    return map
+  }, [allGames])
+  const pollRef = useRef(null)
   const [showLayPopup, setShowLayPopup] = useState(false)
   const [showPastSlip, setShowPastSlip] = useState(null) // { dateKey, lay, lock }
   const [todayLayData, setTodayLayData] = useState(null)
@@ -211,7 +353,8 @@ export default function PastLayTab({ todayLock, onRefresh }) {
   async function load() {
       setLoading(true)
       const [appState, dogState, layHist, predHist, ouHist, propHist, allServerData] = await Promise.all([
-        loadState(), loadDogState(), loadLayHistory(), loadPredictions(), loadOuPick(), loadPropPick(), loadAllData(),
+        loadState(), loadDogState(), loadLayHistory(), loadPredictions(), loadOuPick(), loadPropPick(),
+        fetch(`${SERVER}/data`).then(r => r.json()).catch(() => ({})),
       ])
       const allInHist = allServerData?.allIn || {}
 
@@ -238,7 +381,7 @@ export default function PastLayTab({ todayLock, onRefresh }) {
           const pickTeamL = (pick.team || '').toLowerCase()
           const pickLast = pickTeamL.split(' ').pop()
           let result
-          if (pick.market === 'spreads' && pick.point != null) {
+          if ((pick.market === 'spreads' || pick.market === 'spread') && pick.point != null) {
             const pickedComp = competitors.find(c => {
               const dn = c.team.displayName.toLowerCase()
               return dn.includes(pickTeamL) || pickTeamL.includes(dn) ||
@@ -329,72 +472,89 @@ export default function PastLayTab({ todayLock, onRefresh }) {
 
       // Resolve any unresolved lay legs
       let layChanged = false
+      const layChangedDates = new Set()
       for (const [date, entry] of Object.entries(layHist)) {
         if (!entry?.legs) continue
         const legsWithTeam = entry.legs.filter(l => l.team)
-        if (legsWithTeam.every(l => l.result !== null) && entry.overallResult) continue
-        for (let i = 0; i < entry.legs.length; i++) {
-          const leg = entry.legs[i]
-          if (leg.result !== null || !leg.team || !leg.sport) continue
-          try {
-            const events = await fetchEspnDate(leg.sport, date.replace(/-/g, ''))
-            const homeLower = leg.home?.toLowerCase() || ''
-            const homeLast  = homeLower.split(' ').pop()
-            const event = events.find(e =>
-              (e.competitions?.[0]?.competitors || []).some(c => {
-                const dn = c.team.displayName.toLowerCase()
-                return homeLower.includes(dn) || dn.includes(homeLower) ||
-                       (homeLast.length > 3 && dn.includes(homeLast))
-              })
-            )
-            if (!event) continue
-            const comp = event.competitions?.[0]
-            if (!comp?.status?.type?.completed) continue
+        // Only skip if all legs resolved AND overallResult is already correct (checked below)
+        // Do NOT early-continue just because overallResult exists — it may have been set with wrong 70% rule
+        const allAlreadyResolved = legsWithTeam.every(l => l.result !== null)
+        if (!allAlreadyResolved) {
+          // Try to resolve unresolved legs
+          for (let i = 0; i < entry.legs.length; i++) {
+            const leg = entry.legs[i]
+            if (leg.result !== null || !leg.team || !leg.sport) continue
+            try {
+              const events = await fetchEspnDate(leg.sport, date.replace(/-/g, ''))
+              const homeLower = leg.home?.toLowerCase() || ''
+              const homeLast  = homeLower.split(' ').pop()
+              const event = events.find(e =>
+                (e.competitions?.[0]?.competitors || []).some(c => {
+                  const dn = c.team.displayName.toLowerCase()
+                  return homeLower.includes(dn) || dn.includes(homeLower) ||
+                         (homeLast.length > 3 && dn.includes(homeLast))
+                })
+              )
+              if (!event) continue
+              const comp = event.competitions?.[0]
+              if (!comp?.status?.type?.completed) continue
 
-            // Spread picks: check coverage, not just winner
-            let won
-            if (leg.market === 'spreads' && leg.point != null) {
-              const competitors = comp.competitors || []
-              const legTeamL = leg.team.toLowerCase()
-              const legLastWord = legTeamL.split(' ').pop()
-              const pickedComp = competitors.find(c => {
-                const dn = c.team.displayName.toLowerCase()
-                const sn = c.team.shortDisplayName?.toLowerCase() || ''
-                return dn.includes(legTeamL) || legTeamL.includes(dn) ||
-                       (legLastWord.length > 3 && (dn.includes(legLastWord) || sn.includes(legLastWord)))
-              })
-              if (!pickedComp) continue
-              const oppComp = competitors.find(c => c.id !== pickedComp.id)
-              const pickedScore = parseFloat(pickedComp.score)
-              const oppScore    = parseFloat(oppComp?.score ?? 0)
-              if (isNaN(pickedScore)) continue
-              won = (pickedScore - oppScore + leg.point) > 0
-            } else {
-              const winner = comp.competitors?.find(c => c.winner)
-              if (!winner) continue
-              const winnerName = winner.team.displayName.toLowerCase()
-              const legTeam = leg.team.toLowerCase()
-              const legLast = legTeam.split(' ').pop()
-              won = winnerName.includes(legTeam) || legTeam.includes(winnerName) ||
-                    (legLast.length > 3 && winnerName.includes(legLast))
-            }
-            layHist[date].legs[i].result = won ? 'W' : 'L'
-            layChanged = true
-          } catch(e) {}
+              // Spread picks: check coverage, not just winner
+              let won
+              if ((leg.market === 'spreads' || leg.market === 'spread') && leg.point != null) {
+                const competitors = comp.competitors || []
+                const legTeamL = leg.team.toLowerCase()
+                const legLastWord = legTeamL.split(' ').pop()
+                const pickedComp = competitors.find(c => {
+                  const dn = c.team.displayName.toLowerCase()
+                  const sn = c.team.shortDisplayName?.toLowerCase() || ''
+                  return dn.includes(legTeamL) || legTeamL.includes(dn) ||
+                         (legLastWord.length > 3 && (dn.includes(legLastWord) || sn.includes(legLastWord)))
+                })
+                if (!pickedComp) continue
+                const oppComp = competitors.find(c => c.id !== pickedComp.id)
+                const pickedScore = parseFloat(pickedComp.score)
+                const oppScore    = parseFloat(oppComp?.score ?? 0)
+                if (isNaN(pickedScore)) continue
+                won = (pickedScore - oppScore + leg.point) > 0
+              } else {
+                const winner = comp.competitors?.find(c => c.winner)
+                if (!winner) continue
+                const winnerName = winner.team.displayName.toLowerCase()
+                const legTeam = leg.team.toLowerCase()
+                const legLast = legTeam.split(' ').pop()
+                won = winnerName.includes(legTeam) || legTeam.includes(winnerName) ||
+                      (legLast.length > 3 && winnerName.includes(legLast))
+              }
+              layHist[date].legs[i].result = won ? 'W' : 'L'
+              layChanged = true
+              layChangedDates.add(date)
+            } catch(e) {}
+          }
         }
-        const resolved = legsWithTeam.filter(l => l.result !== null)
-        if (resolved.length === legsWithTeam.length && legsWithTeam.length > 0 && !layHist[date].overallResult) {
+        // Always recalculate overallResult using ALL-legs-must-hit rule
+        // This corrects any entries previously set with the wrong 70% rule
+        const resolved = layHist[date].legs.filter(l => l.team && l.result !== null)
+        const allResolved = resolved.length === legsWithTeam.length && legsWithTeam.length > 0
+        if (allResolved) {
           const hits = resolved.filter(l => l.result === 'W').length
-          layHist[date].overallResult = hits / resolved.length >= 0.7 ? 'W' : 'L'
-          layHist[date].hitCount = hits
-          layHist[date].totalCount = resolved.length
-          layChanged = true
+          const correctResult = hits === resolved.length ? 'W' : 'L'
+          if (layHist[date].overallResult !== correctResult ||
+              layHist[date].hitCount !== hits ||
+              layHist[date].totalCount !== resolved.length) {
+            layHist[date].overallResult = correctResult
+            layHist[date].hitCount = hits
+            layHist[date].totalCount = resolved.length
+            layChanged = true
+            layChangedDates.add(date)
+          }
         }
       }
-      if (layChanged) await saveLayHistory(layHist)
+      if (layChanged) await saveLayHistory(layHist, [...layChangedDates])
 
       // Resolve any unresolved prediction legs
       let predChanged = false
+      const predChangedDates = new Set()
       for (const [date, entry] of Object.entries(predHist)) {
         if (!entry?.legs) continue
         const legsWithTeam = entry.legs.filter(l => l.team)
@@ -419,7 +579,7 @@ export default function PastLayTab({ todayLock, onRefresh }) {
 
             // Spread picks: check coverage, not just winner
             let won
-            if (leg.market === 'spreads' && leg.point != null) {
+            if ((leg.market === 'spreads' || leg.market === 'spread') && leg.point != null) {
               const competitors = comp.competitors || []
               const legTeamL = leg.team.toLowerCase()
               const legLastWord = legTeamL.split(' ').pop()
@@ -446,6 +606,7 @@ export default function PastLayTab({ todayLock, onRefresh }) {
             }
             predHist[date].legs[i].result = won ? 'W' : 'L'
             predChanged = true
+            predChangedDates.add(date)
           } catch(e) {}
         }
         // Only count legs that have a team pick (skip team=null legs)
@@ -456,11 +617,195 @@ export default function PastLayTab({ todayLock, onRefresh }) {
           predHist[date].hitCount = hits
           predHist[date].totalCount = resolved.length
           predChanged = true
+          predChangedDates.add(date)
         }
       }
-      if (predChanged) await savePredictions(predHist)
+      if (predChanged) await savePredictions(predHist, [...predChangedDates])
 
-      setAllData({ appState, dogState, layHist, predHist, ouHist, propHist, allInHist })
+      const f5Hist = allServerData?.f5 || {}
+      const favHist = allServerData?.favPick || {}
+      const hateHist = allServerData?.hatePick || {}
+      const superdogHist = allServerData?.superdog?.picks || {}
+
+      // ── Resolve unresolved F5 picks ──────────────────────────────────────────
+      let f5Changed = false
+      for (const [date, dayEntry] of Object.entries(f5Hist)) {
+        if (date >= today) continue
+        for (const [sport, pick] of Object.entries(dayEntry)) {
+          if (sport === '_locked' || !pick?.team || !pick?.gameId || pick.result !== null) continue
+          try {
+            const events = await fetchEspnDate(pick.sport, date.replace(/-/g, ''))
+            const homeLower = (pick.home || '').toLowerCase()
+            const homeLast = homeLower.split(' ').pop()
+            const event = events.find(e =>
+              (e.competitions?.[0]?.competitors || []).some(c => {
+                const dn = c.team.displayName.toLowerCase()
+                return homeLower.includes(dn) || dn.includes(homeLower) ||
+                       (homeLast.length > 3 && dn.includes(homeLast))
+              })
+            )
+            if (!event) continue
+            const comp = event.competitions?.[0]
+            if (!comp?.status?.type?.completed) continue
+            let won
+            if (pick.marketType === 'spread' && pick.point != null) {
+              const competitors = comp.competitors || []
+              const pickTeamL = pick.team.toLowerCase()
+              const pickLast = pickTeamL.split(' ').pop()
+              const pickedComp = competitors.find(c => {
+                const dn = c.team.displayName.toLowerCase()
+                const sn = c.team.shortDisplayName?.toLowerCase() || ''
+                return dn.includes(pickTeamL) || pickTeamL.includes(dn) ||
+                       (pickLast.length > 3 && (dn.includes(pickLast) || sn.includes(pickLast)))
+              })
+              if (!pickedComp) continue
+              const oppComp = competitors.find(c => c.id !== pickedComp.id)
+              // F5 uses first 5 innings score — ESPN doesn't expose it directly,
+              // fall back to full game score for now
+              const pickedScore = parseFloat(pickedComp.score)
+              const oppScore = parseFloat(oppComp?.score ?? 0)
+              if (isNaN(pickedScore)) continue
+              won = (pickedScore - oppScore + pick.point) > 0
+            } else {
+              const winner = comp.competitors?.find(c => c.winner)
+              if (!winner) continue
+              const wnL = winner.team.displayName.toLowerCase()
+              const pickL = pick.team.toLowerCase()
+              const pickLast = pickL.split(' ').pop()
+              won = wnL.includes(pickL) || pickL.includes(wnL) ||
+                    (pickLast.length > 3 && wnL.includes(pickLast))
+            }
+            f5Hist[date][sport].result = won ? 'W' : 'L'
+            f5Changed = true
+          } catch(e) {}
+        }
+      }
+      if (f5Changed) {
+        const changedDates = [...new Set(
+          Object.keys(f5Hist).filter(date =>
+            Object.values(f5Hist[date] || {}).some(p => p?.result !== null && p?.result !== undefined)
+          )
+        )]
+        await Promise.all(changedDates.map(date =>
+          fetch(`${SERVER}/f5/${date}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(f5Hist[date]),
+          })
+        ))
+      }
+
+      // ── Resolve unresolved SuperDog picks ─────────────────────────────────────
+      let superdogChanged = false
+      for (const [date, pick] of Object.entries(superdogHist)) {
+        if (date >= today || !pick?.team || !pick?.gameId || pick.result !== null) continue
+        try {
+          const events = await fetchEspnDate(pick.sport, date.replace(/-/g, ''))
+          const homeLower = (pick.home || '').toLowerCase()
+          const homeLast = homeLower.split(' ').pop()
+          const event = events.find(e =>
+            (e.competitions?.[0]?.competitors || []).some(c => {
+              const dn = c.team.displayName.toLowerCase()
+              return homeLower.includes(dn) || dn.includes(homeLower) ||
+                     (homeLast.length > 3 && dn.includes(homeLast))
+            })
+          )
+          if (!event) continue
+          const comp = event.competitions?.[0]
+          if (!comp?.status?.type?.completed) continue
+          const winner = comp.competitors?.find(c => c.winner)
+          if (!winner) continue
+          const wnL = winner.team.displayName.toLowerCase()
+          const pickL = pick.team.toLowerCase()
+          const pickLast = pickL.split(' ').pop()
+          const won = wnL.includes(pickL) || pickL.includes(wnL) ||
+                      (pickLast.length > 3 && wnL.includes(pickLast))
+          superdogHist[date].result = won ? 'W' : 'L'
+          superdogChanged = true
+        } catch(e) {}
+      }
+      if (superdogChanged) {
+        const currentSD = allServerData?.superdog || {}
+        await saveSuperDogState({ ...currentSD, picks: superdogHist })
+      }
+
+      // ── Resolve unresolved All In legs ────────────────────────────────────────
+      let allInChanged = false
+      for (const [date, entry] of Object.entries(allInHist)) {
+        if (date >= today || !entry?.legs?.length) continue
+        const unresolvedLegs = entry.legs.filter(l => l.result === null && l.team)
+        if (!unresolvedLegs.length) continue
+        for (let i = 0; i < entry.legs.length; i++) {
+          const leg = entry.legs[i]
+          if (leg.result !== null || !leg.team) continue
+          try {
+            const dateStr = date.replace(/-/g, '')
+            const events = await fetchEspnDate(leg.sport, dateStr)
+            const homeLower = (leg.home || '').toLowerCase()
+            const homeLast = homeLower.split(' ').pop()
+            const event = events.find(e =>
+              (e.competitions?.[0]?.competitors || []).some(c => {
+                const dn = c.team.displayName.toLowerCase()
+                return homeLower.includes(dn) || dn.includes(homeLower) ||
+                       (homeLast.length > 3 && dn.includes(homeLast))
+              })
+            )
+            if (!event) continue
+            const comp = event.competitions?.[0]
+            if (!comp?.status?.type?.completed) continue
+            const legTeam = leg.team.toLowerCase()
+            const legLast = legTeam.split(' ').pop()
+            let won
+            if ((leg.market === 'spreads' || leg.market === 'spread') && leg.point != null) {
+              const competitors = comp.competitors || []
+              const pickedComp = competitors.find(c => {
+                const dn = c.team.displayName.toLowerCase()
+                const sn = c.team.shortDisplayName?.toLowerCase() || ''
+                return dn.includes(legTeam) || legTeam.includes(dn) ||
+                       (legLast.length > 3 && (dn.includes(legLast) || sn.includes(legLast)))
+              })
+              if (!pickedComp) continue
+              const oppComp = competitors.find(c => c.id !== pickedComp.id)
+              const pickedScore = parseFloat(pickedComp.score)
+              const oppScore = parseFloat(oppComp?.score ?? 0)
+              if (isNaN(pickedScore)) continue
+              won = (pickedScore - oppScore + leg.point) > 0
+            } else {
+              const winner = comp.competitors?.find(c => c.winner)
+              if (!winner) continue
+              const wnL = winner.team.displayName.toLowerCase()
+              won = wnL.includes(legTeam) || legTeam.includes(wnL) ||
+                    (legLast.length > 3 && wnL.includes(legLast))
+            }
+            allInHist[date].legs[i].result = won ? 'W' : 'L'
+            allInChanged = true
+          } catch(e) {}
+        }
+        // Set overallResult — ALL legs must hit
+        const legs = allInHist[date].legs
+        const withTeam = legs.filter(l => l.team)
+        const resolved = withTeam.filter(l => l.result !== null)
+        if (resolved.length === withTeam.length && withTeam.length > 0 && !allInHist[date].overallResult) {
+          const hits = resolved.filter(l => l.result === 'W').length
+          allInHist[date].overallResult = hits === withTeam.length ? 'W' : 'L'
+          allInChanged = true
+        }
+      }
+      if (allInChanged) {
+        await Promise.all(
+          Object.entries(allInHist)
+            .filter(([, entry]) => entry?.legs?.length)
+            .map(([date, entry]) =>
+              fetch(`${SERVER}/parlays/allin/${date}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(entry),
+              })
+            )
+        )
+      }
+
+      setAllData({ appState, dogState, layHist, predHist, ouHist, propHist, allInHist, f5Hist, favHist, hateHist, superdogHist })
 
       // Also load today's lay for popup
       const todayKey = getTodayKey()
@@ -502,12 +847,11 @@ export default function PastLayTab({ todayLock, onRefresh }) {
     setTimeout(() => setRefreshed(false), 2000)
   }
 
-  // Fetch game scores whenever the selected day changes
+  // Fetch game scores + live polling whenever the selected day changes
   useEffect(() => {
     if (!selectedKey || !allData) return
-    const { appState, dogState, layHist, predHist, propHist, allInHist } = allData
-    const toFetch = [] // { sport, gameId }
-
+    const { appState, dogState, layHist, predHist, propHist } = allData
+    const toFetch = []
     const collect = (pick) => {
       if (pick?.gameId && pick?.sport) toFetch.push({ sport: pick.sport, gameId: pick.gameId })
     }
@@ -521,21 +865,58 @@ export default function PastLayTab({ todayLock, onRefresh }) {
     const unique = [...new Map(toFetch.map(x => [x.gameId, x])).values()]
     if (unique.length === 0) return
 
+    // Fetch start times once (cached)
     Promise.all(unique.map(({ sport, gameId }) =>
-      fetchGameScore(sport, gameId).then(data => ({ gameId, data }))
+      fetchGameStartTime(sport, gameId).then(time => ({ gameId, time }))
     )).then(results => {
+      setGameStartTimes(prev => {
+        const next = { ...prev }
+        results.forEach(({ gameId, time }) => { if (time) next[gameId] = time })
+        return next
+      })
+    })
+
+    // Score fetch — runs immediately, then polls every 30s if any game is live
+    async function fetchAllScores() {
+      const results = await Promise.all(
+        unique.map(({ sport, gameId }) =>
+          fetchGameScore(sport, gameId).then(data => ({ gameId, data }))
+        )
+      )
       setGameScores(prev => {
         const next = { ...prev }
         results.forEach(({ gameId, data }) => { if (data) next[gameId] = data })
         return next
       })
+      // Return true if any game is currently live
+      return results.some(({ data }) => data?.espnState === 'in')
+    }
+
+    // Clear any existing poll
+    if (pollRef.current) clearInterval(pollRef.current)
+
+    fetchAllScores().then(hasLive => {
+      if (hasLive) {
+        pollRef.current = setInterval(() => {
+          fetchAllScores().then(stillLive => {
+            if (!stillLive && pollRef.current) {
+              clearInterval(pollRef.current)
+              pollRef.current = null
+            }
+          })
+        }, 30000) // poll every 30 seconds while live
+      }
     })
+
+    return () => {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+    }
   }, [selectedKey, allData])
 
   if (loading) return <p style={{ color: '#555', fontSize: '0.85rem' }}>Loading history...</p>
 
   const today = getTodayKey()
-  const { appState, dogState, layHist, predHist, ouHist, propHist, allInHist } = allData
+  const { appState, dogState, layHist, predHist, ouHist, propHist, allInHist, f5Hist, favHist, hateHist, superdogHist } = allData
 
   const allDays = new Set([
     ...Object.keys(appState.picks || {}),
@@ -564,13 +945,8 @@ export default function PastLayTab({ todayLock, onRefresh }) {
         {showLayPopup && (
           <LayOfDayPopup lay={todayLayData} lock={todayLock} onClose={() => setShowLayPopup(false)} />
         )}
-        <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h2 style={{ margin: '0 0 0.3rem', fontSize: '1rem', color: '#aaa' }}>📋 PAST LAYS</h2>
-          </div>
-          <button onClick={handleRefresh} disabled={refreshing} style={{ fontSize: '0.62rem', padding: '0.28rem 0.65rem', background: 'transparent', border: '1px solid #252525', borderRadius: '5px', color: '#444', cursor: 'pointer' }}>
-            {refreshing ? '↺ …' : '↺ Refresh'}
-          </button>
+        <div style={{ marginBottom: '1.25rem' }}>
+          <h2 style={{ margin: '0 0 0.3rem', fontSize: '1rem', color: '#aaa' }}>📋 PAST LAYS</h2>
         </div>
         <button onClick={() => setShowLayPopup(true)} style={{ width: '100%', background: '#111', border: '1px solid #00ff8822', borderRadius: '14px', padding: '0.9rem 1.25rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div style={{ textAlign: 'left' }}>
@@ -602,6 +978,12 @@ export default function PastLayTab({ todayLock, onRefresh }) {
   const lay  = layHist[key] || null
   const prop = propHist[key] || null
   const allIn = allInHist?.[key] || null
+  const f5Day = f5Hist?.[key] || null
+  const fav = favHist?.[key] || null
+  const hate = hateHist?.[key] || null
+  const superdog = superdogHist?.[key] || null
+  // F5 legs: filter out _locked key and noGuess entries
+  const f5Legs = f5Day ? Object.entries(f5Day).filter(([k, v]) => k !== '_locked' && v && !v.noGuess && v.team).map(([, v]) => v) : []
 
   const propEntries = prop
     ? Object.entries(prop).filter(([, v]) => typeof v === 'object' && v !== null && v.player)
@@ -622,7 +1004,7 @@ export default function PastLayTab({ todayLock, onRefresh }) {
         label: lock.team,
         marketLabel: lock.market === 'h2h' ? 'Moneyline' : `Spread ${lock.point > 0 ? '+' : ''}${lock.point}`,
         accentColor: '#00ff88',
-        tag: '🔒 LOCK',
+        tag: 'Lock',
       })
     }
     if (hasLay) {
@@ -637,11 +1019,11 @@ export default function PastLayTab({ todayLock, onRefresh }) {
         allLegs.push({
           ...leg,
           label: leg.team || '—',
-          marketLabel: leg.market === 'spreads' && leg.point != null
+          marketLabel: (leg.market === 'spreads' || leg.market === 'spread') && leg.point != null
             ? `Spread ${leg.point > 0 ? '+' : ''}${leg.point}`
             : 'Moneyline',
           accentColor: isDog ? '#ff9944' : isSuperDog ? '#b44fff' : isFav ? '#4c9be8' : isHate ? '#ff4466' : '#8888ff',
-          tag: isDog ? '🐕 DOG' : isSuperDog ? '⚡ SUPER' : isFav ? '⭐ FAV' : isHate ? '😤 HATE' : `LEG ${nonAutoIdx}`,
+          tag: isDog ? 'Underdog' : isSuperDog ? 'Super Dog' : isFav ? 'Fav' : isHate ? 'Fade' : 'Pick',
         })
       })
     }
@@ -663,7 +1045,7 @@ export default function PastLayTab({ todayLock, onRefresh }) {
       ? totalOdds > 0 ? (1 + totalOdds / 100).toFixed(2) : (1 + 100 / Math.abs(totalOdds)).toFixed(2)
       : null
 
-    const statusLabel = slipResult === 'W' ? '🎉 PARLAY WIN' : slipResult === 'L' ? '❌ PARLAY LOSS' : pending ? '⏳ IN PROGRESS' : '📋 SLIP'
+    const statusLabel = slipResult === 'W' ? '🎉 PARLAY WIN' : slipResult === 'L' ? '❌ PARLAY LOSS' : pending ? 'LIVE' : '📋 SLIP'
 
     return (
       <div
@@ -673,11 +1055,11 @@ export default function PastLayTab({ todayLock, onRefresh }) {
         <div
           onClick={e => e.stopPropagation()}
           style={{
-            width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', overflowX: 'hidden',
-            background: '#0a0a0a',
+            width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'thin', scrollbarColor: '#333 transparent',
+            background: '#111418',
             borderRadius: '20px',
-            boxShadow: `0 0 80px ${slipGlow}, 0 24px 60px rgba(0,0,0,0.9)`,
-            border: `1px solid ${slipColor}33`,
+            boxShadow: `0 0 60px ${slipGlow}55, 0 20px 50px rgba(0,0,0,0.8)`,
+            border: `1px solid #252a30`,
           }}
         >
 
@@ -706,16 +1088,30 @@ export default function PastLayTab({ todayLock, onRefresh }) {
                   fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>✕</button>
                 {allLegs.length > 0 && (
-                  <div style={{
-                    background: `${slipColor}18`,
-                    border: `1px solid ${slipColor}44`,
-                    borderRadius: '8px', padding: '0.28rem 0.75rem',
-                    fontSize: '0.68rem', fontWeight: 'bold', color: slipColor,
-                    letterSpacing: '0.02em',
-                  }}>
-                    {statusLabel}
-                    {slipResult && ` · ${wins}/${resolved.length}`}
-                  </div>
+                  pending ? (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '6px',
+                      color: '#ff4444', fontSize: '0.65rem', fontWeight: '700', letterSpacing: '0.08em',
+                    }}>
+                      <span style={{
+                        width: '6px', height: '6px', borderRadius: '50%', background: '#ff4444',
+                        display: 'inline-block', flexShrink: 0,
+                        animation: 'pulse-live 1s ease-in-out infinite',
+                      }} />
+                      LIVE
+                    </span>
+                  ) : (
+                    <div style={{
+                      background: `${slipColor}18`,
+                      border: `1px solid ${slipColor}44`,
+                      borderRadius: '8px', padding: '0.28rem 0.75rem',
+                      fontSize: '0.68rem', fontWeight: 'bold', color: slipColor,
+                      letterSpacing: '0.02em',
+                    }}>
+                      {statusLabel}
+                      {slipResult && ` · ${wins}/${resolved.length}`}
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -731,54 +1127,66 @@ export default function PastLayTab({ todayLock, onRefresh }) {
 
           {/* Legs */}
           {allLegs.length > 0 && (
-            <div style={{ padding: '0 1.25rem' }}>
+            <div style={{ padding: '0 1.1rem' }}>
               {allLegs.map((leg, idx) => {
                 const legColor = leg.accentColor
-                const resultIcon = leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'
+                const resultIcon = leg.result === 'W' ? <span>✅</span> : leg.result === 'L' ? <span>❌</span> : <SoonBadge />
                 const isLast = idx === allLegs.length - 1
                 const legBg = leg.result === 'W' ? '#0a1a0f' : leg.result === 'L' ? '#1a0a0a' : 'transparent'
                 return (
                   <div key={idx} style={{
-                    padding: '1rem 0',
-                    borderBottom: isLast ? 'none' : `1px solid #1e1e1e`,
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.85rem',
+                    padding: '0.9rem 0',
+                    borderBottom: isLast ? 'none' : '1px solid #1a1f26',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    opacity: leg.result === 'L' ? 0.5 : 1,
+                    transition: 'opacity 0.2s',
                   }}>
+                    {/* Colored dot */}
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: legColor, flexShrink: 0, marginTop: '2px' }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Tag + sport row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
-                        <span style={{
-                          fontSize: '0.58rem', fontWeight: 'bold', letterSpacing: '0.07em',
-                          color: legColor, background: `${legColor}18`,
-                          border: `1px solid ${legColor}40`, padding: '0.12rem 0.5rem', borderRadius: '4px',
-                        }}>{leg.tag}</span>
-                        <span style={{ fontSize: '0.58rem', color: '#444', letterSpacing: '0.05em' }}>{leg.sport}</span>
+                      {/* Type name + sport */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '3px' }}>
+                        <span style={{ fontSize: '0.6rem', fontWeight: '700', color: legColor, letterSpacing: '0.04em' }}>{leg.tag}</span>
+                        <span style={{ fontSize: '0.6rem', color: '#3a4050', fontWeight: '600' }}>· {leg.sport}</span>
                       </div>
                       {/* Team name */}
                       <div style={{
-                        fontWeight: 'bold', fontSize: '1rem',
-                        color: leg.result === 'W' ? '#fff' : leg.result === 'L' ? '#777' : '#eee',
-                        marginBottom: '0.18rem', lineHeight: 1.2,
+                        fontWeight: '800', fontSize: '1.05rem',
+                        color: leg.result === 'L' ? '#555' : '#eef0f4',
+                        marginBottom: '2px', lineHeight: 1.15,
+                        letterSpacing: '-0.02em',
                       }}>
                         {leg.label}
                       </div>
-                      {/* Market label */}
-                      <div style={{ fontSize: '0.7rem', color: '#555', marginBottom: '0.12rem' }}>{leg.marketLabel}</div>
-                      {/* Matchup */}
-                      {leg.away && leg.home && (
-                        <div style={{ fontSize: '0.65rem', color: '#3a3a3a' }}>{leg.away} vs {leg.home}</div>
-                      )}
+                      {/* Market + matchup + time */}
+                      <div style={{ fontSize: '0.6rem', color: '#3a4555' }}>
+                        {leg.marketLabel}
+                        {leg.away && leg.home && (
+                          <span>
+                            {' · '}{leg.away} vs {leg.home}
+                            {(() => {
+                              const rawTime = leg.commenceTime || leg.commence_time
+                              const fromCommence = rawTime
+                                ? new Date(rawTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+                                : null
+                              const displayTime = allGamesTimeMap[leg.gameId] || fromCommence || gameStartTimes[leg.gameId]
+                              return displayTime ? <span>{' · '}{displayTime}</span> : null
+                            })()}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0, paddingTop: '0.2rem' }}>
+                    <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                       {leg.odds != null && (
                         <div style={{
-                          fontSize: '0.95rem', fontWeight: 'bold',
+                          fontSize: '1rem', fontWeight: '800',
                           color: leg.odds > 0 ? '#ff9944' : '#00ff88',
-                          marginBottom: '0.3rem',
+                          letterSpacing: '-0.01em',
                         }}>
                           {fmtOdds(leg.odds)}
                         </div>
                       )}
-                      <div style={{ fontSize: '1.25rem' }}>{resultIcon}</div>
+                      <div>{resultIcon}</div>
                     </div>
                   </div>
                 )
@@ -797,19 +1205,22 @@ export default function PastLayTab({ todayLock, onRefresh }) {
 
           {/* Odds + payout footer */}
           {totalOdds != null && allLegs.length >= 1 && (
-            <div style={{ padding: '1rem 1.4rem 0.5rem', background: '#080808' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '1.1rem 1.4rem 0.75rem', background: '#0d1016' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <div>
-                  <div style={{ fontSize: '0.55rem', color: '#444', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.22rem' }}>PARLAY ODDS</div>
-                  <div style={{ fontSize: '1.6rem', fontWeight: 'bold', color: totalOdds > 0 ? '#ff9944' : '#4c9be8', lineHeight: 1 }}>
+                  <div style={{ fontSize: '0.5rem', color: '#2e3844', letterSpacing: '0.12em', fontWeight: '700', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Parlay Odds</div>
+                  <div style={{ fontSize: '1.7rem', fontWeight: '800', color: totalOdds > 0 ? '#ff9944' : '#4c9be8', lineHeight: 1, letterSpacing: '-0.02em' }}>
                     {fmtOdds(totalOdds)}
                   </div>
                 </div>
                 {payoutMultiplier && (
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.55rem', color: '#444', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.22rem' }}>🪙1 WINS</div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#ccc', lineHeight: 1 }}>
-                      {payoutMultiplier}x
+                    <div style={{ fontSize: '0.5rem', color: '#2e3844', letterSpacing: '0.12em', fontWeight: '700', marginBottom: '0.2rem', textTransform: 'uppercase' }}>$1 Wins</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem', justifyContent: 'flex-end' }}>
+                      <span style={{ fontSize: '1rem', fontWeight: '700', color: '#3a4a5a' }}>$</span>
+                      <span style={{ fontSize: '1.9rem', fontWeight: '800', color: '#fff', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                        {(parseFloat(payoutMultiplier)).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -840,50 +1251,12 @@ export default function PastLayTab({ todayLock, onRefresh }) {
 
           {/* Locked stamp */}
           {!slipResult && allLegs.length > 0 && (
-            <div style={{ textAlign: 'center', padding: '0.5rem 0 0.25rem', fontSize: '0.58rem', color: '#2a2a2a', letterSpacing: '0.1em' }}>
-              ●●● LOCKED IN ●●●
+            <div style={{ textAlign: 'center', padding: '0.5rem 0 0.25rem', fontSize: '0.58rem', color: '#1e2530', letterSpacing: '0.14em' }}>
+              ● ● ● LOCKED IN ● ● ●
             </div>
           )}
 
-          {/* 🚀 All In Slip */}
-          {allIn?.legs?.length > 0 && (
-            <div style={{ borderTop: '1px solid #1e1e1e', marginTop: '0.5rem' }}>
-              <div style={{ padding: '0.75rem 1.4rem 0.25rem', fontSize: '0.55rem', color: '#888', fontWeight: 'bold', letterSpacing: '0.14em' }}>
-                🚀 ALL IN SLIP · {allIn.legs.length} LEG{allIn.legs.length !== 1 ? 'S' : ''}
-              </div>
-              {allIn.legs.map((leg, idx) => {
-                const isLast = idx === allIn.legs.length - 1
-                const resultIcon = leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'
-                return (
-                  <div key={idx} style={{
-                    padding: '0.75rem 1.25rem',
-                    borderBottom: isLast ? 'none' : '1px solid #1a1a1a',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem',
-                  }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.58rem', color: '#b44fff', fontWeight: 'bold', letterSpacing: '0.07em', marginBottom: '0.25rem' }}>
-                        🚀 ALL IN
-                      </div>
-                      <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#eee', marginBottom: '0.15rem', lineHeight: 1.2 }}>
-                        {leg.team || '—'}
-                      </div>
-                      {leg.away && leg.home && (
-                        <div style={{ fontSize: '0.62rem', color: '#3a3a3a' }}>{leg.away} vs {leg.home}</div>
-                      )}
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      {leg.odds != null && (
-                        <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: leg.odds > 0 ? '#ff9944' : '#00ff88', marginBottom: '0.25rem' }}>
-                          {fmtOdds(leg.odds)}
-                        </div>
-                      )}
-                      <div style={{ fontSize: '1.1rem' }}>{resultIcon}</div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+
 
           <div style={{ height: '1.75rem' }} />
         </div>
@@ -913,28 +1286,9 @@ export default function PastLayTab({ todayLock, onRefresh }) {
         />
       )}
 
-      <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h2 style={{ margin: '0 0 0.3rem', fontSize: '1rem', color: '#aaa' }}>📋 PAST LAYS</h2>
-          <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>Every pick, every day — see what hit and what didn't.</p>
-        </div>
-        {/* Refresh button */}
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          style={{
-            fontSize: '0.62rem', padding: '0.28rem 0.65rem',
-            background: refreshed ? '#0a2a1a' : 'transparent',
-            border: `1px solid ${refreshed ? '#00ff8844' : '#252525'}`,
-            borderRadius: '5px',
-            color: refreshing ? '#333' : refreshed ? '#00ff88' : '#444',
-            cursor: refreshing ? 'not-allowed' : 'pointer',
-            transition: 'all 0.3s ease',
-            flexShrink: 0,
-          }}
-        >
-          {refreshing ? '↺ …' : refreshed ? '✓ Updated' : '↺ Refresh'}
-        </button>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <h2 style={{ margin: '0 0 0.3rem', fontSize: '1rem', color: '#aaa' }}>📋 PAST LAYS</h2>
+        <p style={{ margin: 0, color: '#444', fontSize: '0.82rem' }}>Every pick, every day — see what hit and what didn't.</p>
       </div>
 
       {/* Lay of the Day CTA button */}
@@ -1083,7 +1437,7 @@ export default function PastLayTab({ todayLock, onRefresh }) {
         <div style={{ fontSize: '1.25rem' }}>📅</div>
         <div>
           <div style={{ fontSize: '0.58rem', color: key === today ? '#aaaa44' : '#333', letterSpacing: '0.1em', fontWeight: 'bold' }}>
-            {key === today ? 'TODAY · IN PROGRESS' : 'VIEWING'}
+            {key === today ? 'TODAY · LIVE' : 'VIEWING'}
           </div>
           <div style={{ fontSize: '0.88rem', fontWeight: 'bold', color: key === today ? '#cccc66' : '#888' }}>{fmtDateLabel(key)}</div>
         </div>
@@ -1113,22 +1467,14 @@ export default function PastLayTab({ todayLock, onRefresh }) {
       {/* 1. Lock */}
       {lock && (() => {
         const gs = gameScores[lock.gameId]
-        let scoreInfo = null
-        if (gs?.score) {
-          const entries = Object.entries(gs.score)
-          if (entries.length >= 2) {
-            const home = entries.find(([n]) => n.toLowerCase().includes((lock.home || '').toLowerCase().split(' ').pop())) || entries[0]
-            const away = entries.find(([n]) => n !== home?.[0]) || entries[1]
-            scoreInfo = `Final: ${away?.[0]?.split(' ').pop() || '?'} ${away?.[1]} – ${home?.[0]?.split(' ').pop() || '?'} ${home?.[1]}`
-          }
-        }
+        const { scoreInfo, liveScore } = buildScoreDisplay(gs, lock.home)
         return (
           <Section emoji="🔒" title="Lock of the Day" accent="#00ff88" badge={resultBadge(lock.result, null, null)}>
             <LegRow
               label={`${lock.sport} · ${lock.market === 'h2h' ? 'MONEYLINE' : `SPREAD ${lock.point > 0 ? '+' : ''}${lock.point}`}`}
               labelColor="#00ff88" team={lock.team}
               sub={`${lock.away} vs ${lock.home}`}
-              result={lock.result} odds={lock.odds} scoreInfo={scoreInfo}
+              result={lock.result} odds={lock.odds} scoreInfo={scoreInfo} liveScore={liveScore}
             />
             {lock.odds != null && <TotalOddsRow legs={[lock]} label="SLIP ODDS" />}
             {lock.stake != null && (
@@ -1144,57 +1490,66 @@ export default function PastLayTab({ todayLock, onRefresh }) {
       {/* 2. Dog */}
       {dog && (() => {
         const gs = gameScores[dog.gameId]
-        let scoreInfo = null
-        if (gs?.score) {
-          const entries = Object.entries(gs.score)
-          if (entries.length >= 2) {
-            const home = entries.find(([n]) => n.toLowerCase().includes((dog.home || '').toLowerCase().split(' ').pop())) || entries[0]
-            const away = entries.find(([n]) => n !== home?.[0]) || entries[1]
-            scoreInfo = `Final: ${away?.[0]?.split(' ').pop() || '?'} ${away?.[1]} – ${home?.[0]?.split(' ').pop() || '?'} ${home?.[1]}`
-          }
-        }
+        const { scoreInfo, liveScore } = buildScoreDisplay(gs, dog.home)
         return (
           <Section emoji="🐕" title="Dog of the Day" accent="#ff9944" badge={resultBadge(dog.result, null, null)}>
             <LegRow
               label={`${dog.sport} · UNDERDOG ML`} labelColor="#ff9944"
               team={dog.team} sub={`${dog.away} vs ${dog.home}`}
-              result={dog.result} odds={dog.odds} scoreInfo={scoreInfo}
+              result={dog.result} odds={dog.odds} scoreInfo={scoreInfo} liveScore={liveScore}
             />
             {dog.odds != null && <TotalOddsRow legs={[dog]} label="SLIP ODDS" />}
           </Section>
         )
       })()}
 
-      {/* 3. Double Lock */}
+      {/* 3. Double Lock (O/U) */}
       {ou && lock && (() => {
         const gs = gameScores[lock.gameId]
-        let scoreInfo = null
-        if (gs?.score) {
-          const entries = Object.entries(gs.score)
-          if (entries.length >= 2) {
-            const home = entries.find(([n]) => n.toLowerCase().includes((lock.home || '').toLowerCase().split(' ').pop())) || entries[0]
-            const away = entries.find(([n]) => n !== home?.[0]) || entries[1]
-            const total = entries.reduce((s, [, v]) => s + (parseFloat(v) || 0), 0)
-            scoreInfo = `Final: ${away?.[0]?.split(' ').pop()} ${away?.[1]} – ${home?.[0]?.split(' ').pop()} ${home?.[1]} · Total ${total}`
-          }
-        }
+        const { scoreInfo, liveScore } = buildScoreDisplay(gs, lock.home)
+        const ouScoreInfo = gs?.completed && gs?.score
+          ? `Total: ${Object.values(gs.score).reduce((s, v) => s + (parseFloat(v) || 0), 0)} · line ${ou.point}`
+          : null
         return (
           <Section emoji="🔒🔒" title="Double Lock — O/U" accent="#00ff88"
             badge={ou.result ? resultBadge(ou.result, null, null) : null}>
             <LegRow label="LEG 1 · LOCK" labelColor="#00ff88" team={lock.team}
               sub={lock.market === 'h2h' ? 'Moneyline' : `Spread ${lock.point > 0 ? '+' : ''}${lock.point}`}
-              result={lock.result} odds={lock.odds} scoreInfo={scoreInfo} />
+              result={lock.result} odds={lock.odds} scoreInfo={scoreInfo} liveScore={liveScore} />
             <LegRow label="LEG 2 · O/U" labelColor="#8888ff"
               team={`${ou.name} ${ou.point}`}
               sub={`${lock.away} vs ${lock.home} — Total`}
               result={ou.result ?? null} odds={ou.odds}
-              scoreInfo={scoreInfo ? `Total: ${Object.values(gs?.score || {}).reduce((s, v) => s + (parseFloat(v) || 0), 0)} · line ${ou.point}` : null} />
+              scoreInfo={ouScoreInfo} liveScore={liveScore && !gs?.completed ? { ...liveScore, clock: null } : null} />
             <TotalOddsRow legs={[lock, ou].filter(l => l?.odds != null)} label="PARLAY TOTAL" />
           </Section>
         )
       })()}
 
-      {/* 4. Predictions */}
+      {/* 4. F5 / Halftime */}
+      {f5Legs.length > 0 && (() => {
+        const allResolved = f5Legs.every(l => l.result !== null)
+        const wins = f5Legs.filter(l => l.result === 'W').length
+        const overall = allResolved ? (wins === f5Legs.length ? 'W' : 'L') : null
+        return (
+          <Section emoji="⚡" title="F5 / Halftime" accent="#ffcc44"
+            badge={overall ? resultBadge(overall, wins, f5Legs.length) : null}>
+            {f5Legs.map((leg, i) => (
+              <LegRow key={i}
+                label={`${leg.sport} · ${(leg.label || 'F5').toUpperCase()}`}
+                labelColor="#ffcc44"
+                team={leg.team}
+                sub={`${leg.away} vs ${leg.home}`}
+                result={leg.result ?? null}
+                odds={leg.odds ?? null}
+              />
+            ))}
+            {f5Legs.length > 1 && <TotalOddsRow legs={f5Legs} label="PARLAY TOTAL" />}
+          </Section>
+        )
+      })()}
+
+      {/* 5. Predictions */}
       {pred?.legs?.length > 0 && (() => {
         const renderedLegs = pred.legs.filter(l => l.team)
         return (
@@ -1204,50 +1559,19 @@ export default function PastLayTab({ todayLock, onRefresh }) {
               if (!leg.isLock && !leg.isDog && !leg.isSuperDog && !leg.isFav && !leg.isHate) acc.n++
               const n = acc.n
               const gs = gameScores[leg.gameId]
-              let scoreInfo = null
-              if (gs?.score) {
-                const entries = Object.entries(gs.score)
-                if (entries.length >= 2) {
-                  const home = entries.find(([nm]) => nm.toLowerCase().includes((leg.home || '').toLowerCase().split(' ').pop())) || entries[0]
-                  const away = entries.find(([nm]) => nm !== home?.[0]) || entries[1]
-                  scoreInfo = `Final: ${away?.[0]?.split(' ').pop()} ${away?.[1]} – ${home?.[0]?.split(' ').pop()} ${home?.[1]}`
-                }
-              }
-              const legLabel = leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`
+              const { scoreInfo, liveScore } = buildScoreDisplay(gs, leg.home)
+              const mktSuffix = (leg.market === 'spreads' || leg.market === 'spread') && leg.point != null ? ` · SP ${leg.point > 0 ? '+' : ''}${leg.point}` : ' · ML'
+              const legLabel = (leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`) + mktSuffix
               const legColor = leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : leg.isSuperDog ? '#b44fff' : leg.isFav ? '#4c9be8' : leg.isHate ? '#ff4466' : '#8888ff'
               acc.els.push(
                 <LegRow key={leg.gameId || i}
-                  label={legLabel}
-                  labelColor={legColor}
+                  label={legLabel} labelColor={legColor}
                   team={leg.team} sub={`${leg.away} vs ${leg.home} · ${leg.sport}`}
-                  result={leg.result} odds={leg.odds ?? null} scoreInfo={scoreInfo} />
+                  result={leg.result} odds={leg.odds ?? null} scoreInfo={scoreInfo} liveScore={liveScore} />
               )
               return acc
             }, { n: 0, els: [] }).els}
             <TotalOddsRow legs={renderedLegs} label="PARLAY TOTAL" />
-          </Section>
-        )
-      })()}
-
-      {/* 5. All In */}
-      {allIn?.legs?.length > 0 && (() => {
-        const allInW = allIn.legs.filter(l => l.result === 'W').length
-        const allInResolved = allIn.legs.filter(l => l.result !== null).length
-        const allInOverall = allInResolved === allIn.legs.length && allIn.legs.length > 0
-          ? (allInW === allIn.legs.length ? 'W' : 'L') : null
-        return (
-          <Section emoji="🚀" title="All In" accent="#b44fff"
-            badge={allInOverall ? resultBadge(allInOverall, allInW, allIn.legs.length) : null}>
-            {allIn.legs.map((leg, i) => (
-              <LegRow key={i}
-                label={`${leg.sport || ''} · MONEYLINE`}
-                labelColor="#b44fff"
-                team={leg.team || '—'}
-                sub={leg.away && leg.home ? `${leg.away} vs ${leg.home}` : ''}
-                result={leg.result ?? null}
-                odds={leg.odds}
-              />
-            ))}
           </Section>
         )
       })()}
@@ -1262,23 +1586,17 @@ export default function PastLayTab({ todayLock, onRefresh }) {
               if (!leg.isLock && !leg.isDog && !leg.isSuperDog && !leg.isFav && !leg.isHate) acc.n++
               const n = acc.n
               const gs = gameScores[leg.gameId]
-              let scoreInfo = null
-              if (gs?.score) {
-                const entries = Object.entries(gs.score)
-                if (entries.length >= 2) {
-                  const home = entries.find(([nm]) => nm.toLowerCase().includes((leg.home || '').toLowerCase().split(' ').pop())) || entries[0]
-                  const away = entries.find(([nm]) => nm !== home?.[0]) || entries[1]
-                  scoreInfo = `Final: ${away?.[0]?.split(' ').pop()} ${away?.[1]} – ${home?.[0]?.split(' ').pop()} ${home?.[1]}`
-                }
-              }
-              const legLabel = leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`
+              const { scoreInfo, liveScore } = buildScoreDisplay(gs, leg.home)
+              const startTime = gameStartTimes[leg.gameId]
+              const mktSuffix = (leg.market === 'spreads' || leg.market === 'spread') && leg.point != null ? ` · SP ${leg.point > 0 ? '+' : ''}${leg.point}` : ' · ML'
+              const legLabel = (leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`) + mktSuffix
               const legColor = leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : leg.isSuperDog ? '#b44fff' : leg.isFav ? '#4c9be8' : leg.isHate ? '#ff4466' : '#8888ff'
+              const subLine = `${leg.away} vs ${leg.home} · ${leg.sport}${startTime && !liveScore && !scoreInfo ? ` · ${startTime}` : ''}`
               acc.els.push(
                 <LegRow key={leg.gameId || i}
-                  label={legLabel}
-                  labelColor={legColor}
-                  team={leg.team || '—'} sub={`${leg.away} vs ${leg.home} · ${leg.sport}`}
-                  result={leg.result} odds={leg.odds ?? null} scoreInfo={scoreInfo} />
+                  label={legLabel} labelColor={legColor}
+                  team={leg.team || '—'} sub={subLine}
+                  result={leg.result} odds={leg.odds ?? null} scoreInfo={scoreInfo} liveScore={liveScore} />
               )
               return acc
             }, { n: 0, els: [] }).els}
@@ -1287,46 +1605,38 @@ export default function PastLayTab({ todayLock, onRefresh }) {
         )
       })()}
 
-      {/* 6. Prop */}
-      {propEntries.length > 0 && (() => {
-        const resolvedProps = propEntries.filter(([, p]) => p.result !== null)
-        const propW = resolvedProps.filter(([, p]) => p.result === 'W').length
-        const propL = resolvedProps.filter(([, p]) => p.result === 'L').length
-        const propTotal = resolvedProps.length
-        const propOverall = propTotal > 0 ? (propW / propTotal >= 0.5 ? 'W' : 'L') : null
+
+      {/* 7. All In */}
+      {allIn?.legs?.length > 0 && (() => {
+        const allInW = allIn.legs.filter(l => l.result === 'W').length
+        const allInResolved = allIn.legs.filter(l => l.result !== null).length
+        const allInOverall = allInResolved === allIn.legs.length && allIn.legs.length > 0
+          ? (allInW === allIn.legs.length ? 'W' : 'L') : null
         return (
-        <Section emoji="🎲" title="Prop Pick" accent="#ffdd44"
-          badge={propOverall ? resultBadge(propOverall, propW, propTotal) : null}>
-          {propEntries.map(([teamKey, pick], i) => {
-            const gs = gameScores[pick.gameId]
-            let scoreInfo = null
-            if (gs?.playerStats && pick.player) {
-              const pStats = gs.playerStats[pick.player]
-              if (pStats) {
-                const statDef = PROP_STAT_MAP[pick.marketKey] || { label: pick.marketKey, espnKeys: [] }
-                const statVal = statDef.espnKeys.map(k => pStats[k]).find(v => v != null)
-                if (statVal != null) {
-                  const actual = parseFloat(statVal)
-                  const line = parseFloat(pick.line)
-                  const hit = pick.side === 'over' ? actual > line : actual < line
-                  scoreInfo = `${pick.player}: ${statVal} ${statDef.label} · line ${pick.line} · ${hit ? 'HIT' : 'MISS'}`
-                }
-              }
-            }
-            return (
-              <LegRow key={i}
-                label={`${pick.sport} · ${(pick.label || 'PROP').toUpperCase()} · ${(pick.side || '').toUpperCase()}`}
-                labelColor="#ffdd44"
-                team={`${pick.player} ${pick.side === 'over' ? '⬆' : '⬇'} ${pick.line}`}
-                sub={`${pick.team || teamKey}`}
-                result={pick.result} odds={pick.odds} scoreInfo={scoreInfo} />
-            )
-          })}
-        </Section>
+          <Section emoji="🚀" title="All In" accent="#b44fff"
+            badge={allInOverall ? resultBadge(allInOverall, allInW, allIn.legs.length) : null}>
+            {(() => {
+              let aiN = 0
+              return allIn.legs.map((leg, i) => {
+                if (!leg.isLock && !leg.isDog && !leg.isSuperDog && !leg.isFav && !leg.isHate) aiN++
+                const mktSuffix = (leg.market === 'spreads' || leg.market === 'spread') && leg.point != null ? ` · SP ${leg.point > 0 ? '+' : ''}${leg.point}` : ' · ML'
+                const legLabel = (leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${aiN}`) + mktSuffix
+                const legColor = leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : leg.isSuperDog ? '#b44fff' : leg.isFav ? '#4c9be8' : leg.isHate ? '#ff4466' : '#b44fff'
+                return (
+                  <LegRow key={i}
+                    label={legLabel} labelColor={legColor}
+                    team={leg.team || '—'}
+                    sub={leg.away && leg.home ? `${leg.away} vs ${leg.home} · ${leg.sport || ''}` : leg.sport || ''}
+                    result={leg.result ?? null} odds={leg.odds} />
+                )
+              })
+            })()}
+            {allIn.legs.length > 1 && <TotalOddsRow legs={allIn.legs} label="PARLAY TOTAL" />}
+          </Section>
         )
       })()}
 
-      {!lock && !dog && !ou && !pred && !lay && propEntries.length === 0 && !allIn && (
+      {!lock && !dog && !lay?.legs?.length && !pred && !f5Legs.length && !allIn && (
         <div style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '1.25rem', color: '#444', fontSize: '0.85rem', textAlign: 'center' }}>
           No picks recorded for {fmtDateLabel(key)}.
         </div>

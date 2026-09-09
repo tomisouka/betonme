@@ -34,7 +34,7 @@ export default function SuperDogTab({ allGames, loading, onSuperDogChange }) {
     async function resolve() {
       const s = await loadSuperDogState()
       if (!s.picks) return
-      const pending = Object.entries(s.picks).filter(([, p]) => p.result === null)
+      const pending = Object.entries(s.picks).filter(([, p]) => p.result === null || p.result === undefined)
       if (!pending.length) return
 
       for (const [date, pick] of pending) {
@@ -73,8 +73,11 @@ export default function SuperDogTab({ allGames, loading, onSuperDogChange }) {
       }
       await saveSuperDogState(s)
       setSdState({ ...s })
+      if (onSuperDogChange) onSuperDogChange()
     }
     resolve()
+    const interval = setInterval(resolve, 5 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [])
 
   // ── Pick modal ──────────────────────────────────────────────────────────────

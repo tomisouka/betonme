@@ -1,3 +1,5 @@
+const SERVER = import.meta.env.VITE_SERVER_HOST || 'http://127.0.0.1:3001'
+
 // ─── SPORTS / SEASON ─────────────────────────────────────────────────────────
 
 export function getSportsInSeason() {
@@ -81,7 +83,7 @@ export async function fetchGamesFromEspn() {
 
   // Merge DK odds from local server — free, unlimited, no credits
   try {
-    const dkRes = await fetch('http://127.0.0.1:3001/dk-odds')
+    const dkRes = await fetch(`${SERVER}/dk-odds`)
     if (dkRes.ok) {
       const dkData = await dkRes.json()
       const dkGames = Object.values(dkData.sports || {}).flatMap(s => s.games || [])
@@ -114,6 +116,21 @@ export async function fetchGamesFromEspn() {
 
 
 // ─── DATE HELPERS ─────────────────────────────────────────────────────────────
+
+export function getDoubleheaderGameIds(games) {
+  const groups = {}
+  for (const g of games) {
+    if (!g?.commence_time) continue
+    const dateKey = new Date(g.commence_time).toDateString()
+    const key = `${g.sportKey}|${g.home_team}|${g.away_team}|${dateKey}`
+    ;(groups[key] ||= []).push(g.id)
+  }
+  const result = new Set()
+  for (const ids of Object.values(groups)) {
+    if (ids.length > 1) ids.forEach(id => result.add(id))
+  }
+  return result
+}
 
 export function getTodayKey() {
   const d = new Date()
@@ -216,7 +233,10 @@ export async function fetchMlbProbablePitchers() {
 // Fetch ESPN scoreboard for a specific sport and date string (YYYYMMDD)
 // Used by DogTab to resolve past pick results
 export async function fetchEspnDate(sportKey, dateStr) {
-  const mapping = ESPN_SPORT_MAP[sportKey]
+  // Accept both sportKey ('baseball_mlb') and sportLabel ('MLB')
+  const LABEL_TO_KEY = { MLB: 'baseball_mlb', NBA: 'basketball_nba', NFL: 'americanfootball_nfl' }
+  const resolvedKey = LABEL_TO_KEY[sportKey] || sportKey
+  const mapping = ESPN_SPORT_MAP[resolvedKey]
   if (!mapping) return []
   try {
     const url = `https://site.api.espn.com/apis/site/v2/sports/${mapping.endpoint}/scoreboard?dates=${dateStr}`

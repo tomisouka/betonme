@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { loadPrefs, savePrefs, loadFavPick, saveFavPick } from '../hooks/useSaveData.js'
+import { loadPrefs, savePrefs, loadFavPick, saveFavPick, SERVER } from '../hooks/useSaveData.js'
 import { getTodayKey, getGameDateLabel } from '../utils/odds.js'
-
-const SERVER = 'http://127.0.0.1:3001'
+import DHBadge from '../components/DHBadge.jsx'
+// STEP MARKER: step 3/6 in progress — file 3 of 5 (FavsTab.jsx) done.
+// Next: HateWatchTab.jsx, checkbetonme.sh.
 
 // ── MLB Teams ─────────────────────────────────────────────────────────────────
 const MLB_TEAMS = [
@@ -81,42 +82,98 @@ function StatCard({ label, value, sub, color = '#aaa', note }) {
   )
 }
 
-// ── Bias Meter ────────────────────────────────────────────────────────────────
-function BiasMeter({ pickPct }) {
-  // 50% = perfectly neutral, 100% = always pick them, 0% = always fade
-  const pct = Math.round(pickPct)
-  const pos = Math.max(2, Math.min(98, pct)) // clamp for visual
-  const color = pct > 70 ? '#ff9944' : pct < 30 ? '#8888ff' : '#00ff88'
-  const label = pct > 70 ? 'BIASED' : pct < 30 ? 'FADER' : 'BALANCED'
-  const labelColor = pct > 70 ? '#ff9944' : pct < 30 ? '#8888ff' : '#00ff88'
+// ── Shared slider renderer ────────────────────────────────────────────────────
+function SliderMeter({ title, label, labelColor, sub, pos, gradientLeft, gradientRight, leftText, rightText }) {
   return (
-    <div style={{ marginBottom: '1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <span style={{ fontSize: '0.62rem', color: '#444', letterSpacing: '0.07em' }}>BIAS METER</span>
+    <div style={{ marginBottom: '1.25rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+        <span style={{ fontSize: '0.62rem', color: '#444', letterSpacing: '0.07em' }}>{title}</span>
         <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: labelColor }}>{label}</span>
       </div>
       <div style={{ position: 'relative', height: '8px', background: '#111', borderRadius: '4px', border: '1px solid #222' }}>
-        {/* gradient track */}
         <div style={{
           position: 'absolute', inset: 0, borderRadius: '4px',
-          background: 'linear-gradient(to right, #8888ff, #00ff88 50%, #ff9944)',
-          opacity: 0.18,
+          background: `linear-gradient(to right, ${gradientLeft}, #333 50%, ${gradientRight})`,
+          opacity: 0.22,
         }} />
-        {/* needle */}
+        <div style={{ position: 'absolute', left: '50%', top: '-2px', width: '1px', height: '12px', background: '#2a2a2a' }} />
         <div style={{
           position: 'absolute', top: '-3px', width: '14px', height: '14px',
-          background: color, borderRadius: '50%', border: '2px solid #111',
-          left: `calc(${pos}% - 7px)`,
-          transition: 'left 0.4s ease',
-          boxShadow: `0 0 6px ${color}88`,
+          background: labelColor, borderRadius: '50%', border: '2px solid #111',
+          left: `calc(${pos}% - 7px)`, transition: 'left 0.4s ease',
+          boxShadow: `0 0 6px ${labelColor}88`,
         }} />
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.35rem' }}>
-        <span style={{ fontSize: '0.58rem', color: '#333' }}>Always fade</span>
-        <span style={{ fontSize: '0.58rem', color: '#333' }}>Neutral</span>
-        <span style={{ fontSize: '0.58rem', color: '#333' }}>Always pick</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.3rem' }}>
+        <span style={{ fontSize: '0.58rem', color: '#333' }}>{leftText}</span>
+        <span style={{ fontSize: '0.58rem', color: '#444' }}>{sub}</span>
+        <span style={{ fontSize: '0.58rem', color: '#333' }}>{rightText}</span>
       </div>
     </div>
+  )
+}
+
+// ── Bias Meter — how often you ride your fav vs go against them ───────────────
+// Left = objective (you fade your own team sometimes), Right = pure bias (always ride)
+function BiasMeter({ gutPct }) {
+  if (gutPct === null) return null
+  const pct = Math.round(gutPct)
+  const pos = Math.max(2, Math.min(98, pct))
+  const { label, color, sub } =
+    pct > 80 ? { label: 'PURE BIAS',    color: '#ff4444', sub: 'You never go against your gut' } :
+    pct > 65 ? { label: 'BIASED',       color: '#ff9944', sub: 'Feelings over data' } :
+    pct > 40 ? { label: 'BALANCED',     color: '#00ff88', sub: "You're making calls, not just riding" } :
+    pct > 20 ? { label: 'CONTRARIAN',   color: '#8888ff', sub: 'You fade your own instincts' } :
+               { label: 'FULL FADE',    color: '#aaaaff', sub: 'You never trust your gut at all' }
+  return (
+    <SliderMeter
+      title="BIAS METER"
+      label={label} labelColor={color} sub={sub}
+      pos={pos}
+      gradientLeft="#00ff88" gradientRight="#ff4444"
+      leftText="Objective" rightText="Pure bias"
+    />
+  )
+}
+
+// ── Sharpness Meter — odds-adjusted edge on your gut picks vs baseline ────────
+// Left = losing money on these picks, Right = beating the market
+function SharpnessMeter({ picks, overallPct, minPicks = 3 }) {
+  const resolved = picks.filter(p => (p.result === 'W' || p.result === 'L') && p.odds != null)
+  if (resolved.length < minPicks || overallPct === null) {
+    return (
+      <div style={{ marginBottom: '1.25rem', padding: '0.7rem 1rem', background: '#0f0f0f', border: '1px solid #1a1a1a', borderRadius: '8px' }}>
+        <div style={{ fontSize: '0.62rem', color: '#444', letterSpacing: '0.07em', marginBottom: '0.2rem' }}>SHARPNESS METER</div>
+        <div style={{ fontSize: '0.72rem', color: '#333' }}>Need at least {minPicks} resolved picks with odds to measure sharpness.</div>
+      </div>
+    )
+  }
+  // Odds-adjusted edge: for each pick, did you beat implied probability?
+  // impliedProb = odds < 0 ? (-odds)/(-odds+100) : 100/(odds+100)
+  const edgeScores = resolved.map(p => {
+    const imp = p.odds < 0 ? (-p.odds) / (-p.odds + 100) : 100 / (p.odds + 100)
+    const outcome = p.result === 'W' ? 1 : 0
+    return outcome - imp  // positive = beat the market, negative = lost to it
+  })
+  const avgEdge = edgeScores.reduce((s, e) => s + e, 0) / edgeScores.length
+  const edgePct = Math.round(avgEdge * 100)
+
+  // Needle: map -30 to +30 edge range onto 2–98 slider
+  const pos = Math.max(2, Math.min(98, 50 + edgePct * 1.6))
+  const { label, color, sub } =
+    edgePct > 15  ? { label: 'SHARP',          color: '#00ff88', sub: 'Your instinct is finding real value' } :
+    edgePct > 5   ? { label: 'SLIGHT EDGE',    color: '#ffaa44', sub: 'Beating baseline, keep it up' } :
+    edgePct > -5  ? { label: 'BREAK EVEN',     color: '#aaa',    sub: 'No edge yet, could go either way' } :
+    edgePct > -15 ? { label: 'LOSING EDGE',    color: '#ff9944', sub: 'Your bias is costing you' } :
+                    { label: 'GETTING PLAYED', color: '#ff4444', sub: 'The market knows more than your gut' }
+  return (
+    <SliderMeter
+      title="SHARPNESS METER"
+      label={label} labelColor={color} sub={`${edgePct > 0 ? '+' : ''}${edgePct}% vs market · ${resolved.length} picks`}
+      pos={pos}
+      gradientLeft="#ff4444" gradientRight="#00ff88"
+      leftText="Losing edge" rightText="Sharp"
+    />
   )
 }
 
@@ -124,10 +181,13 @@ function BiasMeter({ pickPct }) {
 
 
 // ── Today's Game Card — owns favPick slot ─────────────────────────────────────
-function TodayGameCard({ team, allGames, todayFavPick, todayLock, todayDog, onFavPickChange }) {
+function TodayGameCard({ team, allGames, todayFavPick, todayLock, todayDog, onFavPickChange, doubleheaderIds = new Set() }) {
+  const [step, setStep]       = useState('side')   // 'side' | 'line' | 'nopick_confirm'
+  const [side, setSide]       = useState(null)      // 'ride' | 'fade'
   const [picking, setPicking] = useState(false)
   const [saving, setSaving]   = useState(false)
-  const [noPickConfirm, setNoPickConfirm] = useState(false)
+
+  function resetFlow() { setStep('side'); setSide(null) }
 
   function nameMatches(a, b) {
     if (!a || !b) return false
@@ -272,12 +332,16 @@ function TodayGameCard({ team, allGames, todayFavPick, todayLock, todayDog, onFa
   const teamML     = mlMarket?.outcomes?.find(o => nameMatches(o.name, teamFull))
   const teamSpread = spMarket?.outcomes?.find(o => nameMatches(o.name, teamFull))
 
-  const hasFavPick  = !!todayFavPick && !todayFavPick.noPick
-  const isNoPick    = !!todayFavPick?.noPick
-  const isCovered   = !!coveredPick   // lock or dog already covers this team
-  const displayPick = coveredPick || todayFavPick
-  const isSpread    = displayPick?.market === 'spreads'
-  const anyPick     = isCovered || hasFavPick || isNoPick
+  const oppML     = mlMarket?.outcomes?.find(o => !nameMatches(o.name, teamFull))
+  const oppSpread = spMarket?.outcomes?.find(o => !nameMatches(o.name, teamFull))
+
+  const hasFavPick   = !!todayFavPick && !todayFavPick.noPick
+  const isNoPick     = !!todayFavPick?.noPick
+  const isCovered    = !!coveredPick
+  const displayPick  = coveredPick || todayFavPick
+  const isSpread     = displayPick?.market === 'spreads'
+  const savedSide    = todayFavPick?.favSide   // 'ride' | 'fade'
+  const anyPick      = isCovered || hasFavPick || isNoPick
 
   async function saveNoPick() {
     setSaving(true)
@@ -295,21 +359,23 @@ function TodayGameCard({ team, allGames, todayFavPick, todayLock, todayDog, onFa
     }
   }
 
-  async function makePick(market, odds, point) {
+  async function makePick(pickedTeam, market, odds, point, favSide) {
     setSaving(true)
     try {
       const existing = await loadFavPick()
       const updated  = { ...existing, [getTodayKey()]: {
         sport: 'MLB', sportLabel: 'MLB',
-        team: teamFull,
+        team: pickedTeam,
         home: todayGame.home_team,
         away: todayGame.away_team,
         odds, market, point: point ?? null,
         gameId: todayGame.id,
+        favSide,  // 'ride' | 'fade' — tracks whether this was a fav pick or a fade
       }}
       await saveFavPick(updated)
       onFavPickChange?.()
       setPicking(false)
+      resetFlow()
     } catch (e) {
       console.error('favPick save failed', e)
     } finally {
@@ -317,8 +383,13 @@ function TodayGameCard({ team, allGames, todayFavPick, todayLock, todayDog, onFa
     }
   }
 
+  // Card border: green for ride, red for fade, neutral otherwise
+  const cardBorder = anyPick
+    ? (savedSide === 'fade' ? '#ff444433' : '#00ff8833')
+    : '#2a2a2a'
+
   return (
-    <div style={{ background: '#111', border: `1px solid ${anyPick ? '#00ff8833' : '#2a2a2a'}`, borderRadius: '12px', padding: '0.9rem 1.1rem', marginBottom: '1.5rem' }}>
+    <div style={{ background: '#111', border: `1px solid ${cardBorder}`, borderRadius: '12px', padding: '0.9rem 1.1rem', marginBottom: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
         <span style={{ fontSize: '0.6rem', color: '#555', fontWeight: 'bold', letterSpacing: '0.08em' }}>⚾ TODAY — YOUR PICK</span>
         {gameTime && <span style={{ fontSize: '0.62rem', color: '#444' }}>{gameTime}</span>}
@@ -337,9 +408,10 @@ function TodayGameCard({ team, allGames, todayFavPick, todayLock, todayDog, onFa
             {teamShort} {fmtO(teamML.price)} ML
           </span>
         )}
+        <DHBadge show={doubleheaderIds.has(todayGame?.id)} size="sm" />
       </div>
 
-      {/* Covered by lock or dog — no separate pick needed */}
+      {/* Covered by lock or dog */}
       {isCovered && !picking && (
         <div style={{ fontSize: '0.78rem', color: '#00ff88', fontWeight: 'bold' }}>
           {coverSource} · ⭐ {teamShort} {isSpread
@@ -349,44 +421,163 @@ function TodayGameCard({ team, allGames, todayFavPick, todayLock, todayDog, onFa
         </div>
       )}
 
-      {/* No Pick Today — skipped */}
+      {/* No Pick Today */}
       {isNoPick && !picking && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontSize: '0.78rem', color: '#444', fontStyle: 'italic' }}>
             🚫 No pick today — {teamShort} not in play
           </div>
-          <button onClick={() => { setPicking(true); setNoPickConfirm(false) }} style={{
+          <button onClick={() => { setPicking(true); resetFlow() }} style={{
             fontSize: '0.6rem', padding: '0.2rem 0.5rem', background: 'transparent',
             border: '1px solid #222', borderRadius: '5px', color: '#444', cursor: 'pointer',
           }}>change</button>
         </div>
       )}
 
-      {/* Standalone favPick already made */}
+      {/* Saved pick summary */}
       {!isCovered && hasFavPick && !picking && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: '0.78rem', color: '#00ff88', fontWeight: 'bold' }}>
-            ⭐ {teamShort} {isSpread
+          <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: savedSide === 'fade' ? '#ff4444' : '#00ff88' }}>
+            {savedSide === 'fade' ? '😤' : '⭐'} {(displayPick.team || '').split(' ').pop()} {isSpread
               ? `${displayPick.point > 0 ? '+' : ''}${displayPick.point} (${fmtO(displayPick.odds)})`
               : `${fmtO(displayPick.odds)} ML`}
+            <span style={{ fontSize: '0.62rem', color: '#444', fontWeight: 'normal', marginLeft: '0.4rem' }}>
+              {savedSide === 'fade' ? '— fading your fav' : '— riding your fav'}
+            </span>
           </div>
-          <button onClick={() => setPicking(true)} style={{
+          <button onClick={() => { setPicking(true); resetFlow() }} style={{
             fontSize: '0.6rem', padding: '0.2rem 0.5rem', background: 'transparent',
             border: '1px solid #222', borderRadius: '5px', color: '#444', cursor: 'pointer',
           }}>change</button>
         </div>
       )}
 
-      {/* No pick yet or changing — only show if not covered by lock/dog */}
+      {/* Pick flow */}
       {(!anyPick || picking) && !isCovered && (
         <div>
-          {noPickConfirm ? (
+
+          {/* Step 1: Ride or Fade */}
+          {step === 'side' && (
+            <div>
+              <div style={{ fontSize: '0.6rem', color: '#444', letterSpacing: '0.07em', marginBottom: '0.55rem' }}>
+                {teamShort.toUpperCase()} IS PLAYING — WHAT'S YOUR MOVE?
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <button onClick={() => { setSide('ride'); setStep('line') }} style={{
+                  flex: 1, padding: '0.7rem 0.5rem', borderRadius: '8px', cursor: 'pointer',
+                  background: '#0a1a0a', border: '1px solid #00ff8855',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = '#00ff88'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = '#00ff8855'}
+                >
+                  <span style={{ fontSize: '1.1rem' }}>⭐</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#00ff88' }}>Ride</span>
+                  <span style={{ fontSize: '0.6rem', color: '#555' }}>back {teamShort}</span>
+                </button>
+                <button onClick={() => { setSide('fade'); setStep('line') }} style={{
+                  flex: 1, padding: '0.7rem 0.5rem', borderRadius: '8px', cursor: 'pointer',
+                  background: '#1a0000', border: '1px solid #ff444455',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = '#ff4444'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = '#ff444455'}
+                >
+                  <span style={{ fontSize: '1.1rem' }}>😤</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#ff4444' }}>Fade</span>
+                  <span style={{ fontSize: '0.6rem', color: '#555' }}>bet against {teamShort}</span>
+                </button>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button onClick={() => setStep('nopick_confirm')} style={{
+                  fontSize: '0.62rem', padding: '0.3rem 0.6rem', background: 'transparent',
+                  border: '1px solid #1e1e1e', borderRadius: '5px', color: '#333', cursor: 'pointer',
+                }}>🚫 No pick today</button>
+                {picking && (
+                  <button onClick={() => { setPicking(false); resetFlow() }} style={{
+                    fontSize: '0.6rem', padding: '0.2rem 0.5rem', background: 'transparent',
+                    border: '1px solid #1a1a1a', borderRadius: '5px', color: '#333', cursor: 'pointer',
+                  }}>cancel</button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Pick the line */}
+          {step === 'line' && side && (
+            <div>
+              <div style={{ fontSize: '0.6rem', color: '#444', letterSpacing: '0.07em', marginBottom: '0.55rem' }}>
+                <span style={{ color: side === 'ride' ? '#00ff88' : '#ff4444' }}>
+                  {side === 'ride' ? '⭐ RIDE' : '😤 FADE'}
+                </span>
+                <span style={{ color: '#333' }}> — ML OR SPREAD?</span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {side === 'ride' ? (
+                  <>
+                    {teamML && (
+                      <button onClick={() => makePick(teamFull, 'h2h', teamML.price, null, 'ride')} disabled={saving} style={{
+                        padding: '0.55rem 0.9rem', borderRadius: '7px', cursor: saving ? 'not-allowed' : 'pointer',
+                        background: '#0a1a0a', border: '1px solid #00ff8866',
+                        color: '#00ff88', fontSize: '0.8rem', fontWeight: 'bold',
+                      }}>
+                        {teamShort} ML {fmtO(teamML.price)}
+                      </button>
+                    )}
+                    {teamSpread && (
+                      <button onClick={() => makePick(teamFull, 'spreads', teamSpread.price, teamSpread.point, 'ride')} disabled={saving} style={{
+                        padding: '0.55rem 0.9rem', borderRadius: '7px', cursor: saving ? 'not-allowed' : 'pointer',
+                        background: '#0a1a0a', border: '1px solid #00ff8844',
+                        color: '#00ff88', fontSize: '0.8rem', fontWeight: 'bold',
+                      }}>
+                        {teamShort} {teamSpread.point > 0 ? '+' : ''}{teamSpread.point} ({fmtO(teamSpread.price)})
+                      </button>
+                    )}
+                    {!teamML && !teamSpread && (
+                      <div style={{ fontSize: '0.72rem', color: '#333' }}>No odds available yet</div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {oppML && (
+                      <button onClick={() => makePick(opponent, 'h2h', oppML.price, null, 'fade')} disabled={saving} style={{
+                        padding: '0.55rem 0.9rem', borderRadius: '7px', cursor: saving ? 'not-allowed' : 'pointer',
+                        background: '#1a0000', border: '1px solid #ff444466',
+                        color: '#ff4444', fontSize: '0.8rem', fontWeight: 'bold',
+                      }}>
+                        {oppShort} ML {fmtO(oppML.price)}
+                      </button>
+                    )}
+                    {oppSpread && (
+                      <button onClick={() => makePick(opponent, 'spreads', oppSpread.price, oppSpread.point, 'fade')} disabled={saving} style={{
+                        padding: '0.55rem 0.9rem', borderRadius: '7px', cursor: saving ? 'not-allowed' : 'pointer',
+                        background: '#1a0000', border: '1px solid #ff444444',
+                        color: '#ff4444', fontSize: '0.8rem', fontWeight: 'bold',
+                      }}>
+                        {oppShort} {oppSpread.point > 0 ? '+' : ''}{oppSpread.point} ({fmtO(oppSpread.price)})
+                      </button>
+                    )}
+                    {!oppML && !oppSpread && (
+                      <div style={{ fontSize: '0.72rem', color: '#333' }}>No odds available yet</div>
+                    )}
+                  </>
+                )}
+              </div>
+              <button onClick={() => setStep('side')} style={{
+                marginTop: '0.5rem', fontSize: '0.6rem', padding: '0.2rem 0.5rem',
+                background: 'transparent', border: '1px solid #1a1a1a', borderRadius: '5px', color: '#333', cursor: 'pointer',
+              }}>← back</button>
+            </div>
+          )}
+
+          {/* No Pick Confirmation */}
+          {step === 'nopick_confirm' && (
             <div style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '0.9rem 1rem' }}>
               <div style={{ fontSize: '0.72rem', color: '#aaa', fontWeight: 'bold', marginBottom: '0.4rem' }}>
                 🚫 Skip today's pick?
               </div>
               <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: '0.8rem', lineHeight: 1.5 }}>
-                Mark <span style={{ color: '#888' }}>{teamShort}</span> as not in play today. This won't count against your stats.
+                Mark <span style={{ color: '#888' }}>{teamShort}</span> as not in play today. Won't count against your stats.
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button onClick={saveNoPick} disabled={saving} style={{
@@ -397,7 +588,7 @@ function TodayGameCard({ team, allGames, todayFavPick, todayLock, todayDog, onFa
                 }}>
                   {saving ? 'Saving...' : 'Yes, skip today'}
                 </button>
-                <button onClick={() => setNoPickConfirm(false)} style={{
+                <button onClick={() => setStep('side')} style={{
                   flex: 1, padding: '0.55rem 0.5rem', borderRadius: '7px', cursor: 'pointer',
                   background: 'transparent', border: '1px solid #1e1e1e',
                   color: '#444', fontSize: '0.72rem',
@@ -406,50 +597,8 @@ function TodayGameCard({ team, allGames, todayFavPick, todayLock, todayDog, onFa
                 </button>
               </div>
             </div>
-          ) : (
-            <>
-              <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '0.4rem', letterSpacing: '0.06em' }}>
-                ⭐ PICK {teamShort} — SPREAD OR ML
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                {teamML && (
-                  <button onClick={() => makePick('h2h', teamML.price, null)} disabled={saving} style={{
-                    padding: '0.45rem 0.9rem', borderRadius: '6px', cursor: saving ? 'not-allowed' : 'pointer',
-                    background: teamML.price < 0 ? '#0a2a1a' : '#2a1a0a',
-                    border: `1px solid ${teamML.price < 0 ? '#00ff88' : '#ff9944'}`,
-                    color: teamML.price < 0 ? '#00ff88' : '#ff9944',
-                    fontSize: '0.8rem', fontWeight: 'bold',
-                  }}>
-                    {teamShort} ML {fmtO(teamML.price)}
-                  </button>
-                )}
-                {teamSpread && (
-                  <button onClick={() => makePick('spreads', teamSpread.price, teamSpread.point)} disabled={saving} style={{
-                    padding: '0.45rem 0.9rem', borderRadius: '6px', cursor: saving ? 'not-allowed' : 'pointer',
-                    background: '#1a1a2a', border: '1px solid #4444aa',
-                    color: '#8888ff', fontSize: '0.8rem', fontWeight: 'bold',
-                  }}>
-                    {teamShort} {teamSpread.point > 0 ? '+' : ''}{teamSpread.point} ({fmtO(teamSpread.price)})
-                  </button>
-                )}
-                {picking && (
-                  <button onClick={() => setPicking(false)} style={{
-                    padding: '0.45rem 0.7rem', borderRadius: '6px', cursor: 'pointer',
-                    background: 'transparent', border: '1px solid #222', color: '#444', fontSize: '0.72rem',
-                  }}>✕</button>
-                )}
-                {!teamML && !teamSpread && (
-                  <div style={{ fontSize: '0.72rem', color: '#333' }}>No odds available yet</div>
-                )}
-              </div>
-              <div style={{ marginTop: '0.5rem' }}>
-                <button onClick={() => setNoPickConfirm(true)} style={{
-                  fontSize: '0.62rem', padding: '0.3rem 0.6rem', background: 'transparent',
-                  border: '1px solid #1e1e1e', borderRadius: '5px', color: '#333', cursor: 'pointer',
-                }}>🚫 No pick today</button>
-              </div>
-            </>
           )}
+
         </div>
       )}
     </div>
@@ -458,18 +607,17 @@ function TodayGameCard({ team, allGames, todayFavPick, todayLock, todayDog, onFa
 
 
 
-export default function FavsTab({ allGames, todayLock, todayDog, todayFavPick, onFavPickChange, onTeamChange }) {
-  const [favTeam, setFavTeam] = useState(() => localStorage.getItem('favTeam_MLB') || '')
-  const [picking, setPicking] = useState(() => !localStorage.getItem('favTeam_MLB'))
+export default function FavsTab({ allGames, todayLock, todayDog, todayFavPick, onFavPickChange, onTeamChange, doubleheaderIds = new Set() }) {
+  const [favTeam, setFavTeam] = useState('')
+  const [picking, setPicking] = useState(true)
   const [saveData, setSaveData] = useState(null)
 
   useEffect(() => {
-    // Hydrate favTeam from server prefs (authoritative, overrides localStorage if set)
+    // Hydrate favTeam from server prefs (DB is authoritative)
     loadPrefs().then(prefs => {
       if (prefs?.favTeam_MLB) {
         setFavTeam(prefs.favTeam_MLB)
         setPicking(false)
-        localStorage.setItem('favTeam_MLB', prefs.favTeam_MLB)
       }
     }).catch(() => {})
     fetch(`${SERVER}/data`)
@@ -481,7 +629,6 @@ export default function FavsTab({ allGames, todayLock, todayDog, todayFavPick, o
     setFavTeam(team)
     setPicking(false)
     loadPrefs().then(prefs => savePrefs({ ...prefs, 'favTeam_MLB': team }))
-    localStorage.setItem('favTeam_MLB', team)
     onTeamChange?.()
   }
 
@@ -509,6 +656,15 @@ export default function FavsTab({ allGames, todayLock, todayDog, todayFavPick, o
       allPicks.push({ date, ...pick, involved, pickedThem, source: 'lock' })
     })
 
+    // From favPick (FavsTab ride/fade picks) — favSide is authoritative
+    Object.entries(saveData.favPick || {}).forEach(([date, pick]) => {
+      if (!pick || pick.noPick || pick.sport !== 'MLB') return
+      const involved = teamMatches(pick.home, favTeam) || teamMatches(pick.away, favTeam)
+      // If favSide is set, use it directly. Otherwise fall back to team match.
+      const pickedThem = pick.favSide ? pick.favSide === 'ride' : teamMatches(pick.team, favTeam)
+      allPicks.push({ date, ...pick, involved, pickedThem, source: 'fav' })
+    })
+
     if (allPicks.length === 0) return { empty: true }
 
     const mlbPicks = allPicks
@@ -528,11 +684,10 @@ export default function FavsTab({ allGames, todayLock, todayDog, todayFavPick, o
     const fadedRate     = rate(favFaded)
     const involvedRate  = rate(favInvolved)
 
-    // Bias: of all games fav team was involved, % of time you picked them
-    const involvedResolved = favInvolved.filter(p => p.result === 'W' || p.result === 'L')
-    const biasScore = involvedResolved.length
-      ? (favPicked.filter(p => p.result === 'W' || p.result === 'L').length / involvedResolved.length) * 100
-      : 50
+    // Bias: of all games fav team was involved, % of time you picked them (all picks, not just resolved)
+    const biasScore = favInvolved.length
+      ? (favPicked.length / favInvolved.length) * 100
+      : null
 
     // Knowledge delta: are you better when their games are involved vs overall?
     const knowledgeDelta = (involvedRate.pct !== null && overallRate.pct !== null)
@@ -558,6 +713,7 @@ export default function FavsTab({ allGames, todayLock, todayDog, todayFavPick, o
       biasScore,
       knowledgeDelta,
       avgOdds,
+      sharpnessPicks: favPicked,  // picks where you rode your fav — used for sharpness meter
       recentPicks: favInvolved.filter(p => p.result).sort((a,b) => b.date.localeCompare(a.date)).slice(0, 5),
     }
   }, [favTeam, saveData])
@@ -610,6 +766,7 @@ export default function FavsTab({ allGames, todayLock, todayDog, todayFavPick, o
       {favTeam && (
         <TodayGameCard
           team={favTeam}
+          doubleheaderIds={doubleheaderIds}
           allGames={allGames}
           todayFavPick={todayFavPick}
           todayLock={todayLock}
@@ -627,8 +784,9 @@ export default function FavsTab({ allGames, todayLock, todayDog, todayFavPick, o
         </div>
       ) : (
         <>
-          {/* Bias meter */}
-          <BiasMeter pickPct={a.biasScore} />
+          {/* Bias meter + Sharpness meter */}
+          <BiasMeter gutPct={a.biasScore} />
+          <SharpnessMeter picks={a.sharpnessPicks} overallPct={a.overallRate.pct} />
 
           {/* Core stats row */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
@@ -652,28 +810,47 @@ export default function FavsTab({ allGames, todayLock, todayDog, todayFavPick, o
             />
           </div>
 
-          {/* Knowledge delta */}
-          {a.knowledgeDelta !== null && (
-            <div style={{
-              background: '#111', border: `1px solid ${a.knowledgeDelta > 0 ? '#00ff8822' : '#ff444422'}`,
-              borderRadius: '10px', padding: '0.85rem 1.1rem', marginBottom: '0.75rem',
-            }}>
-              <div style={{ fontSize: '0.62rem', color: '#444', letterSpacing: '0.07em', marginBottom: '0.3rem' }}>KNOWLEDGE DELTA</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                <span style={{
-                  fontSize: '1.4rem', fontWeight: 'bold',
-                  color: a.knowledgeDelta > 0 ? '#00ff88' : '#ff4444',
-                }}>
-                  {a.knowledgeDelta > 0 ? '+' : ''}{a.knowledgeDelta}%
-                </span>
-                <span style={{ fontSize: '0.75rem', color: '#555' }}>
-                  {a.knowledgeDelta > 0
-                    ? `vs your MLB average — you have an edge on ${favTeam.split(' ').pop()} games`
-                    : `vs your MLB average — you're actually worse on ${favTeam.split(' ').pop()} games`}
-                </span>
+          {/* Verdict */}
+          {(() => {
+            const biased = a.biasScore !== null && a.biasScore > 65
+            const balanced = a.biasScore !== null && a.biasScore >= 40 && a.biasScore <= 65
+            const resolvedWithOdds = a.sharpnessPicks.filter(p => (p.result === 'W' || p.result === 'L') && p.odds != null)
+            let sharp = null
+            if (resolvedWithOdds.length >= 3 && a.overallRate.pct !== null) {
+              const edgeScores = resolvedWithOdds.map(p => {
+                const imp = p.odds < 0 ? (-p.odds) / (-p.odds + 100) : 100 / (p.odds + 100)
+                return (p.result === 'W' ? 1 : 0) - imp
+              })
+              sharp = Math.round(edgeScores.reduce((s, e) => s + e, 0) / edgeScores.length * 100) > 5
+            }
+            let verdict, vcolor, vsub
+            if (biased && sharp === true) {
+              verdict = 'Riding Right'; vcolor = '#00ff88'; vsub = 'Pure loyalty but your fav picks are actually hitting'
+            } else if (biased && sharp === false) {
+              verdict = 'Homer Bet'; vcolor = '#ff4444'; vsub = 'Heart over head — the market is punishing you'
+            } else if (biased && sharp === null) {
+              verdict = 'Ride or Die'; vcolor = '#ff9944'; vsub = 'You always back them — need more data to see if it pays'
+            } else if (balanced && sharp === true) {
+              verdict = 'Sharp Fan'; vcolor = '#00ff88'; vsub = 'Objective reads + solid results — this is how you win'
+            } else if (balanced && sharp === false) {
+              verdict = 'Trying to Be Smart'; vcolor = '#ffaa44'; vsub = "Balanced approach but the picks aren't landing yet"
+            } else if (balanced) {
+              verdict = 'Even Keel'; vcolor = '#aaa'; vsub = 'Reading the game, not just the fandom — build more data'
+            } else {
+              verdict = sharp === true ? 'Contrarian Edge' : 'Against Your Own Team'
+              vcolor  = sharp === true ? '#8888ff' : '#555'
+              vsub    = sharp === true ? 'You fade your own fav and it pays — ruthless' : "You barely back them — are they even your fav?"
+            }
+            return (
+              <div style={{ background: '#111', border: `1px solid ${vcolor}33`, borderRadius: '10px', padding: '0.85rem 1.1rem', marginBottom: '0.75rem' }}>
+                <div style={{ fontSize: '0.62rem', color: '#444', letterSpacing: '0.07em', marginBottom: '0.3rem' }}>VERDICT</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: vcolor }}>{verdict}</span>
+                  <span style={{ fontSize: '0.72rem', color: '#555' }}>{vsub}</span>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Avg odds card */}
           {a.avgOdds !== null && (

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { loadState, loadDogState } from '../hooks/useSaveData.js'
 import { getTeamLogoUrl, LOGO_STYLE } from '../utils/teamLogos.js'
 
-const SERVER = 'http://127.0.0.1:3001'
+const SERVER = import.meta.env.VITE_SERVER_HOST || 'http://127.0.0.1:3001'
 
 function getDateKey(offset = 0) {
   const d = new Date(Date.now() + offset * 86400000)

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { getTodayKey, ensureAmerican, formatOdds } from '../utils/odds.js'
-import { STORAGE_KEYS, loadPropPick, savePropPick } from '../hooks/useSaveData.js'
+import { loadPropPick, savePropPick } from '../hooks/useSaveData.js'
 import PropSection, { ODDS_API_PROP_MARKETS, PROP_MARKET_LABELS, MARKET_ORDER, MARKET_SECTION_LABELS } from '../components/PropSection.jsx'
 import PropsInsightPanel from '../components/PropsInsightPanel.jsx'
 
+const SERVER = import.meta.env.VITE_SERVER_HOST || 'http://127.0.0.1:3001'
 
 export default function PropsTab({ todayLock, todayDog, allGames, onRefresh }) {
   const todayKey = getTodayKey()
@@ -104,7 +105,7 @@ export default function PropsTab({ todayLock, todayDog, allGames, onRefresh }) {
     setPropsError(null)
 
     try {
-      const r = await fetch('http://127.0.0.1:3001/dk-props?sport=' + lockSport)
+      const r = await fetch(`${SERVER}/dk-props?sport=` + lockSport)
       const data = r.ok ? await r.json() : {}
       const sportData = data[lockSport]
       const allProps = sportData?.props || []
@@ -824,7 +825,7 @@ function PropsSneakPeek({ propLines, allGames, onPick, todayPicks = {} }) {
 
   React.useEffect(() => {
     const loadProps = () => {
-      fetch('http://127.0.0.1:3001/dk-props')
+      fetch(`${SERVER}/dk-props`)
         .then(r => r.ok ? r.json() : {})
         .then(data => {
           const allProps = Object.entries(data).flatMap(([sport, sd]) =>

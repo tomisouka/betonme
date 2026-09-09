@@ -1,20 +1,8 @@
 // ─── SERVER ───────────────────────────────────────────────────────────────────
 
-export const SERVER = 'http://127.0.0.1:3001'
-
-// ─── STORAGE KEYS (localStorage — cache only) ────────────────────────────────
-
-export const STORAGE_KEYS = {
-  APP: 'lockapp',
-  ODDS_CACHE: 'oddsCache',
-  PROPS_CACHE: 'propsCache',
-  PROPS_DAY_CACHE: 'propsDayCache',
-  STATS_CACHE: 'statsCache',
-  PREDICTIONS: 'predictionsHistory',
-  LAY: 'layHistory',
-}
-
-const CACHE_DURATION_MS = 8 * 60 * 60 * 1000  // 8h — kept for legacy compatibility
+export const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+// STEP MARKER: step 3/6 in progress — file 1 of 5 (useSaveData.js) done.
+// Next: App.jsx (2 occurrences), FavsTab.jsx, HateWatchTab.jsx, checkbetonme.sh.
 
 // ─── RAW SERVER I/O ───────────────────────────────────────────────────────────
 
@@ -25,265 +13,176 @@ export async function loadAllData() {
   } catch { return {} }
 }
 
-export async function saveAllData(data) {
+async function putJson(path, body) {
   try {
-    await fetch(`${SERVER}/data`, {
-      method: 'POST',
+    await fetch(`${SERVER}${path}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(body),
     })
-  } catch (e) { console.error('saveAllData failed', e) }
+  } catch (e) { console.error(`PUT ${path} failed`, e) }
 }
 
-// ─── WRITE QUEUE ──────────────────────────────────────────────────────────────
-// Serializes all saves so they run one at a time.
-// Each job: reads current data, merges its key, writes back.
-// Next job doesn't start until the previous POST fully resolves —
-// so no two saves ever read the same stale snapshot and stomp each other.
-
-let _queue = Promise.resolve()
-
-function enqueueWrite(key, value) {
-  _queue = _queue.then(async () => {
-    try {
-      const current = await loadAllData()
-      await saveAllData({ ...current, [key]: value })
-    } catch (e) { console.error(`enqueueWrite(${key}) failed`, e) }
-  })
-  return _queue
-}
-
-// ─── APP STATE (lock picks, coins, streak) ────────────────────────────────────
+// ─── APP STATE ────────────────────────────────────────────────────────────────
 
 export async function loadState() {
-  try {
-    const data = await loadAllData()
-    return data.app || {}
-  } catch { return {} }
+  try { const data = await loadAllData(); return data.app || {} }
+  catch { return {} }
 }
 
 export async function saveState(state) {
-  return enqueueWrite('app', state)
+  return putJson('/appstate', state)
 }
 
 // ─── PREDICTIONS ──────────────────────────────────────────────────────────────
 
 export async function loadPredictions() {
-  try {
-    const data = await loadAllData()
-    return data.predictions || {}
-  } catch { return {} }
+  try { const data = await loadAllData(); return data.predictions || {} }
+  catch { return {} }
 }
 
-export async function savePredictions(pred) {
-  return enqueueWrite('predictions', pred)
+export async function savePredictions(pred, changedDates = null) {
+  const entries = changedDates
+    ? changedDates.map(d => [d, pred[d]]).filter(([, v]) => v)
+    : Object.entries(pred)
+  return Promise.all(entries.map(([date, parlay]) => putJson(`/parlays/prediction/${date}`, parlay)))
 }
 
 // ─── LAY HISTORY ─────────────────────────────────────────────────────────────
 
 export async function loadLayHistory() {
-  try {
-    const data = await loadAllData()
-    return data.lay || {}
-  } catch { return {} }
+  try { const data = await loadAllData(); return data.lay || {} }
+  catch { return {} }
 }
 
-export async function saveLayHistory(lay) {
-  return enqueueWrite('lay', lay)
+export async function saveLayHistory(lay, changedDates = null) {
+  const entries = changedDates
+    ? changedDates.map(d => [d, lay[d]]).filter(([, v]) => v)
+    : Object.entries(lay)
+  return Promise.all(entries.map(([date, parlay]) => putJson(`/parlays/lay/${date}`, parlay)))
 }
 
 // ─── DOG PICKS ────────────────────────────────────────────────────────────────
 
 export async function loadDogState() {
-  try {
-    const data = await loadAllData()
-    return data.dog || {}
-  } catch { return {} }
+  try { const data = await loadAllData(); return data.dog || {} }
+  catch { return {} }
 }
 
 export async function saveDogStateServer(state) {
-  return enqueueWrite('dog', state)
+  if (!state?.picks) return
+  return Promise.all(Object.entries(state.picks).map(([date, pick]) => putJson(`/picks/dog/${date}`, pick)))
 }
 
 // ─── PROP PICKS ───────────────────────────────────────────────────────────────
 
 export async function loadPropPick() {
-  try {
-    const data = await loadAllData()
-    return data.propPick || {}
-  } catch { return {} }
+  try { const data = await loadAllData(); return data.propPick || {} }
+  catch { return {} }
 }
 
 export async function savePropPick(picks) {
-  return enqueueWrite('propPick', picks)
+  return Promise.all(Object.entries(picks).map(([date, dateProps]) => putJson(`/props/${date}`, dateProps)))
 }
 
 // ─── DOUBLE LOCK O/U ─────────────────────────────────────────────────────────
 
 export async function loadOuPick() {
-  try {
-    const data = await loadAllData()
-    return data.ouPick || {}
-  } catch { return {} }
+  try { const data = await loadAllData(); return data.ouPick || {} }
+  catch { return {} }
 }
 
 export async function saveOuPick(picks) {
-  return enqueueWrite('ouPick', picks)
+  return Promise.all(Object.entries(picks).map(([date, pick]) => putJson(`/picks/ou/${date}`, pick)))
 }
-// ─── FAV PICK (per-day pick made from FavsTab) ────────────────────────────────
+
+// ─── FAV PICK ────────────────────────────────────────────────────────────────
 
 export async function loadFavPick() {
-  try {
-    const data = await loadAllData()
-    return data.favPick || {}
-  } catch { return {} }
+  try { const data = await loadAllData(); return data.favPick || {} }
+  catch { return {} }
 }
 
 export async function saveFavPick(picks) {
-  return enqueueWrite('favPick', picks)
+  return Promise.all(Object.entries(picks).map(([date, pick]) => putJson(`/picks/fav/${date}`, pick)))
 }
 
 // ─── SUPER DOG PICKS ──────────────────────────────────────────────────────────
 
 export async function loadSuperDogState() {
-  try {
-    const data = await loadAllData()
-    return data.superdog || {}
-  } catch { return {} }
+  try { const data = await loadAllData(); return data.superdog || {} }
+  catch { return {} }
 }
 
 export async function saveSuperDogState(state) {
-  return enqueueWrite('superdog', state)
+  if (!state?.picks) return
+  return Promise.all(Object.entries(state.picks).map(([date, pick]) => putJson(`/picks/superdog/${date}`, pick)))
 }
 
-// ─── HATE PICK (per-day pick made from HateWatchTab) ─────────────────────────
+// ─── HATE PICK ───────────────────────────────────────────────────────────────
 
 export async function loadHatePick() {
-  try {
-    const data = await loadAllData()
-    return data.hatePick || {}
-  } catch { return {} }
+  try { const data = await loadAllData(); return data.hatePick || {} }
+  catch { return {} }
 }
 
 export async function saveHatePick(picks) {
-  return enqueueWrite('hatePick', picks)
+  return Promise.all(Object.entries(picks).map(([date, pick]) => putJson(`/picks/hate/${date}`, pick)))
 }
 
-// ─── USER PREFS (fav team, hate team, etc.) ───────────────────────────────────
+// ─── USER PREFS ───────────────────────────────────────────────────────────────
 
 export async function loadPrefs() {
-  try {
-    const data = await loadAllData()
-    return data.prefs || {}
-  } catch { return {} }
+  try { const data = await loadAllData(); return data.prefs || {} }
+  catch { return {} }
 }
 
 export async function savePrefs(prefs) {
-  return enqueueWrite('prefs', prefs)
+  return putJson('/prefs', prefs)
 }
 
+// ─── IN-MEMORY CACHE (replaces localStorage) ──────────────────────────────────
+// Odds and ESPN data cached in memory for the session only.
 
-// ─── ODDS CACHE (localStorage) ───────────────────────────────────────────────
+const _memCache = new Map()
+const _espnCache = new Map()
 
-export function getCachedOdds() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.ODDS_CACHE)
-    if (!raw) return null
-    const { timestamp, data } = JSON.parse(raw)
-    // 8-hour TTL = 3 fetches/day (450 credits/month)
-    if (Date.now() - timestamp < 8 * 60 * 60 * 1000) return data
-    return null
-  } catch { return null }
+export function getCachedData(key) {
+  const entry = _memCache.get(key)
+  if (!entry) return null
+  if (Date.now() - entry.timestamp > 8 * 60 * 60 * 1000) { _memCache.delete(key); return null }
+  return entry.data
 }
 
-export function setCachedOdds(data) {
-  localStorage.setItem(STORAGE_KEYS.ODDS_CACHE, JSON.stringify({ timestamp: Date.now(), data }))
+export function setCachedData(key, data) {
+  _memCache.set(key, { timestamp: Date.now(), data })
 }
+
+export function getCachedOdds() { return getCachedData('oddsCache') }
+export function setCachedOdds(data) { setCachedData('oddsCache', data) }
 
 export function getCacheAge() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.ODDS_CACHE)
-    if (!raw) return null
-    const { timestamp } = JSON.parse(raw)
-    const mins = Math.floor((Date.now() - timestamp) / 60000)
-    return mins < 60 ? `${mins}m ago` : `${Math.floor(mins / 60)}h ago`
-  } catch { return null }
+  const entry = _memCache.get('oddsCache')
+  if (!entry) return null
+  const mins = Math.floor((Date.now() - entry.timestamp) / 60000)
+  return mins < 60 ? `${mins}m ago` : `${Math.floor(mins / 60)}h ago`
 }
-
-export function getCachedData(storageKey) {
-  try {
-    const raw = localStorage.getItem(storageKey)
-    if (!raw) return null
-    const { timestamp, data } = JSON.parse(raw)
-    // 8-hour TTL = 3 fetches/day (450 credits/month)
-    if (Date.now() - timestamp < 8 * 60 * 60 * 1000) return data
-    return null
-  } catch { return null }
-}
-
-export function setCachedData(storageKey, data) {
-  localStorage.setItem(storageKey, JSON.stringify({ timestamp: Date.now(), data }))
-}
-
-// ─── ONE-TIME localStorage MIGRATION ─────────────────────────────────────────
-// Runs once on startup: moves any existing browser-side pick data to the server.
-// After migration the localStorage keys are removed so this only fires once.
-
-export async function migrateLocalStorageToServer() {
-  try {
-    const current = await loadAllData()
-    let dirty = false
-
-    const rawDog = localStorage.getItem('dogapp')
-    if (rawDog && !current.dog) {
-      try { current.dog = JSON.parse(rawDog); dirty = true } catch {}
-    }
-    const rawProp = localStorage.getItem('propPick')
-    if (rawProp && !current.propPick) {
-      try { current.propPick = JSON.parse(rawProp); dirty = true } catch {}
-    }
-    const rawOU = localStorage.getItem('doubleLockOU')
-    if (rawOU && !current.ouPick) {
-      try { current.ouPick = JSON.parse(rawOU); dirty = true } catch {}
-    }
-
-    if (dirty) {
-      await saveAllData(current)
-      localStorage.removeItem('dogapp')
-      localStorage.removeItem('propPick')
-      localStorage.removeItem('doubleLockOU')
-      console.log('[BetOnMe] localStorage migration complete')
-    }
-  } catch (e) { console.error('Migration failed', e) }
-}
-// ─── ESPN DATE CACHE ──────────────────────────────────────────────────────────
-// Caches ESPN scoreboard responses keyed by date string (YYYYMMDD)
-// Historical dates never change once completed — cache indefinitely
-// Today's date uses 8h TTL
 
 export function getCachedEspnDate(dateStr) {
-  try {
-    const raw = localStorage.getItem(`espn_${dateStr}`)
-    if (!raw) return null
-    const { timestamp, events } = JSON.parse(raw)
-    const todayStr = new Date().toISOString().split('T')[0].replace(/-/g, '')
-    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0].replace(/-/g, '')
-    if (dateStr === todayStr) {
-      // Today: 5-minute TTL so resolution polling actually sees updated scores
-      if (Date.now() - timestamp > 5 * 60 * 1000) return null
-    } else if (dateStr === yesterdayStr) {
-      // Yesterday: 30-minute TTL to catch late-finishing games (extra innings, OT)
-      if (Date.now() - timestamp > 30 * 60 * 1000) return null
-    }
-    // Historical dates (2+ days ago): cache forever — scores never change
-    return events
-  } catch { return null }
+  const entry = _espnCache.get(dateStr)
+  if (!entry) return null
+  const todayStr = new Date().toISOString().split('T')[0].replace(/-/g, '')
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0].replace(/-/g, '')
+  if (dateStr === todayStr) {
+    if (Date.now() - entry.timestamp > 5 * 60 * 1000) { _espnCache.delete(dateStr); return null }
+  } else if (dateStr === yesterdayStr) {
+    if (Date.now() - entry.timestamp > 30 * 60 * 1000) { _espnCache.delete(dateStr); return null }
+  }
+  return entry.events
 }
 
 export function setCachedEspnDate(dateStr, events) {
-  try {
-    localStorage.setItem(`espn_${dateStr}`, JSON.stringify({ timestamp: Date.now(), events }))
-  } catch {}
+  _espnCache.set(dateStr, { timestamp: Date.now(), events })
 }
 
 export async function fetchEspnDate(sport, dateStr) {

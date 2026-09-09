@@ -4,6 +4,7 @@ import { loadState, saveState, fetchEspnDate } from '../hooks/useSaveData.js'
 import SportFilter, { filterBySport } from '../components/SportFilter.jsx'
 import { getTeamLogoUrl, LOGO_STYLE } from '../utils/teamLogos.js'
 
+const SERVER = import.meta.env.VITE_SERVER_HOST || 'http://127.0.0.1:3001'
 
 function getGameStatus(game) {
   const status = game.espnStatus
@@ -326,6 +327,156 @@ function MonthBucket({ label, record, entries, PickRow }) {
   )
 }
 
+// ─── CONFIDENCE METER ─────────────────────────────────────────────────────────
+export const CONFIDENCE_LEVELS = [
+  { label: 'RISKY PLAY',         emoji: '🤞', color: '#ff4444', bg: '#2a0808', border: '#ff444433' },
+  { label: 'FEELING IT',         emoji: '👀', color: '#ff9944', bg: '#2a1800', border: '#ff994433' },
+  { label: 'SOLID PICK',         emoji: '🎯', color: '#aaaaaa', bg: '#1a1a1a', border: '#44444466' },
+  { label: 'CONFIDENT',          emoji: '🔥', color: '#00ccff', bg: '#001a2a', border: '#00ccff33' },
+  { label: 'PUT MY HOUSE ON IT', emoji: '🏠💸', color: '#00ff88', bg: '#001a0d', border: '#00ff8844' },
+]
+
+// Read-only badge — used in history views
+export function ConfidenceBadge({ level }) {
+  if (level == null) return null
+  const c = CONFIDENCE_LEVELS[level]
+  return (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+      padding: '0.3rem 0.75rem', borderRadius: '20px',
+      background: c.bg, border: `1px solid ${c.border}`,
+      fontSize: '0.75rem', fontWeight: 'bold', color: c.color,
+    }}>
+      <span>{c.emoji}</span>
+      <span>{c.label}</span>
+      <span style={{ fontSize: '0.6rem', color: '#555', marginLeft: '0.2rem' }}>CONFIDENCE</span>
+    </div>
+  )
+}
+
+// Interactive slider — used on today's lock
+function ConfidenceMeter({ lockedLevel, onConfirm }) {
+  const [level, setLevel] = useState(lockedLevel ?? 2)
+  const [confirmed, setConfirmed] = useState(lockedLevel != null)
+  const current = CONFIDENCE_LEVELS[level]
+
+  // If parent passes a lockedLevel after save, sync into confirmed state
+  useEffect(() => {
+    if (lockedLevel != null) { setLevel(lockedLevel); setConfirmed(true) }
+  }, [lockedLevel])
+
+  function handleConfirm() {
+    setConfirmed(true)
+    onConfirm && onConfirm(level)
+  }
+
+  function handleChange(e) {
+    if (confirmed) return
+    setLevel(Number(e.target.value))
+  }
+
+  return (
+    <div style={{
+      marginTop: '1.25rem',
+      padding: '1rem 1.25rem',
+      background: current.bg,
+      border: `1px solid ${confirmed ? current.color + '66' : current.border}`,
+      borderRadius: '10px',
+      transition: 'all 0.3s ease',
+      opacity: confirmed ? 1 : 1,
+    }}>
+      <style>{`
+        .confidence-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 20px; height: 20px;
+          border-radius: 50%;
+          background: ${current.color};
+          border: 2px solid #000;
+          box-shadow: 0 0 8px ${current.color}88;
+          cursor: ${confirmed ? 'default' : 'pointer'};
+          transition: background 0.3s, box-shadow 0.3s;
+        }
+        .confidence-slider::-moz-range-thumb {
+          width: 20px; height: 20px;
+          border-radius: 50%;
+          background: ${current.color};
+          border: 2px solid #000;
+          box-shadow: 0 0 8px ${current.color}88;
+          cursor: ${confirmed ? 'default' : 'pointer'};
+        }
+      `}</style>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+        <span style={{ fontSize: '0.65rem', color: '#555', fontWeight: 'bold', letterSpacing: '0.08em' }}>
+          {confirmed ? '🔒 CONFIDENCE LOCKED' : 'CONFIDENCE'}
+        </span>
+        <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: current.color, transition: 'color 0.3s' }}>
+          {current.emoji} {current.label}
+        </span>
+      </div>
+
+      <div style={{ position: 'relative' }}>
+        <div style={{
+          position: 'absolute', top: '50%', left: 0, right: 0,
+          height: '4px', background: '#1a1a1a', borderRadius: '2px',
+          transform: 'translateY(-50%)', pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', top: '50%', left: 0,
+          height: '4px', width: `${(level / 4) * 100}%`,
+          background: `linear-gradient(to right, #ff4444, ${current.color})`,
+          borderRadius: '2px', transform: 'translateY(-50%)',
+          pointerEvents: 'none', transition: 'width 0.25s ease, background 0.3s ease',
+        }} />
+        <input
+          type="range" min={0} max={4} step={1} value={level}
+          onChange={handleChange}
+          disabled={confirmed}
+          className="confidence-slider"
+          style={{
+            position: 'relative', width: '100%', appearance: 'none', WebkitAppearance: 'none',
+            background: 'transparent', height: '24px',
+            cursor: confirmed ? 'default' : 'pointer', outline: 'none', margin: 0,
+          }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem' }}>
+        <div style={{ display: 'flex', gap: '0.55rem' }}>
+          {CONFIDENCE_LEVELS.map((lvl, i) => (
+            <div
+              key={i}
+              onClick={() => !confirmed && setLevel(i)}
+              style={{
+                width: '6px', height: '6px', borderRadius: '50%',
+                cursor: confirmed ? 'default' : 'pointer',
+                background: i <= level ? current.color : '#333',
+                transition: 'background 0.3s',
+                boxShadow: i === level ? `0 0 6px ${current.color}` : 'none',
+              }}
+            />
+          ))}
+        </div>
+        {!confirmed ? (
+          <button
+            onClick={handleConfirm}
+            style={{
+              padding: '0.35rem 0.9rem', borderRadius: '6px', fontSize: '0.72rem',
+              fontWeight: 'bold', cursor: 'pointer', border: `1px solid ${current.color}66`,
+              background: current.bg, color: current.color,
+              transition: 'all 0.2s',
+            }}
+          >
+            Lock It In ✓
+          </button>
+        ) : (
+          <span style={{ fontSize: '0.68rem', color: '#444', fontStyle: 'italic' }}>locked in</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── LOCK TAB ─────────────────────────────────────────────────────────────────
 export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLockChange }) {
   const [appState, setAppState] = useState({})
@@ -344,7 +495,7 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
       let connected = false
       for (let attempt = 0; attempt < 5; attempt++) {
         try {
-          const res = await fetch('http://127.0.0.1:3001/ping')
+          const res = await fetch(`${SERVER}/ping`)
           await res.json()
           connected = true
           break
@@ -354,7 +505,7 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
       }
       if (!connected) { setServerOk(false); return }
       try {
-        const res = await fetch('http://127.0.0.1:3001/data')
+        const res = await fetch(`${SERVER}/data`)
         const all = await res.json()
         s = all.app || {}
         setServerOk(true)
@@ -608,6 +759,17 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
           {todayPick.result === null && <div style={{ marginTop: '0.75rem', color: '#555', fontSize: '0.82rem' }}>⏳ Waiting for final score — auto-resolves when game ends</div>}
           {todayPick.result === 'W' && <div style={{ marginTop: '0.5rem', color: '#00ff88', fontWeight: 'bold' }}>✅ WIN — 🪙 {calcPayout(todayPick.odds, todayPick.stake)} returned</div>}
           {todayPick.result === 'L' && <div style={{ marginTop: '0.5rem', color: '#ff4444', fontWeight: 'bold' }}>❌ LOSS — 🪙 {todayPick.stake} lost</div>}
+          <ConfidenceMeter
+            lockedLevel={todayPick.confidence ?? null}
+            onConfirm={async (level) => {
+              const fresh = await loadState()
+              const currentKey = getTodayKey()
+              if (!fresh.picks?.[currentKey]) return
+              fresh.picks[currentKey].confidence = level
+              setAppState({ ...fresh })
+              await saveState(fresh)
+            }}
+          />
         </div>
       )}
 
@@ -720,13 +882,20 @@ export default function LockTab({ allGames, loading, onRefresh, cacheAge, onLock
           byMonth[monthKey].push([date, pick])
         })
         const PickRow = ({ date, pick }) => (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111', border: '1px solid #1a1a1a', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}>
-            <span style={{ color: '#555' }}>{date}</span>
-            <span><strong>{pick.team}</strong></span>
-            <span style={{ color: '#555' }}>{pick.market === 'h2h' ? 'ML' : `SP ${pick.point > 0 ? '+' : ''}${pick.point}`} {formatOdds(pick.odds)}</span>
-            <span style={{ color: '#555' }}>{pick.sport}</span>
-            <span style={{ color: '#ff9944' }}>🪙 {pick.stake}</span>
-            <span style={{ fontWeight: 'bold', color: pick.result === 'W' ? '#00ff88' : pick.result === 'L' ? '#ff4444' : '#444' }}>{pick.result || '⏳'}</span>
+          <div style={{ background: '#111', border: '1px solid #1a1a1a', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '0.4rem', fontSize: '0.85rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: '#555' }}>{date}</span>
+              <span><strong>{pick.team}</strong></span>
+              <span style={{ color: '#555' }}>{pick.market === 'h2h' ? 'ML' : `SP ${pick.point > 0 ? '+' : ''}${pick.point}`} {formatOdds(pick.odds)}</span>
+              <span style={{ color: '#555' }}>{pick.sport}</span>
+              <span style={{ color: '#ff9944' }}>🪙 {pick.stake}</span>
+              <span style={{ fontWeight: 'bold', color: pick.result === 'W' ? '#00ff88' : pick.result === 'L' ? '#ff4444' : '#444' }}>{pick.result || '⏳'}</span>
+            </div>
+            {pick.confidence != null && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <ConfidenceBadge level={pick.confidence} />
+              </div>
+            )}
           </div>
         )
         return (

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { loadPrefs, savePrefs, loadHatePick, saveHatePick } from '../hooks/useSaveData.js'
+import { loadPrefs, savePrefs, loadHatePick, saveHatePick, SERVER } from '../hooks/useSaveData.js'
 import { getTodayKey, getGameDateLabel } from '../utils/odds.js'
-
-const SERVER = 'http://127.0.0.1:3001'
+// STEP MARKER: step 3/6 in progress — file 4 of 5 (HateWatchTab.jsx) done.
+// Next: checkbetonme.sh (final file in step 3).
 
 // ── MLB Teams ─────────────────────────────────────────────────────────────────
 const MLB_TEAMS = [
@@ -170,10 +170,12 @@ function TodayGameCard({ team, allGames, todayHatePick, todayLock, todayDog, onH
 
   function nameMatches(a, b) {
     if (!a || !b) return false
-    const al = a.toLowerCase(), bl = b.toLowerCase()
+    const al = a.toLowerCase().trim(), bl = b.toLowerCase().trim()
     if (al === bl) return true
-    if (al.split(' ').pop() === bl.split(' ').pop()) return true
-    return al.includes(bl) || bl.includes(al)
+    if (al.includes(bl) || bl.includes(al)) return true
+    const alLast = al.split(' ').pop(), blLast = bl.split(' ').pop()
+    if (alLast.length > 2 && alLast === blLast) return true
+    return false
   }
 
   function fmtO(price) {
@@ -312,9 +314,13 @@ function TodayGameCard({ team, allGames, todayHatePick, todayLock, todayDog, onH
   const mlMarket    = bm?.markets?.find(m => m.key === 'h2h')
   const spMarket    = bm?.markets?.find(m => m.key === 'spreads')
   const teamML      = mlMarket?.outcomes?.find(o => nameMatches(o.name, teamFull))
-  const oppML       = mlMarket?.outcomes?.find(o => !nameMatches(o.name, teamFull))
+                   ?? mlMarket?.outcomes?.find(o => nameMatches(o.name, teamShort))
+                   ?? (mlMarket?.outcomes?.length === 2 ? mlMarket.outcomes.find(o => !nameMatches(o.name, opponent)) : null)
+  const oppML       = mlMarket?.outcomes?.find(o => !nameMatches(o.name, teamFull) && o !== teamML)
+                   ?? (mlMarket?.outcomes?.length === 2 ? mlMarket.outcomes.find(o => o !== teamML) : null)
   const teamSpread  = spMarket?.outcomes?.find(o => nameMatches(o.name, teamFull))
-  const oppSpread   = spMarket?.outcomes?.find(o => !nameMatches(o.name, teamFull))
+                   ?? spMarket?.outcomes?.find(o => nameMatches(o.name, teamShort))
+  const oppSpread   = spMarket?.outcomes?.find(o => !nameMatches(o.name, teamFull) && o !== teamSpread)
 
   // For fade: betting opponent. For sell: betting hate team.
   // Casual = lower odds (more negative / less positive). Super = higher odds (bigger dog price).
@@ -690,7 +696,7 @@ export default function HateWatchTab({ allGames, todayLock, todayDog, todayHateP
       .catch(() => {})
   }, [])
 
-  // Load team preference from savedata on mount
+  // Load team preference from DB prefs on mount
   useEffect(() => {
     loadPrefs().then(prefs => {
       const saved = prefs['hateTeam_MLB']
@@ -698,18 +704,13 @@ export default function HateWatchTab({ allGames, todayLock, todayDog, todayHateP
         setHateTeam(saved)
         setPicking(false)
       }
-    }).catch(() => {
-      // fallback to localStorage for backwards compat
-      const ls = localStorage.getItem('hateTeam_MLB')
-      if (ls) { setHateTeam(ls); setPicking(false) }
-    })
+    }).catch(() => {})
   }, [])
 
   function selectTeam(team) {
     setHateTeam(team)
     setPicking(false)
     loadPrefs().then(prefs => savePrefs({ ...prefs, 'hateTeam_MLB': team }))
-    localStorage.setItem('hateTeam_MLB', team)
     onTeamChange?.()
   }
 

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { getTodayKey, ensureAmerican, formatOdds, combineParlayOdds, getGameDateLabel, calcPayout, fetchMlbProbablePitchers, getProbablePitcher } from '../utils/odds.js'
-import { loadPredictions, savePredictions, loadLayHistory, saveLayHistory, loadOuPick, saveOuPick, fetchEspnDate, loadState, loadAllData, saveAllData, loadFavPick, loadHatePick, loadSuperDogState } from '../hooks/useSaveData.js'
+import { loadPredictions, savePredictions, loadLayHistory, saveLayHistory, loadOuPick, saveOuPick, fetchEspnDate, loadState, loadFavPick, loadHatePick, SERVER } from '../hooks/useSaveData.js'
 import ParlaySection from '../components/ParlaySection.jsx'
 import SportFilter, { filterBySport } from '../components/SportFilter.jsx'
 import { getTeamLogoUrl, LOGO_STYLE } from '../utils/teamLogos.js'
+import DHBadge from '../components/DHBadge.jsx'
 
-export default function ParlaysTab({ allGames, loading, todayLock, todayDog, todaySuperDog, onLockChange }) {
+export default function ParlaysTab({ allGames, loading, todayLock, todayDog, todaySuperDog, onLockChange, allInHistoryProp, onAllInHistoryChange, doubleheaderIds = new Set() }) {
   const todayKey = getTodayKey()
 
   const [predictionsHistory, setPredictionsHistory] = useState({})
@@ -27,10 +28,19 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
   const [todayFilter, setTodayFilter] = useState('today')
 
   // All In state (same as Lay but no leg limit)
-  const [allInHistory, setAllInHistory] = useState({})
+  const [allInHistory, setAllInHistory] = useState(allInHistoryProp || {})
   const [allInRemovedGames, setAllInRemovedGames] = useState([])
   const [allInLocked, setAllInLocked] = useState(false)
   const todayAllIn = allInHistory[todayKey] || null
+
+  // Sync allInHistory from App prop (survives tab switches)
+  useEffect(() => {
+    if (allInHistoryProp && Object.keys(allInHistoryProp).length > 0) {
+      setAllInHistory(allInHistoryProp)
+      const todayK = getTodayKey()
+      if (allInHistoryProp[todayK]) setAllInLocked(true)
+    }
+  }, [allInHistoryProp])
 
   // Loaded fav/hate picks for auto-including in predictions
   const [todayFavPick, setTodayFavPick] = useState(null)
@@ -51,23 +61,35 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
     NFL: { title: 'First Half',      short: 'H1', emoji: '🏈', color: '#7ac96f' },
   }
   const SPORT_KEY_MAP_F5 = { NBA: 'basketball_nba', MLB: 'baseball_mlb', NFL: 'americanfootball_nfl' }
-  const F5_API_KEY = '9556a1b199876f898bdc45023a854ed2'
+  const F5_API_KEY = import.meta.env.VITE_F5_API_KEY
 
   const todayF5 = f5State[todayKey] || {}
 
   useEffect(() => {
-    loadAllData().then(d => {
-      setF5State(d.f5 || {})
-      // F5 locked if today's picks exist and locked flag is set
-      const todayK = getTodayKey()
-      setF5Locked(!!(d.f5?.[todayK]?._locked))
-    })
+    fetch(`${SERVER}/f5`)
+      .then(r => r.json())
+      .then(f5 => {
+        setF5State(f5 || {})
+        // F5 locked if today's picks exist and locked flag is set
+        const todayK = getTodayKey()
+        setF5Locked(!!(f5?.[todayK]?._locked))
+      })
+      .catch(() => {})
   }, [])
 
   async function saveF5(updated) {
     setF5State(updated)
-    const current = await loadAllData()
-    await saveAllData({ ...current, f5: updated })
+    // Save each date's f5 picks via targeted endpoint
+    await Promise.all(
+      Object.entries(updated).map(([date, sports]) => {
+        if (date === '_locked') return Promise.resolve()
+        return fetch(`${SERVER}/f5/${date}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sports),
+        }).catch(e => console.error('PUT /f5 failed', e))
+      })
+    )
   }
 
   async function lockF5() {
@@ -102,10 +124,17 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
     await saveF5(updated)
   }
 
+  // Stable MLB game ID string — only changes when the actual set of MLB games changes,
+  // not on every new allGames array reference from the 30s poll
+  const mlbGameIds = useMemo(
+    () => allGames.filter(g => g.sportLabel === 'MLB').map(g => g.id).sort().join(','),
+    [allGames]
+  )
+
   useEffect(() => {
-    const hasMlb = allGames.some(g => g.sportLabel === 'MLB')
-    if (hasMlb) fetchMlbProbablePitchers().then(map => setMlbPitchers(map))
-  }, [allGames])
+    if (!mlbGameIds) return
+    fetchMlbProbablePitchers().then(map => setMlbPitchers(map))
+  }, [mlbGameIds])
 
   useEffect(() => {
     async function loadParlaySavedState() {
@@ -143,15 +172,6 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
     loadHatePick().then(p => {
       const pick = p?.[todayK] || null
       if (pick && !pick.noPick) setTodayHatePick(pick)
-    }).catch(() => {})
-    // Load All In history
-    loadAllData().then(d => {
-      const ai = d.allIn || {}
-      setAllInHistory(ai)
-      const todayAi = ai[todayK]
-      if (todayAi) {
-        setAllInLocked(true)
-      }
     }).catch(() => {})
   }, [])
 
@@ -223,10 +243,11 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
 
   const calcSlipOdds = (games, legsData) => {
     if (games.length < 2) return null
-    const oddsArr = games.map((game, idx) => {
-      // If legsData provided (locked state), use stored odds
+    const oddsArr = games.map((game) => {
+      // If legsData provided (locked state), look up by gameId not position
       if (legsData) {
-        const leg = legsData[idx]
+        const gid = game.id || game.gameId
+        const leg = legsData.find(l => (l.gameId || l.id) === gid)
         if (leg?.odds != null) return leg.odds
       }
       // Otherwise use selected odds or auto-pick odds
@@ -234,8 +255,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
       const isLock = gid === lockGameId
       const isDog  = gid === dogGameId && !isLock
       const isSuperDog = gid === superdogGameId && !isLock && !isDog
-      const isFav  = gid === favGameId && !isLock && !isDog && !isSuperDog
-      const isHate = gid === hateGameId && !isLock && !isDog && !isSuperDog && !isFav
+      const isFav  = gid === favGameId && !isLock && !isDog
+      const isHate = gid === hateGameId && !isLock && !isDog
       if (isLock && todayLock?.odds != null) return todayLock.odds
       if (isDog  && todayDog?.odds  != null) return todayDog.odds
       if (isSuperDog && todaySuperDog?.odds != null) return todaySuperDog.odds
@@ -250,8 +271,14 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
     return combineParlayOdds(oddsArr)
   }
 
+  // Format payout as proper dollar amount: $1,234.56
+  const formatPayout = (odds, stake = 1) => {
+    const payout = calcPayout(odds, stake)
+    return '$' + payout.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
+
   const predictionsOdds = predictionsLocked && todayPredictions ? calcSlipOdds(predictionsSlip, todayPredictions.legs) : (!predictionsLocked ? calcSlipOdds(predictionsSlip) : null)
-  const layOdds = layLocked && todayLay ? calcSlipOdds(laySlip, todayLay.legs) : (!layLocked ? calcSlipOdds(laySlip) : null)
+  const layOdds = layLocked && todayLay ? calcSlipOdds(laySlip, todayLay.legs) : (!layLocked && todayPredictions ? calcSlipOdds(laySlip, todayPredictions.legs) : null)
 
   // F5 combined odds — compute from locked picks (skip noGuess / push / null odds)
   const f5Odds = (() => {
@@ -267,13 +294,16 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
   const [openLay, setOpenLay] = useState(false)
   useEffect(() => { if (predictionsLocked) setOpenLay(true) }, [predictionsLocked])
 
+  const [openAllIn, setOpenAllIn] = useState(false)
+  useEffect(() => { if (layLocked) setOpenAllIn(true) }, [layLocked])
+
   async function lockPredictions() {
     const legs = predictionsSlip.map(game => {
       const isLock = game.id === lockGameId
       const isDog = game.id === dogGameId && !isLock
       const isSuperDog = game.id === superdogGameId && !isLock && !isDog
-      const isFav = game.id === favGameId && !isLock && !isDog && !isSuperDog
-      const isHate = game.id === hateGameId && !isLock && !isDog && !isSuperDog && !isFav
+      const isFav = game.id === favGameId && !isLock && !isDog
+      const isHate = game.id === hateGameId && !isLock && !isDog
       const team = isLock ? todayLock?.team
         : isDog ? todayDog?.team
         : isSuperDog ? todaySuperDog?.team
@@ -296,7 +326,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
         : isFav ? (todayFavPick?.point ?? null)
         : isHate ? (todayHatePick?.point ?? null)
         : (selectedMarkets[game.id]?.point ?? null)
-      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, isSuperDog, isFav, isHate, result: null }
+      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, isSuperDog, isFav, isHate, result: null, commenceTime: game.commence_time || null }
     }).sort((a, b) => { const rank = l => l.isLock ? 0 : l.isDog ? 1 : l.isSuperDog ? 2 : l.isFav ? 3 : l.isHate ? 4 : 5; return rank(a) - rank(b) })
     const updated = { ...predictionsHistory, [todayKey]: { legs, lockedAt: Date.now() } }
     await savePredictions(updated)
@@ -311,8 +341,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
       const isLock = game.id === lockGameId
       const isDog = game.id === dogGameId && !isLock
       const isSuperDog = game.id === superdogGameId && !isLock && !isDog
-      const isFav = game.id === favGameId && !isLock && !isDog && !isSuperDog
-      const isHate = game.id === hateGameId && !isLock && !isDog && !isSuperDog && !isFav
+      const isFav = game.id === favGameId && !isLock && !isDog
+      const isHate = game.id === hateGameId && !isLock && !isDog
       const team = isLock ? todayLock?.team
         : isDog ? todayDog?.team
         : isSuperDog ? todaySuperDog?.team
@@ -335,7 +365,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
         : isFav ? (todayFavPick?.point ?? null)
         : isHate ? (todayHatePick?.point ?? null)
         : (selectedMarkets[game.id]?.point ?? null)
-      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, isSuperDog, isFav, isHate, result: null }
+      return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, isSuperDog, isFav, isHate, result: null, commenceTime: game.commence_time || null }
     }).sort((a, b) => { const rank = l => l.isLock ? 0 : l.isDog ? 1 : l.isSuperDog ? 2 : l.isFav ? 3 : l.isHate ? 4 : 5; return rank(a) - rank(b) })
     const hist = await loadLayHistory()
     const updated = { ...hist, [todayKey]: { legs, lockedAt: Date.now() } }
@@ -501,6 +531,98 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
     resolveLay()
     const layInterval = setInterval(resolveLay, 5 * 60 * 1000)
     return () => clearInterval(layInterval)
+  }, [])
+
+  useEffect(() => {
+    async function resolveAllIn() {
+      const resp = await fetch(`${SERVER}/parlays/allin`).catch(() => null)
+      if (!resp) return
+      const hist = await resp.json().catch(() => null)
+      if (!hist) return
+      let changed = false
+      for (const [date, entry] of Object.entries(hist)) {
+        if (!entry || !entry.legs) continue
+        const legsWithTeam = entry.legs.filter(l => l.team)
+        const allResolved = legsWithTeam.every(l => l.result !== null)
+        if (allResolved && entry.overallResult) continue
+        for (let i = 0; i < entry.legs.length; i++) {
+          const leg = entry.legs[i]
+          if (leg.result !== null || !leg.team) continue
+          if (!leg.sport) continue
+          try {
+            const dateStr = date.replace(/-/g, '')
+            const events = await fetchEspnDate(leg.sport, dateStr)
+            const homeLower = leg.home?.toLowerCase() || ''
+            const homeLast  = homeLower.split(' ').pop()
+            const event = events.find(e =>
+              (e.competitions?.[0]?.competitors || []).some(c => {
+                const dn = c.team.displayName.toLowerCase()
+                return homeLower.includes(dn) || dn.includes(homeLower) ||
+                       (homeLast.length > 3 && dn.includes(homeLast))
+              })
+            )
+            if (!event) continue
+            const comp = event.competitions?.[0]
+            if (!comp?.status?.type?.completed) continue
+            let won
+            if (leg.market === 'spreads' && leg.point != null) {
+              const competitors = comp.competitors || []
+              const _lt = leg.team.toLowerCase()
+              const _ll = _lt.split(' ').pop()
+              const pickedComp = competitors.find(c => {
+                const dn = c.team.displayName.toLowerCase()
+                const sn = c.team.shortDisplayName?.toLowerCase() || ''
+                return dn.includes(_lt) || _lt.includes(dn) ||
+                       (_ll.length > 3 && (dn.includes(_ll) || sn.includes(_ll)))
+              })
+              if (!pickedComp) continue
+              const oppComp = competitors.find(c => c.id !== pickedComp.id)
+              const pickedScore = parseFloat(pickedComp.score)
+              const oppScore    = parseFloat(oppComp?.score ?? 0)
+              if (isNaN(pickedScore)) continue
+              won = (pickedScore - oppScore + leg.point) > 0
+            } else {
+              const winner = comp.competitors?.find(c => c.winner)
+              if (!winner) continue
+              const winnerName = winner.team.displayName.toLowerCase()
+              const legTeam = leg.team.toLowerCase()
+              const legLast = legTeam.split(' ').pop()
+              won = winnerName.includes(legTeam) || legTeam.includes(winnerName) ||
+                    (legLast.length > 3 && winnerName.includes(legLast))
+            }
+            hist[date].legs[i].result = won ? 'W' : 'L'
+            changed = true
+          } catch(e) { console.error('[AllIn resolve]', e) }
+        }
+        const resolvedLegs = legsWithTeam.filter(l => l.result !== null)
+        if (resolvedLegs.length === legsWithTeam.length && legsWithTeam.length > 0 && !hist[date].overallResult) {
+          const hits = resolvedLegs.filter(l => l.result === 'W').length
+          hist[date].overallResult = hits === resolvedLegs.length ? 'W' : 'L'
+          hist[date].hitCount = hits
+          hist[date].totalCount = resolvedLegs.length
+          changed = true
+        }
+      }
+      if (changed) {
+        await Promise.all(
+          Object.entries(hist).map(([date, entry]) =>
+            fetch(`${SERVER}/parlays/allin/${date}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(entry),
+            }).catch(e => console.error('PUT /parlays/allin failed', e))
+          )
+        )
+      }
+      // Always sync state from server so UI reflects latest results even if changed=false
+      const todayK = getTodayKey()
+      setAllInHistory({ ...hist })
+      if (hist?.[todayK]) setAllInLocked(true)
+      onAllInHistoryChange?.({ ...hist })
+    }
+    resolveAllIn()
+    const allInInterval = setInterval(resolveAllIn, 5 * 60 * 1000)
+    return () => clearInterval(allInInterval)
   }, [])
 
   useEffect(() => {
@@ -942,7 +1064,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                                     border: `1px solid ${legColor}30`,
                                     padding: '0.1rem 0.4rem', borderRadius: '3px',
                                   }}>
-                                    {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`}
+                                    {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : (leg.isSuperDog && leg.isHate) ? '⚡ SUPER + 😤 HATE' : (leg.isSuperDog && leg.isFav) ? '⚡ SUPER + ⭐ FAV' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`}
                                   </span>
                                   <span style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.06em' }}>{leg.sport}</span>
                                   {isLegLive && leg.result === null && (
@@ -959,6 +1081,13 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                                 <div style={{ fontSize: '0.68rem', color: '#444', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {leg.away} vs {leg.home}
                                 </div>
+                                {(() => {
+                                  const ct = liveGame?.commence_time || leg.commenceTime
+                                  if (!ct) return null
+                                  if (isLegLive) return <div style={{ fontSize: '0.62rem', color: '#ff4444', fontWeight: 'bold', marginTop: '0.15rem' }}>🔴 LIVE</div>
+                                  if (isLegFinal) return <div style={{ fontSize: '0.62rem', color: '#555', marginTop: '0.15rem' }}>✓ Final</div>
+                                  return <div style={{ fontSize: '0.62rem', color: '#444', marginTop: '0.15rem' }}>{getGameDateLabel(ct)}</div>
+                                })()}
                               </div>
                               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                 {leg.odds != null && (
@@ -999,9 +1128,9 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                               </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.2rem' }}>🪙1 WINS</div>
+                              <div style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.2rem' }}>$1 WINS</div>
                               <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fff', lineHeight: 1 }}>
-                                {calcPayout(predictionsOdds, 1).toFixed(2)}x
+                                {formatPayout(predictionsOdds)}
                               </div>
                             </div>
                           </div>
@@ -1022,15 +1151,22 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                 <>
                   {/* ── GAME BROWSER — tap to add to slip ── */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <button
+                    <div
                       onClick={() => setGamesBrowserOpen(o => !o)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0 }}
+                      style={{
+                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        cursor: 'pointer', padding: '0.65rem 0.85rem',
+                        background: '#111', border: '1px solid #1e1e1e', borderRadius: '8px',
+                        transition: 'border-color 0.15s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = '#333'}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = '#1e1e1e'}
                     >
-                      <span style={{ fontSize: '0.65rem', color: '#444', fontWeight: 'bold', letterSpacing: '0.07em' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#555', fontWeight: 'bold', letterSpacing: '0.07em' }}>
                         🎮 GAME BROWSER
                       </span>
-                      <span style={{ color: '#333', fontSize: '0.65rem' }}>{gamesBrowserOpen ? '▲' : '▼'}</span>
-                    </button>
+                      <span style={{ color: '#444', fontSize: '0.7rem' }}>{gamesBrowserOpen ? '▲' : '▼'}</span>
+                    </div>
                     {gamesBrowserOpen && (
                       <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
                         {['today', 'all'].map(f => (
@@ -1088,6 +1224,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                       const isLockGame = game.id === lockGameId
                       const isDogGame = game.id === dogGameId && !isLockGame
                       const isAutoIncluded = isLockGame || isDogGame
+                      const isDoubleheader = doubleheaderIds.has(game.id)
                       const isSelected = isAutoIncluded || selectedGames.includes(game.id)
                       const espnState = game.espnStatus?.type?.state
                       const isFinal = espnState === 'post' || game.espnStatus?.type?.completed
@@ -1111,17 +1248,20 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                           }}
                           style={{
                             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            background: isSelected ? '#1a1a1a' : '#111',
-                            border: `1px solid ${isLockGame ? '#00ff8833' : isDogGame ? '#ff994433' : isSelected ? '#333' : '#1a1a1a'}`,
+                            background: isSelected ? '#1a1a1a' : '#0d0d0d',
+                            border: `1px solid ${isLockGame ? '#00ff8833' : isDogGame ? '#ff994433' : isSelected ? '#ff444433' : '#2a2a2a'}`,
                             borderRadius: '8px', padding: '0.7rem 0.9rem',
                             cursor: isAutoIncluded || isLive ? 'default' : 'pointer',
                             opacity: isLive ? 0.5 : 1,
                           }}
                         >
                           <div>
-                            <div style={{ fontSize: '0.62rem', color: isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : '#444', marginBottom: '0.1rem', fontWeight: isAutoIncluded ? 'bold' : 'normal' }}>
-                              {isLockGame ? '🔒 ' : isDogGame ? '🐕 ' : ''}{game.sportLabel}
-                              {isLive && <span style={{ color: '#ff9944', marginLeft: '0.4rem' }}>· 🔴 LIVE</span>}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.1rem' }}>
+                              <span style={{ fontSize: '0.62rem', color: isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : isSelected ? '#555' : '#666', fontWeight: isAutoIncluded ? 'bold' : 'normal' }}>
+                                {isLockGame ? '🔒 ' : isDogGame ? '🐕 ' : ''}{game.sportLabel}
+                                {isLive && <span style={{ color: '#ff9944', marginLeft: '0.4rem' }}>· 🔴 LIVE</span>}
+                              </span>
+                              <DHBadge show={isDoubleheader} size="sm" />
                             </div>
                             <div style={{ fontWeight: 'bold', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
                               {getTeamLogoUrl(game.away_team, game.sportLabel) && <img src={getTeamLogoUrl(game.away_team, game.sportLabel)} style={{ ...LOGO_STYLE, width: '18px', height: '18px' }} alt="" />}
@@ -1131,8 +1271,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                             </div>
                             <div style={{ fontSize: '0.62rem', color: '#444', marginTop: '0.1rem' }}>{getGameDateLabel(game.commence_time)}</div>
                             {game.sportLabel === 'MLB' && (() => {
-                              const awayP = getProbablePitcher(game.away_team, mlbPitchers)
-                              const homeP = getProbablePitcher(game.home_team, mlbPitchers)
+                              const awayP = getProbablePitcher(game.away_team, mlbPitchers, game.espnId || game.id)
+                              const homeP = getProbablePitcher(game.home_team, mlbPitchers, game.espnId || game.id)
                               if (!awayP && !homeP) return null
                               return (
                                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem', background: '#0d1a2a', border: '1px solid #1a3a5a', borderRadius: '5px', padding: '0.18rem 0.5rem' }}>
@@ -1146,12 +1286,29 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                               )
                             })()}
                           </div>
-                          <div style={{ fontSize: '1rem', color: isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : isSelected ? '#ff4444' : '#444' }}>
+                          <div style={{ fontSize: '1rem', color: isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : isSelected ? '#ff4444' : '#555', fontWeight: isSelected ? 'normal' : 'bold' }}>
                             {isLockGame ? '🔒' : isDogGame ? '🐕' : isSelected ? '✕' : '＋'}
                           </div>
                         </div>
                       )
                     })}
+                  </div>
+                  <div
+                    onClick={() => setGamesBrowserOpen(false)}
+                    style={{
+                      display: 'flex', justifyContent: 'center', alignItems: 'center',
+                      gap: '0.5rem', cursor: 'pointer', padding: '0.65rem 0.85rem',
+                      background: '#111', border: '1px solid #1e1e1e', borderRadius: '8px',
+                      marginTop: '0.5rem',
+                      color: '#444', fontSize: '0.68rem', fontWeight: 'bold',
+                      letterSpacing: '0.08em', textTransform: 'uppercase',
+                      transition: 'border-color 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = '#333'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = '#1e1e1e'}
+                  >
+                    <span>▲</span>
+                    <span>Hide Games</span>
                   </div>
                     </>
                   )}
@@ -1172,8 +1329,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                           const isLockLeg = gid === lockGameId
                           const isDogLeg = gid === dogGameId && !isLockLeg
                           const isSuperDogLeg = gid === superdogGameId && !isLockLeg && !isDogLeg
-                          const isFavLeg = gid === favGameId && !isLockLeg && !isDogLeg && !isSuperDogLeg
-                          const isHateLeg = gid === hateGameId && !isLockLeg && !isDogLeg && !isSuperDogLeg && !isFavLeg
+                          const isFavLeg = gid === favGameId && !isLockLeg && !isDogLeg
+                          const isHateLeg = gid === hateGameId && !isLockLeg && !isDogLeg
                           const isAutoLeg = isLockLeg || isDogLeg || isSuperDogLeg || isFavLeg || isHateLeg
                           // Pre-lock: team comes from selectedTeams; post-lock: from leg.team
                           // Resolve team/odds for all leg types (auto and manual)
@@ -1194,7 +1351,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                           const sportName = leg.sportLabel || leg.sport
                           const legColor = isLockLeg ? '#00ff88' : isDogLeg ? '#ff9944' : isSuperDogLeg ? '#b44fff' : isFavLeg ? '#4c9be8' : isHateLeg ? '#ff4466' : '#555'
                           const legBorder = isLockLeg ? '#00ff8833' : isDogLeg ? '#ff994433' : isSuperDogLeg ? '#b44fff33' : isFavLeg ? '#4c9be833' : isHateLeg ? '#ff446633' : '#222'
-                          const legLabel = isLockLeg ? '🔒 LOCK · ' : isDogLeg ? '🐕 DOG · ' : isSuperDogLeg ? '⚡ SUPER DOG · ' : isFavLeg ? '⭐ FAV · ' : isHateLeg ? '😤 HATE · ' : `LEG ${predictionsSlip.slice(0, i).filter(l => { const g = l.id || l.gameId; return ![lockGameId, dogGameId, superdogGameId, favGameId, hateGameId].includes(g) }).length + 1} · `
+                          const legLabel = isLockLeg ? '🔒 LOCK · ' : isDogLeg ? '🐕 DOG · ' : (isSuperDogLeg && isHateLeg) ? '⚡ SUPER + 😤 HATE · ' : (isSuperDogLeg && isFavLeg) ? '⚡ SUPER + ⭐ FAV · ' : isSuperDogLeg ? '⚡ SUPER DOG · ' : isFavLeg ? '⭐ FAV · ' : isHateLeg ? '😤 HATE · ' : `LEG ${predictionsSlip.slice(0, i).filter(l => { const g = l.id || l.gameId; return ![lockGameId, dogGameId, superdogGameId, favGameId, hateGameId].includes(g) }).length + 1} · `
                           // Resolve market key — normalize SuperDog's 'spread'/'ml' to 'spreads'/'h2h'
                           const normalizeMarket = (m) => m === 'spread' ? 'spreads' : m === 'ml' ? 'h2h' : (m ?? 'h2h')
                           const rawAutoMarket = isLockLeg ? todayLock?.market : isDogLeg ? (todayDog?.market ?? 'h2h') : isSuperDogLeg ? todaySuperDog?.market : isFavLeg ? todayFavPick?.market : isHateLeg ? todayHatePick?.market : null
@@ -1211,15 +1368,18 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                             <div key={gid || i} style={{ background: '#111', border: `1px solid ${legBorder}`, borderRadius: '8px', overflow: 'hidden' }}>
                               {/* Game info row */}
                               <div style={{ padding: '0.6rem 0.8rem 0.5rem' }}>
-                                <div style={{ fontSize: '0.6rem', color: legColor, marginBottom: '0.15rem', fontWeight: 'bold', letterSpacing: '0.05em' }}>
-                                  {legLabel}{sportName}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.15rem' }}>
+                                  <span style={{ fontSize: '0.6rem', color: legColor, fontWeight: 'bold', letterSpacing: '0.05em' }}>
+                                    {legLabel}{sportName}
+                                  </span>
+                                  <DHBadge show={doubleheaderIds.has(gid)} size="sm" />
                                 </div>
                                 <div style={{ fontWeight: 'bold', fontSize: '0.82rem' }}>
                                   {awayName} <span style={{ color: '#333' }}>@</span> {homeName}
                                 </div>
                                 {sportName === 'MLB' && (() => {
-                                  const awayP = getProbablePitcher(awayName, mlbPitchers)
-                                  const homeP = getProbablePitcher(homeName, mlbPitchers)
+                                  const awayP = getProbablePitcher(awayName, mlbPitchers, gid)
+                                  const homeP = getProbablePitcher(homeName, mlbPitchers, gid)
                                   if (!awayP && !homeP) return null
                                   return (
                                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem', background: '#0d1a2a', border: '1px solid #1a3a5a', borderRadius: '5px', padding: '0.18rem 0.5rem' }}>
@@ -1352,8 +1512,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                               <div style={{ fontWeight: 'bold', color: '#00ff88', fontSize: '1.1rem' }}>{formatOdds(slipOdds)}</div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '0.1rem' }}>1 COIN WINS</div>
-                              <div style={{ fontWeight: 'bold', color: '#00ff88', fontSize: '1.1rem' }}>{calcPayout(slipOdds, 1).toFixed(2)}</div>
+                              <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '0.1rem' }}>$1 WINS</div>
+                              <div style={{ fontWeight: 'bold', color: '#00ff88', fontSize: '1.1rem' }}>{formatPayout(slipOdds)}</div>
                             </div>
                           </div>
                         ) : null
@@ -1386,8 +1546,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                     <div style={{ fontWeight: 'bold', color: '#00ff88', fontSize: '1.2rem' }}>{formatOdds(predictionsOdds)}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>💰 1 COIN WINS</div>
-                    <div style={{ fontWeight: 'bold', color: '#00ff88', fontSize: '1.2rem' }}>{calcPayout(predictionsOdds, 1).toFixed(2)}</div>
+                    <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>$1 WINS</div>
+                    <div style={{ fontWeight: 'bold', color: '#00ff88', fontSize: '1.2rem' }}>{formatPayout(predictionsOdds)}</div>
                   </div>
                 </div>
               </div>
@@ -1403,179 +1563,10 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
       </ParlaySection>
 
 
-      {/* 4. All In */}
-      {(() => {
-        const allInSlip = predictionsSlip.filter(g => !allInRemovedGames.includes(g.id))
-        const allInOdds = allInLocked && todayAllIn ? calcSlipOdds(todayAllIn.legs.map(l => allGames.find(g => g.id === l.gameId) || l)) : (!allInLocked ? calcSlipOdds(allInSlip) : null)
-
-        async function lockAllIn() {
-          const legs = allInSlip.map(game => {
-            const isLock = game.id === lockGameId
-            const isDog = game.id === dogGameId && !isLock
-            const isSuperDog = game.id === superdogGameId && !isLock && !isDog
-            const isFav = game.id === favGameId && !isLock && !isDog && !isSuperDog
-            const isHate = game.id === hateGameId && !isLock && !isDog && !isSuperDog && !isFav
-            const team = isLock ? todayLock?.team : isDog ? todayDog?.team : isSuperDog ? todaySuperDog?.team : isFav ? todayFavPick?.team : isHate ? todayHatePick?.team : selectedTeams[game.id]
-            const odds = isLock ? (todayLock?.odds ?? null) : isDog ? (todayDog?.odds ?? null) : isSuperDog ? (todaySuperDog?.odds ?? null) : isFav ? (todayFavPick?.odds ?? null) : isHate ? (todayHatePick?.odds ?? null) : (selectedOdds[game.id] ?? null)
-            const market = isLock ? (todayLock?.market ?? 'h2h') : isSuperDog ? (todaySuperDog?.market ?? 'h2h') : isFav ? (todayFavPick?.market ?? 'h2h') : isHate ? (todayHatePick?.market ?? 'h2h') : (selectedMarkets[game.id]?.market ?? 'h2h')
-            const point = isLock ? (todayLock?.point ?? null) : isSuperDog ? (todaySuperDog?.point ?? null) : isFav ? (todayFavPick?.point ?? null) : isHate ? (todayHatePick?.point ?? null) : (selectedMarkets[game.id]?.point ?? null)
-            return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, isSuperDog, isFav, isHate, result: null }
-          })
-          const current = await loadAllData()
-          const updated = { ...current, allIn: { ...(current.allIn || {}), [todayKey]: { legs, lockedAt: Date.now() } } }
-          await saveAllData(updated)
-          setAllInHistory(updated.allIn)
-          setAllInLocked(true)
-        }
-
-        return (
-          <ParlaySection title="All In" emoji="🚀" defaultOpen={false} totalOdds={allInLocked && todayAllIn ? calcSlipOdds((todayAllIn.legs || []).map(l => ({ bookmakers: [{ markets: [{ key: 'h2h', outcomes: [{ name: l.team, price: l.odds }] }] }] }))) : null}>
-            {!predictionsLocked ? (
-              <p style={{ color: '#555', fontSize: '0.85rem', margin: 0 }}>Lock your Predictions first — All In uses all your picks with no leg limit.</p>
-            ) : (
-              <div>
-                {!allInLocked && (
-                  <p style={{ color: '#555', fontSize: '0.8rem', margin: '0 0 1rem' }}>
-                    All your prediction picks, no limit — the full swing. Tap ✕ to remove any leg.
-                  </p>
-                )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-                  {allInLocked && todayAllIn ? (
-                    (() => {
-                      const legs = todayAllIn.legs
-                      const allResolved = legs.every(l => l.result !== null)
-                      const allWon = allResolved && legs.every(l => l.result === 'W')
-                      const anyLost = legs.some(l => l.result === 'L')
-                      const statusColor = allWon ? '#ff9944' : anyLost ? '#ff4444' : '#ff9944'
-                      const statusLabel = allWon ? '🎉 ALL LEGS HIT' : anyLost ? '❌ PARLAY LOST' : '⏳ IN PROGRESS'
-                      let legCounter = 0
-                      const oddsArr = legs.map(l => l.odds).filter(o => o != null && !isNaN(o))
-                      return (
-                        <div style={{ margin: '0 auto', maxWidth: '420px', background: 'linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 100%)', border: `1px solid ${statusColor}44`, borderRadius: '16px', overflow: 'hidden', boxShadow: '0 0 40px rgba(255,153,68,0.1), 0 8px 32px rgba(0,0,0,0.6)' }}>
-                          <div style={{ background: 'linear-gradient(135deg, #111 0%, #141414 100%)', borderBottom: `1px solid ${statusColor}33`, padding: '1.25rem 1.5rem 1rem', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.6rem', color: '#444', letterSpacing: '0.15em', fontWeight: 'bold', marginBottom: '0.3rem' }}>ALL IN · BET SLIP</div>
-                            <div style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.5rem' }}>🚀 All In · {legs.length}-Leg Parlay</div>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: `${statusColor}18`, border: `1px solid ${statusColor}44`, borderRadius: '20px', padding: '0.2rem 0.75rem', fontSize: '0.72rem', fontWeight: 'bold', color: statusColor }}>{statusLabel}</div>
-                          </div>
-                          <div style={{ padding: '0 1.25rem' }}>
-                            {legs.map((leg, idx) => {
-                              if (!leg.isLock && !leg.isDog && !leg.isSuperDog) legCounter++
-                              const n = legCounter
-                              const legColor = leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : leg.isSuperDog ? '#b44fff' : leg.isFav ? '#4c9be8' : leg.isHate ? '#ff4466' : '#ff9944'
-                              const resultIcon = leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'
-                              const liveGame = allGames.find(g => g.id === leg.gameId)
-                              const espnState = liveGame?.espnStatus?.type?.state
-                              const isLegLive = espnState === 'in'
-                              const isLegFinal = espnState === 'post' || liveGame?.espnStatus?.type?.completed
-                              const marketLabel = leg.market === 'spreads' && leg.point != null ? `Spread ${leg.point > 0 ? '+' : ''}${leg.point}` : 'Moneyline'
-                              return (
-                                <div key={leg.gameId} style={{ padding: '0.85rem 0', borderBottom: idx === legs.length - 1 ? 'none' : '1px solid #1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
-                                      <span style={{ fontSize: '0.56rem', fontWeight: 'bold', color: legColor, background: `${legColor}15`, border: `1px solid ${legColor}30`, padding: '0.08rem 0.35rem', borderRadius: '3px' }}>
-                                        {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`}
-                                      </span>
-                                      <span style={{ fontSize: '0.56rem', color: '#333' }}>{leg.sport}</span>
-                                      {isLegLive && leg.result === null && <span style={{ fontSize: '0.54rem', fontWeight: 'bold', color: '#ff4444', background: '#ff444420', border: '1px solid #ff444440', borderRadius: '3px', padding: '0.06rem 0.3rem' }}>🔴 LIVE</span>}
-                                      {isLegFinal && leg.result === null && <span style={{ fontSize: '0.54rem', fontWeight: 'bold', color: '#aaa', background: '#ffffff10', border: '1px solid #aaa30', borderRadius: '3px', padding: '0.06rem 0.3rem' }}>✓ FINAL</span>}
-                                    </div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff', marginBottom: '0.08rem' }}>{leg.team || '—'}</div>
-                                    <div style={{ fontSize: '0.63rem', color: '#555', marginBottom: '0.05rem' }}>{marketLabel}</div>
-                                    <div style={{ fontSize: '0.65rem', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{leg.away} vs {leg.home}</div>
-                                  </div>
-                                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    {leg.odds != null && <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: leg.odds > 0 ? '#ff9944' : '#00ff88', marginBottom: '0.15rem' }}>{leg.odds > 0 ? '+' : ''}{leg.odds}</div>}
-                                    <div style={{ fontSize: '1.1rem' }}>{resultIcon}</div>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', margin: '0 -1px' }}>
-                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#000', flexShrink: 0, marginLeft: '-9px' }} />
-                            <div style={{ flex: 1, borderTop: '2px dashed #1e1e1e' }} />
-                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#000', flexShrink: 0, marginRight: '-9px' }} />
-                          </div>
-                          <div style={{ padding: '1rem 1.5rem 1.25rem', background: '#0a0a0a' }}>
-                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', fontSize: '0.65rem', color: '#333', letterSpacing: '0.06em' }}>
-                              <span>●●●</span><span>LOCKED IN</span><span>●●●</span>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })()
-                  ) : (
-                    allInSlip.map((game) => {
-                      const bm = game.bookmakers?.[0]
-                      const ml = bm?.markets?.find(m => m.key === 'h2h')
-                      const isLockGame = game.id === lockGameId
-                      const isDogGame = game.id === dogGameId && !isLockGame
-                      const isSuperDogGame = game.id === superdogGameId && !isLockGame && !isDogGame
-                      const isFavGame = game.id === favGameId && !isLockGame && !isDogGame && !isSuperDogGame
-                      const isHateGame = game.id === hateGameId && !isLockGame && !isDogGame && !isSuperDogGame && !isFavGame
-                      const isAutoGame = isLockGame || isDogGame || isSuperDogGame || isFavGame || isHateGame
-                      const isRequired = isLockGame || isDogGame  // only Lock+Dog cannot be removed
-                      const isRemoved = allInRemovedGames.includes(game.id)
-                      const chosenTeam = isLockGame ? todayLock?.team : isDogGame ? todayDog?.team : isSuperDogGame ? todaySuperDog?.team : isFavGame ? todayFavPick?.team : isHateGame ? todayHatePick?.team : selectedTeams[game.id]
-                      const pickedOutcome = ml?.outcomes?.find(o => o.name === chosenTeam) || ml?.outcomes?.reduce((a, b) => ensureAmerican(a.price) < ensureAmerican(b.price) ? a : b)
-                      const canRemove = !isRequired && allInSlip.length > 2
-                      const canAdd = isRemoved && true
-                      const gameColor = isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : isSuperDogGame ? '#b44fff' : isFavGame ? '#4c9be8' : isHateGame ? '#ff4466' : '#ff9944'
-                      const gameLabel = isLockGame ? '🔒 LOCK' : isDogGame ? '🐕 DOG' : isSuperDogGame ? '⚡ SUPER DOG' : isFavGame ? '⭐ FAV' : isHateGame ? '😤 HATE' : isRemoved ? 'REMOVED' : 'LEG'
-                      return (
-                        <div key={game.id} onClick={() => {
-                          if (allInLocked || isRequired) return
-                          if (isRemoved && canAdd) setAllInRemovedGames(r => r.filter(id => id !== game.id))
-                          else if (!isRemoved && canRemove) setAllInRemovedGames(r => [...r, game.id])
-                        }} style={{
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          background: isRemoved ? '#111' : '#1a1a1a',
-                          border: `1px solid ${isRemoved ? '#1a1a1a' : `${gameColor}44`}`,
-                          borderRadius: '8px', padding: '0.75rem 1rem',
-                          opacity: isRemoved ? 0.3 : 1,
-                          cursor: (isRequired || (!canRemove && !isRemoved) || (!canAdd && isRemoved)) ? 'default' : 'pointer',
-                          transition: 'all 0.15s',
-                        }}>
-                          <div>
-                            <div style={{ fontSize: '0.65rem', color: gameColor, fontWeight: 'bold', marginBottom: '0.2rem' }}>{gameLabel}</div>
-                            <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{chosenTeam || pickedOutcome?.name || '—'}</div>
-                            <div style={{ color: '#333', fontSize: '0.72rem' }}>{game.away_team} vs {game.home_team}</div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div style={{ fontWeight: 'bold', color: pickedOutcome && ensureAmerican(pickedOutcome.price) < 0 ? '#00ff88' : '#ff9944', fontSize: '0.95rem' }}>
-                              {pickedOutcome ? formatOdds(ensureAmerican(pickedOutcome.price)) : '—'}
-                            </div>
-                            <div style={{ fontSize: '1rem' }}>
-                              {isRemoved ? (canAdd ? '➕' : '—') : isRequired ? '🔒' : (canRemove ? '✕' : '—')}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
-                {!allInLocked && allInSlip.length >= 2 && (
-                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-                    <span style={{ fontSize: '0.78rem', color: '#555' }}>{allInSlip.length} leg{allInSlip.length !== 1 ? 's' : ''} · no limit ✓</span>
-                    <button onClick={lockAllIn} style={{
-                      padding: '0.6rem 1.25rem', borderRadius: '7px', fontWeight: 'bold', fontSize: '0.85rem',
-                      background: '#ff9944', color: '#000', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                    }}>Lock All In 🚀</button>
-                  </div>
-                )}
-                {allInLocked && (
-                  <div style={{ textAlign: 'center', fontSize: '0.8rem', color: '#ff9944', fontWeight: 'bold', marginTop: '0.5rem' }}>🚀 All In locked</div>
-                )}
-              </div>
-            )}
-          </ParlaySection>
-        )
-      })()}
-
-      {/* 5. Lay of the Day */}
+      {/* 4. Lay of the Day */}
       <ParlaySection title="Lay of the Day" emoji="🎯" defaultOpen={false} totalOdds={layOdds} forceOpen={openLay}>
-        {!allInLocked ? (
-          <p style={{ color: '#555', fontSize: '0.85rem', margin: 0 }}>Lock in your All In first — then trim down to your 2–4 most confident picks for Lay of the Day.</p>
+        {!predictionsLocked ? (
+          <p style={{ color: '#555', fontSize: '0.85rem', margin: 0 }}>Lock your Predictions first — then trim down to your 2–4 most confident picks for Lay of the Day.</p>
         ) : (
           <div>
             {!layLocked && (
@@ -1618,7 +1609,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
                                   <span style={{ fontSize: '0.58rem', fontWeight: 'bold', letterSpacing: '0.08em', color: legColor, background: `${legColor}15`, border: `1px solid ${legColor}30`, padding: '0.1rem 0.4rem', borderRadius: '3px' }}>
-                                    {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`}
+                                    {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : (leg.isSuperDog && leg.isHate) ? '⚡ SUPER + 😤 HATE' : (leg.isSuperDog && leg.isFav) ? '⚡ SUPER + ⭐ FAV' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`}
                                   </span>
                                   <span style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.06em' }}>{leg.sport}</span>
                                   {isLegLive && leg.result === null && <span style={{ fontSize: '0.56rem', fontWeight: 'bold', color: '#ff4444', background: '#ff444420', border: '1px solid #ff444440', borderRadius: '3px', padding: '0.08rem 0.35rem' }}>🔴 LIVE</span>}
@@ -1627,6 +1618,13 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                                 <div style={{ fontWeight: 'bold', fontSize: '0.92rem', color: '#fff', marginBottom: '0.1rem' }}>{leg.team || '—'}</div>
                                 <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: '0.1rem' }}>{marketLabel}</div>
                                 <div style={{ fontSize: '0.68rem', color: '#444', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{leg.away} vs {leg.home}</div>
+                                {(() => {
+                                  const ct = liveGame?.commence_time || leg.commenceTime
+                                  if (!ct) return null
+                                  if (isLegLive) return <div style={{ fontSize: '0.62rem', color: '#ff4444', fontWeight: 'bold', marginTop: '0.15rem' }}>🔴 LIVE</div>
+                                  if (isLegFinal) return <div style={{ fontSize: '0.62rem', color: '#555', marginTop: '0.15rem' }}>✓ Final</div>
+                                  return <div style={{ fontSize: '0.62rem', color: '#444', marginTop: '0.15rem' }}>{getGameDateLabel(ct)}</div>
+                                })()}
                               </div>
                               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                 {leg.odds != null && <div style={{ fontSize: '0.88rem', fontWeight: 'bold', color: leg.odds > 0 ? '#ff9944' : '#00ff88', marginBottom: '0.2rem' }}>{leg.odds > 0 ? '+' : ''}{leg.odds}</div>}
@@ -1649,8 +1647,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                               <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: layOdds > 0 ? '#ff9944' : '#8888ff', lineHeight: 1 }}>{layOdds > 0 ? '+' : ''}{layOdds}</div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.2rem' }}>🪙1 WINS</div>
-                              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fff', lineHeight: 1 }}>{calcPayout(layOdds, 1).toFixed(2)}x</div>
+                              <div style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.2rem' }}>$1 WINS</div>
+                              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fff', lineHeight: 1 }}>{formatPayout(layOdds)}</div>
                             </div>
                           </div>
                         )}
@@ -1663,22 +1661,29 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                 })()
               ) : (
                 predictionsSlip.map((game) => {
-                  const bm = game.bookmakers?.[0]
-                  const ml = bm?.markets?.find(m => m.key === 'h2h')
                   const isRemoved = layRemovedGames.includes(game.id)
                   const isLockGame = game.id === lockGameId
                   const isDogGame = game.id === dogGameId && !isLockGame
                   const isSuperDogGame = game.id === superdogGameId && !isLockGame && !isDogGame
-                  const isFavGame = game.id === favGameId && !isLockGame && !isDogGame && !isSuperDogGame
-                  const isHateGame = game.id === hateGameId && !isLockGame && !isDogGame && !isSuperDogGame && !isFavGame
-                  const isAutoGame = isLockGame || isDogGame || isSuperDogGame || isFavGame || isHateGame
+                  const isFavGame = game.id === favGameId && !isLockGame && !isDogGame
+                  const isHateGame = game.id === hateGameId && !isLockGame && !isDogGame
                   const isRequired = isLockGame || isDogGame  // only Lock+Dog cannot be removed
-                  const chosenTeam = isLockGame ? todayLock?.team : isDogGame ? todayDog?.team : isSuperDogGame ? todaySuperDog?.team : isFavGame ? todayFavPick?.team : isHateGame ? todayHatePick?.team : selectedTeams[game.id]
-                  const pickedOutcome = ml?.outcomes?.find(o => o.name === chosenTeam) || ml?.outcomes?.reduce((a, b) => ensureAmerican(a.price) < ensureAmerican(b.price) ? a : b)
                   const canRemove = !isRequired && laySlip.length > 2
                   const canAdd = isRemoved && laySlip.length < 4
                   const gameColor = isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : isSuperDogGame ? '#b44fff' : isFavGame ? '#4c9be8' : isHateGame ? '#ff4466' : '#8888ff'
                   const legNum = laySlip.filter(g => !layRemovedGames.includes(g.id)).indexOf(game) + 1
+
+                  // Always source team/odds/market from the locked prediction leg —
+                  // never re-derive from live bookmaker data (avoids ML fallback bug).
+                  const predLeg = todayPredictions?.legs?.find(l => l.gameId === game.id)
+                  const chosenTeam = predLeg?.team || null
+                  const chosenOdds = predLeg?.odds ?? null
+                  const chosenMarket = predLeg?.market ?? 'h2h'
+                  const chosenPoint = predLeg?.point ?? null
+                  const marketLabel = chosenMarket === 'spreads' && chosenPoint != null
+                    ? `Spread ${chosenPoint > 0 ? '+' : ''}${chosenPoint}`
+                    : 'Moneyline'
+
                   return (
                     <div key={game.id} onClick={() => {
                       if (layLocked || isRequired) return
@@ -1697,13 +1702,14 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                         <div style={{ fontSize: '0.65rem', color: gameColor, fontWeight: 'bold', marginBottom: '0.2rem' }}>
                           {isLockGame ? '🔒 LOCK — fixed' : isDogGame ? '🐕 DOG' : isSuperDogGame ? '⚡ SUPER DOG' : isFavGame ? '⭐ FAV' : isHateGame ? '😤 HATE' : isRemoved ? 'REMOVED' : `LEG ${legNum}`}
                         </div>
-                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{chosenTeam || pickedOutcome?.name || '—'}</div>
+                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{chosenTeam || '—'}</div>
+                        <div style={{ fontSize: '0.68rem', color: '#555', marginBottom: '0.1rem' }}>{marketLabel}</div>
                         <div style={{ color: '#333', fontSize: '0.72rem' }}>{game.away_team} vs {game.home_team}</div>
                         <div style={{ fontSize: '0.65rem', color: '#444', marginTop: '0.2rem' }}>{getGameDateLabel(game.commence_time)}</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ fontWeight: 'bold', color: pickedOutcome && ensureAmerican(pickedOutcome.price) < 0 ? '#00ff88' : '#ff9944', fontSize: '1rem' }}>
-                          {pickedOutcome ? formatOdds(ensureAmerican(pickedOutcome.price)) : '—'}
+                        <div style={{ fontWeight: 'bold', color: chosenOdds != null && chosenOdds > 0 ? '#ff9944' : '#00ff88', fontSize: '1rem' }}>
+                          {chosenOdds != null ? formatOdds(chosenOdds) : '—'}
                         </div>
                         <div style={{ fontSize: '1.1rem', opacity: isRequired ? 0.3 : 1 }}>
                           {isRemoved ? (canAdd ? '➕' : '—') : isRequired ? '🔒' : (canRemove ? '✕' : '—')}
@@ -1718,7 +1724,7 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
               <div style={{ background: '#1a1a2a', border: '1px solid #8888ff44', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: '#555', fontSize: '0.78rem' }}>{laySlip.length} legs · Lay of the Day</span>
-                  <span style={{ fontWeight: 'bold', color: '#8888ff', fontSize: '1.2rem' }}>{formatOdds(calcSlipOdds(laySlip))}</span>
+                  <span style={{ fontWeight: 'bold', color: '#8888ff', fontSize: '1.2rem' }}>{formatOdds(calcSlipOdds(laySlip, todayPredictions?.legs))}</span>
                 </div>
               </div>
             )}
@@ -1730,8 +1736,8 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
                     <div style={{ fontWeight: 'bold', color: '#8888ff', fontSize: '1.2rem' }}>{formatOdds(layOdds)}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>💰 1 COIN WINS</div>
-                    <div style={{ fontWeight: 'bold', color: '#8888ff', fontSize: '1.2rem' }}>{calcPayout(layOdds, 1).toFixed(2)}</div>
+                    <div style={{ fontSize: '0.65rem', color: '#555', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>$1 WINS</div>
+                    <div style={{ fontWeight: 'bold', color: '#8888ff', fontSize: '1.2rem' }}>{formatPayout(layOdds)}</div>
                   </div>
                 </div>
               </div>
@@ -1757,6 +1763,253 @@ export default function ParlaysTab({ allGames, loading, todayLock, todayDog, tod
           </div>
         )}
       </ParlaySection>
+      {/* 5. All In */}
+      {(() => {
+        // All In: starts with all Lay legs (can't remove any).
+        // User can add back legs that were cut from Lay (layRemovedGames).
+        // allInRemovedGames is repurposed here as "allInAddedBack" — legs the user added back on top of Lay.
+        // Base is laySlip (locked Lay legs), not predictionsSlip — same fix as predictions→lay.
+        const laySlipGames = layLocked && todayLay
+          ? todayLay.legs.map(leg => {
+              const live = allGames.find(g => g.id === leg.gameId)
+              return live || { id: leg.gameId, home_team: leg.home, away_team: leg.away, sportLabel: leg.sport, bookmakers: [], _leg: leg }
+            })
+          : laySlip
+        const addedBackGames = allInRemovedGames
+          .map(id => {
+            const live = predictionsSlip.find(g => g.id === id)
+            if (live) return live
+            // Fall back to stored prediction leg if live game not available
+            const storedLeg = todayPredictions?.legs?.find(l => l.gameId === id)
+            if (storedLeg) return { id: storedLeg.gameId, home_team: storedLeg.home, away_team: storedLeg.away, sportLabel: storedLeg.sport, bookmakers: [], _leg: storedLeg }
+            return null
+          })
+          .filter(Boolean)
+        const allInSlip = [...laySlipGames, ...addedBackGames]
+        const allInOdds = (() => {
+          if (allInLocked && todayAllIn) {
+            // Use stored odds directly keyed by gameId — don't rely on index alignment
+            const oddsArr = todayAllIn.legs
+              .map(l => l.odds)
+              .filter(o => o != null && !isNaN(o))
+            return oddsArr.length >= 2 ? combineParlayOdds(oddsArr) : null
+          }
+          if (!allInLocked) {
+            // Use both lay legs and prediction legs as stored data source —
+            // lay legs get lay odds, added-back legs get prediction odds
+            const combinedLegsData = [
+              ...(todayLay?.legs ?? []),
+              ...(todayPredictions?.legs?.filter(l => !todayLay?.legs?.find(ll => ll.gameId === l.gameId)) ?? [])
+            ]
+            return calcSlipOdds(allInSlip, combinedLegsData.length ? combinedLegsData : undefined)
+          }
+          return null
+        })()
+
+        async function lockAllIn() {
+          const legs = allInSlip.map(game => {
+            const isLock = game.id === lockGameId
+            const isDog = game.id === dogGameId && !isLock
+            const isSuperDog = game.id === superdogGameId && !isLock && !isDog
+            const isFav = game.id === favGameId && !isLock && !isDog
+            const isHate = game.id === hateGameId && !isLock && !isDog
+            // Prefer stored Lay leg, then stored prediction leg, then live UI state
+            const layLeg = todayLay?.legs?.find(l => l.gameId === game.id)
+            const predLeg = todayPredictions?.legs?.find(l => l.gameId === game.id)
+            const storedLeg = layLeg ?? predLeg
+            const team = storedLeg?.team ?? (isLock ? todayLock?.team : isDog ? todayDog?.team : isSuperDog ? todaySuperDog?.team : isFav ? todayFavPick?.team : isHate ? todayHatePick?.team : selectedTeams[game.id])
+            const odds = storedLeg?.odds ?? (isLock ? (todayLock?.odds ?? null) : isDog ? (todayDog?.odds ?? null) : isSuperDog ? (todaySuperDog?.odds ?? null) : isFav ? (todayFavPick?.odds ?? null) : isHate ? (todayHatePick?.odds ?? null) : (selectedOdds[game.id] ?? null))
+            const market = storedLeg?.market ?? (isLock ? (todayLock?.market ?? 'h2h') : isSuperDog ? (todaySuperDog?.market ?? 'h2h') : isFav ? (todayFavPick?.market ?? 'h2h') : isHate ? (todayHatePick?.market ?? 'h2h') : (selectedMarkets[game.id]?.market ?? 'h2h'))
+            const point = storedLeg?.point ?? (isLock ? (todayLock?.point ?? null) : isSuperDog ? (todaySuperDog?.point ?? null) : isFav ? (todayFavPick?.point ?? null) : isHate ? (todayHatePick?.point ?? null) : (selectedMarkets[game.id]?.point ?? null))
+            return { gameId: game.id, home: game.home_team, away: game.away_team, sport: game.sportLabel, team: team || null, odds, market, point, isLock, isDog, isSuperDog, isFav, isHate, result: null, commenceTime: game.commence_time || null }
+          })
+          const allinPayload = { legs, lockedAt: Date.now() }
+          await fetch(`${SERVER}/parlays/allin/${todayKey}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(allinPayload),
+          }).catch(e => console.error('PUT /parlays/allin failed', e))
+          setAllInHistory(prev => ({ ...prev, [todayKey]: allinPayload }))
+          onAllInHistoryChange?.(prev => ({ ...prev, [todayKey]: allinPayload }))
+          setAllInLocked(true)
+        }
+
+        return (
+          <ParlaySection title="All In" emoji="🚀" defaultOpen={false} totalOdds={allInOdds} forceOpen={openAllIn}>
+            {!layLocked ? (
+              <p style={{ color: '#555', fontSize: '0.85rem', margin: 0 }}>Lock your Lay of the Day first — All In uses all your Lay picks with no leg limit.</p>
+            ) : (
+              <div>
+                {!allInLocked && (
+                  <p style={{ color: '#555', fontSize: '0.8rem', margin: '0 0 1rem' }}>
+                    All your Lay picks are in — tap ➕ to add back any legs you cut from Lay.
+                  </p>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                  {allInLocked && todayAllIn ? (
+                    (() => {
+                      const legs = todayAllIn.legs
+                      const allResolved = legs.every(l => l.result !== null)
+                      const allWon = allResolved && legs.every(l => l.result === 'W')
+                      const anyLost = legs.some(l => l.result === 'L')
+                      const statusColor = allWon ? '#ff9944' : anyLost ? '#ff4444' : '#ff9944'
+                      const statusLabel = allWon ? '🎉 ALL LEGS HIT' : anyLost ? '❌ PARLAY LOST' : '⏳ IN PROGRESS'
+                      let legCounter = 0
+                      const oddsArr = legs.map(l => l.odds).filter(o => o != null && !isNaN(o))
+                      return (
+                        <div style={{ margin: '0 auto', maxWidth: '420px', background: 'linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 100%)', border: `1px solid ${statusColor}44`, borderRadius: '16px', overflow: 'hidden', boxShadow: '0 0 40px rgba(255,153,68,0.1), 0 8px 32px rgba(0,0,0,0.6)' }}>
+                          <div style={{ background: 'linear-gradient(135deg, #111 0%, #141414 100%)', borderBottom: `1px solid ${statusColor}33`, padding: '1.25rem 1.5rem 1rem', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.6rem', color: '#444', letterSpacing: '0.15em', fontWeight: 'bold', marginBottom: '0.3rem' }}>ALL IN · BET SLIP</div>
+                            <div style={{ fontSize: '1.05rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.5rem' }}>🚀 All In · {legs.length}-Leg Parlay</div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: `${statusColor}18`, border: `1px solid ${statusColor}44`, borderRadius: '20px', padding: '0.2rem 0.75rem', fontSize: '0.72rem', fontWeight: 'bold', color: statusColor }}>{statusLabel}</div>
+                          </div>
+                          <div style={{ padding: '0 1.25rem' }}>
+                            {legs.map((leg, idx) => {
+                              if (!leg.isLock && !leg.isDog && !leg.isSuperDog) legCounter++
+                              const n = legCounter
+                              const legColor = leg.isLock ? '#00ff88' : leg.isDog ? '#ff9944' : leg.isSuperDog ? '#b44fff' : leg.isFav ? '#4c9be8' : leg.isHate ? '#ff4466' : '#ff9944'
+                              const resultIcon = leg.result === 'W' ? '✅' : leg.result === 'L' ? '❌' : '⏳'
+                              const liveGame = allGames.find(g => g.id === leg.gameId)
+                              const espnState = liveGame?.espnStatus?.type?.state
+                              const isLegLive = espnState === 'in'
+                              const isLegFinal = espnState === 'post' || liveGame?.espnStatus?.type?.completed
+                              const marketLabel = leg.market === 'spreads' && leg.point != null ? `Spread ${leg.point > 0 ? '+' : ''}${leg.point}` : 'Moneyline'
+                              return (
+                                <div key={leg.gameId} style={{ padding: '0.85rem 0', borderBottom: idx === legs.length - 1 ? 'none' : '1px solid #1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
+                                      <span style={{ fontSize: '0.56rem', fontWeight: 'bold', color: legColor, background: `${legColor}15`, border: `1px solid ${legColor}30`, padding: '0.08rem 0.35rem', borderRadius: '3px' }}>
+                                        {leg.isLock ? '🔒 LOCK' : leg.isDog ? '🐕 DOG' : (leg.isSuperDog && leg.isHate) ? '⚡ SUPER + 😤 HATE' : (leg.isSuperDog && leg.isFav) ? '⚡ SUPER + ⭐ FAV' : leg.isSuperDog ? '⚡ SUPER' : leg.isFav ? '⭐ FAV' : leg.isHate ? '😤 HATE' : `LEG ${n}`}
+                                      </span>
+                                      <span style={{ fontSize: '0.56rem', color: '#333' }}>{leg.sport}</span>
+                                      {isLegLive && leg.result === null && <span style={{ fontSize: '0.54rem', fontWeight: 'bold', color: '#ff4444', background: '#ff444420', border: '1px solid #ff444440', borderRadius: '3px', padding: '0.06rem 0.3rem' }}>🔴 LIVE</span>}
+                                      {isLegFinal && leg.result === null && <span style={{ fontSize: '0.54rem', fontWeight: 'bold', color: '#aaa', background: '#ffffff10', border: '1px solid #aaa30', borderRadius: '3px', padding: '0.06rem 0.3rem' }}>✓ FINAL</span>}
+                                    </div>
+                                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff', marginBottom: '0.08rem' }}>{leg.team || '—'}</div>
+                                    <div style={{ fontSize: '0.63rem', color: '#555', marginBottom: '0.05rem' }}>{marketLabel}</div>
+                                    <div style={{ fontSize: '0.65rem', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{leg.away} vs {leg.home}</div>
+                                    {(() => {
+                                      const ct = liveGame?.commence_time || leg.commenceTime
+                                      if (!ct) return null
+                                      if (isLegLive) return <div style={{ fontSize: '0.62rem', color: '#ff4444', fontWeight: 'bold', marginTop: '0.15rem' }}>🔴 LIVE</div>
+                                      if (isLegFinal) return <div style={{ fontSize: '0.62rem', color: '#555', marginTop: '0.15rem' }}>✓ Final</div>
+                                      return <div style={{ fontSize: '0.62rem', color: '#444', marginTop: '0.15rem' }}>{getGameDateLabel(ct)}</div>
+                                    })()}
+                                  </div>
+                                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                    {leg.odds != null && <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: leg.odds > 0 ? '#ff9944' : '#00ff88', marginBottom: '0.15rem' }}>{leg.odds > 0 ? '+' : ''}{leg.odds}</div>}
+                                    <div style={{ fontSize: '1.1rem' }}>{resultIcon}</div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', margin: '0 -1px' }}>
+                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#000', flexShrink: 0, marginLeft: '-9px' }} />
+                            <div style={{ flex: 1, borderTop: '2px dashed #1e1e1e' }} />
+                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#000', flexShrink: 0, marginRight: '-9px' }} />
+                          </div>
+                          <div style={{ padding: '1rem 1.5rem 1.25rem', background: '#0a0a0a' }}>
+                            {allInOdds && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                <div>
+                                  <div style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.2rem' }}>PARLAY ODDS</div>
+                                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: allInOdds > 0 ? '#ff9944' : '#ff9944', lineHeight: 1 }}>{allInOdds > 0 ? '+' : ''}{allInOdds}</div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                  <div style={{ fontSize: '0.58rem', color: '#333', letterSpacing: '0.1em', fontWeight: 'bold', marginBottom: '0.2rem' }}>$1 WINS</div>
+                                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fff', lineHeight: 1 }}>{formatPayout(allInOdds)}</div>
+                                </div>
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', fontSize: '0.65rem', color: '#333', letterSpacing: '0.06em' }}>
+                              <span>●●●</span><span>LOCKED IN</span><span>●●●</span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()
+                  ) : (
+                    // Show Lay legs (fixed) first, then legs cut from Lay that can be added back
+                    [...laySlipGames, ...predictionsSlip.filter(g => layRemovedGames.includes(g.id))].map((game) => {
+                      const bm = game.bookmakers?.[0]
+                      const ml = bm?.markets?.find(m => m.key === 'h2h')
+                      const isLockGame = game.id === lockGameId
+                      const isDogGame = game.id === dogGameId && !isLockGame
+                      const isSuperDogGame = game.id === superdogGameId && !isLockGame && !isDogGame
+                      const isFavGame = game.id === favGameId && !isLockGame && !isDogGame
+                      const isHateGame = game.id === hateGameId && !isLockGame && !isDogGame
+                      const isLayLeg = !layRemovedGames.includes(game.id)       // in Lay — fixed, can't remove
+                      const isCutByLay = layRemovedGames.includes(game.id)      // cut by Lay — can be added back
+                      const isAddedBack = allInRemovedGames.includes(game.id)   // user added it back
+                      const isInSlip = isLayLeg || isAddedBack
+                      // For lay legs use todayLay; for cut legs fall back to todayPredictions
+                      const layLegData = todayLay?.legs?.find(l => l.gameId === game.id)
+                        ?? todayPredictions?.legs?.find(l => l.gameId === game.id)
+                      const chosenTeam = layLegData?.team ?? (isLockGame ? todayLock?.team : isDogGame ? todayDog?.team : isSuperDogGame ? todaySuperDog?.team : isFavGame ? todayFavPick?.team : isHateGame ? todayHatePick?.team : selectedTeams[game.id])
+                      const storedOdds = layLegData?.odds ?? null
+                      const pickedOutcome = ml?.outcomes?.find(o => o.name === chosenTeam) || ml?.outcomes?.reduce((a, b) => ensureAmerican(a.price) < ensureAmerican(b.price) ? a : b)
+                      const gameColor = isLockGame ? '#00ff88' : isDogGame ? '#ff9944' : isSuperDogGame ? '#b44fff' : isFavGame ? '#4c9be8' : isHateGame ? '#ff4466' : '#ff9944'
+                      const gameLabel = isLockGame ? '🔒 LOCK' : isDogGame ? '🐕 DOG' : isSuperDogGame ? '⚡ SUPER DOG' : isFavGame ? '⭐ FAV' : isHateGame ? '😤 HATE' : 'LEG'
+                      return (
+                        <div key={game.id} style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          background: isInSlip ? '#1a1a1a' : '#111',
+                          border: `1px solid ${isInSlip ? `${gameColor}44` : '#1a1a1a'}`,
+                          borderRadius: '8px', padding: '0.75rem 1rem',
+                          opacity: isInSlip ? 1 : 0.45,
+                          transition: 'all 0.15s',
+                        }}>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                              <div style={{ fontSize: '0.65rem', color: gameColor, fontWeight: 'bold' }}>{gameLabel}</div>
+                              {isLayLeg && <div style={{ fontSize: '0.58rem', color: '#555', fontWeight: 'bold', letterSpacing: '0.04em' }}>· FROM LAY</div>}
+                              {isCutByLay && isAddedBack && <div style={{ fontSize: '0.58rem', color: '#ff9944', fontWeight: 'bold', letterSpacing: '0.04em' }}>· ADDED BACK</div>}
+                              {isCutByLay && !isAddedBack && <div style={{ fontSize: '0.58rem', color: '#333', fontWeight: 'bold', letterSpacing: '0.04em' }}>· CUT IN LAY</div>}
+                            </div>
+                            <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{chosenTeam || pickedOutcome?.name || '—'}</div>
+                            <div style={{ color: '#333', fontSize: '0.72rem' }}>{game.away_team} vs {game.home_team}</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ fontWeight: 'bold', color: (storedOdds ?? (pickedOutcome ? ensureAmerican(pickedOutcome.price) : null)) < 0 ? '#00ff88' : '#ff9944', fontSize: '0.95rem' }}>
+                              {storedOdds != null ? formatOdds(storedOdds) : (pickedOutcome ? formatOdds(ensureAmerican(pickedOutcome.price)) : '—')}
+                            </div>
+                            {isCutByLay && (
+                              <button onClick={() => {
+                                if (isAddedBack) setAllInRemovedGames(r => r.filter(id => id !== game.id))
+                                else setAllInRemovedGames(r => [...r, game.id])
+                              }} style={{
+                                fontSize: '1rem', background: 'transparent', border: 'none', cursor: 'pointer',
+                                color: isAddedBack ? '#ff4444' : '#ff9944', padding: '0.2rem',
+                              }}>
+                                {isAddedBack ? '✕' : '➕'}
+                              </button>
+                            )}
+                            {isLayLeg && <div style={{ fontSize: '0.85rem', opacity: 0.3 }}>🔒</div>}
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+                {!allInLocked && allInSlip.length >= 2 && (
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#555' }}>{allInSlip.length} leg{allInSlip.length !== 1 ? 's' : ''} · {laySlipGames.length} from Lay{allInSlip.length > laySlipGames.length ? ` + ${allInSlip.length - laySlipGames.length} added back` : ''}</span>
+                    <button onClick={lockAllIn} style={{
+                      padding: '0.6rem 1.25rem', borderRadius: '7px', fontWeight: 'bold', fontSize: '0.85rem',
+                      background: '#ff9944', color: '#000', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                    }}>Lock All In 🚀</button>
+                  </div>
+                )}
+                {allInLocked && (
+                  <div style={{ textAlign: 'center', fontSize: '0.8rem', color: '#ff9944', fontWeight: 'bold', marginTop: '0.5rem' }}>🚀 All In locked</div>
+                )}
+              </div>
+            )}
+          </ParlaySection>
+        )
+      })()}
+
 
       {f5Modal && (() => {
         const { game, sport, linesData } = f5Modal

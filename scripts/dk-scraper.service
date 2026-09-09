@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/kaneki/rabbit/root/projects/onit/betonme
-ExecStart=/usr/bin/python3 /home/kaneki/rabbit/root/projects/onit/betonme/dk_scraper.py --watch
+WorkingDirectory=%h/betonme
+ExecStart=/usr/bin/python3 %h/betonme/dk_scraper.py --watch
 Restart=on-failure
 RestartSec=60
 
