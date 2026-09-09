@@ -73,3 +73,7 @@ package-lock.json
 docs/
 public-repo-checklist.md
 consolidate.sh
+
+# Personal study notes — not part of the public project
+learn/
+notes_hierarchy/
